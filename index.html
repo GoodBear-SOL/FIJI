@@ -153,7 +153,7 @@ function getProvider(){return window.phantom?.solana?.isPhantom?window.phantom.s
 async function afterConnect(p,r){
  wallet=(r?.publicKey||p.publicKey).toString();$('cbtn').textContent=short(wallet)+' ✕';loadAssets();
  if(!db)return toast('Wallet connected (Supabase not set up yet)');
- try{const {data,error}=await db.rpc('ensure_profile',{p_wallet:wallet,p_ref:new URLSearchParams(location.search).get('ref')});
+ try{const {data,error}=await db.rpc('fiji_ensure_profile',{p_wallet:wallet,p_ref:new URLSearchParams(location.search).get('ref')});
   if(error)throw error;setProfile(data);toast('Wallet connected 💧')}catch(e){toast('Connected, but Supabase failed: '+(e.message||e))}}
 async function connect(){
  if(wallet){const p=getProvider();try{await p?.disconnect()}catch(e){}wallet=null;$('cbtn').textContent='Connect wallet';return toast('Disconnected')}
@@ -174,18 +174,18 @@ async function loadAssets(){
  catch(e){toast('Could not load assets (RPC busy?)')}}
 async function doEarn(t){
  if(!wallet)return toast('Connect your wallet first');
- const {data,error}=await db.rpc('earn',{p_wallet:wallet,p_type:t});if(error)return toast(error.message);setProfile(data);toast('Points earned ⭐')}
+ const {data,error}=await db.rpc('fiji_earn',{p_wallet:wallet,p_type:t});if(error)return toast(error.message);setProfile(data);toast('Points earned ⭐')}
 function tap(){if(!wallet)return toast('Connect your wallet first');$('tb').style.width=(++taps*10)+'%';
  if(taps>=10){taps=0;setTimeout(()=>$('tb').style.width='0',300);doEarn('game')}}
 async function postMeme(){
  if(!wallet)return toast('Connect your wallet first');
- const {error}=await db.rpc('submit_meme',{p_wallet:wallet,p_caption:$('cap').value,p_url:$('img').value||null});
+ const {error}=await db.rpc('fiji_submit_meme',{p_wallet:wallet,p_caption:$('cap').value,p_url:$('img').value||null});
  if(error)return toast(error.message);$('cap').value=$('img').value='';toast('Meme posted! +20 ⭐');loadMemes();
- const {data}=await db.from('profiles').select('*').eq('wallet',wallet).single();setProfile(data)}
+ const {data}=await db.from('fiji_profiles').select('*').eq('wallet',wallet).single();setProfile(data)}
 async function loadMemes(){
- const {data}=await db.from('memes').select('*').order('created_at',{ascending:false}).limit(20);
+ const {data}=await db.from('fiji_memes').select('*').order('created_at',{ascending:false}).limit(20);
  $('feed').innerHTML=(data||[]).map(m=>`<div class="sticker card">${/^https:\/\//.test(m.image_url||'')?`<img src="${esc(m.image_url)}" style="width:100%;border-radius:16px;margin-bottom:8px">`:''}${esc(m.caption)}<div class="small">by ${short(m.wallet)}</div></div>`).join('')||'<div class="sticker card">No memes yet. Be the first!</div>'}
 async function loadBoard(){
- const {data}=await db.from('profiles').select('wallet,points,streak').order('points',{ascending:false}).limit(25);
+ const {data}=await db.from('fiji_profiles').select('wallet,points,streak').order('points',{ascending:false}).limit(25);
  $('lb').innerHTML='<tr><th>#</th><th>Wallet</th><th>Points</th><th>Streak</th></tr>'+(data||[]).map((p,i)=>`<tr><td>${['🥇','🥈','🥉'][i]||i+1}</td><td>${short(p.wallet)}</td><td>${p.points}</td><td>🔥 ${p.streak}</td></tr>`).join('')}
 </script></body></html>
