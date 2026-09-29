@@ -133,7 +133,7 @@ footer{text-align:center;padding:30px 20px 50px}
 <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const CFG={SUPABASE_URL:'YOUR_SUPABASE_URL',SUPABASE_KEY:'YOUR_ANON_KEY',FIJI_MINT:'YOUR_FIJI_MINT_ADDRESS',RPC:'https://api.mainnet-beta.solana.com'};
+const CFG={SUPABASE_URL:'https://tmceqqciccnnlxjiobgc.supabase.co/rest/v1/',SUPABASE_KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtY2VxcWNpY2Nubmx4amlvYmdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxMjQ0MDEsImV4cCI6MjA5OTcwMDQwMX0.D63RvW8nmKtqYDhS49d0zvahBmL7Lg8Pt96w19U90Bo',FIJI_MINT:'98kfF7rmsg1QDUEoCqNE7g7M1FdrTt92TEp2CLzypump',RPC:'https://api.mainnet-beta.solana.com'};
 const $=i=>document.getElementById(i);let db=null;try{db=supabase.createClient(CFG.SUPABASE_URL,CFG.SUPABASE_KEY)}catch(e){console.warn('Supabase not configured yet',e)}
 const conn=new solanaWeb3.Connection(CFG.RPC),TOKEN='TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
 let wallet=null,taps=0;const pages=['home','wallet','earn','memes','board'];
