@@ -44,7 +44,9 @@ h2{font-size:clamp(28px,4vw,42px);line-height:1.1;margin:6px 0 14px}
 table{width:100%;border-collapse:collapse}td,th{padding:10px 8px;text-align:left;border-bottom:2px dashed #cfd9ea;word-break:break-all}th{font-family:Fredoka}
 input{width:100%;padding:12px 16px;border:3px solid var(--ink);border-radius:16px;font:600 16px Nunito;margin:6px 0;background:#fff}
 .bar{height:16px;border:2.5px solid var(--ink);border-radius:99px;background:#fff;overflow:hidden}.bar i{display:block;height:100%;background:var(--teal);width:0;transition:.3s}
-#pad{font-size:72px;cursor:pointer;user-select:none;display:inline-block;transition:.08s}#pad:active{transform:scale(.85) rotate(-6deg)}
+#pad{width:120px;height:120px;object-fit:cover;border-radius:50%;border:3px solid var(--ink);cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-user-drag:none;-webkit-tap-highlight-color:transparent;display:inline-block;margin:8px 0;transition:.08s}#pad:active{transform:scale(.85) rotate(-6deg)}
+#pad.hurt{animation:ouch .35s;filter:sepia(1) saturate(6) hue-rotate(-30deg)}
+@keyframes ouch{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px) rotate(-8deg)}40%{transform:translateX(10px) rotate(8deg)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
 #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 20px;border-radius:99px;display:none;z-index:20;font-family:Fredoka}
 footer{text-align:center;padding:30px 20px 50px}
 @media(max-width:760px){.hero{grid-template-columns:1fr;text-align:center;padding-top:34px}.hero p{margin-inline:auto}.hero .btns{justify-content:center}.mascot{order:-1}.nav a{padding:6px 10px;font-size:15px}}
@@ -63,7 +65,7 @@ footer{text-align:center;padding:30px 20px 50px}
  .btn{min-height:44px}.btn.sm{padding:8px 14px}#cbtn{min-height:40px;font-size:14px;padding:6px 12px}
  .mint{font-size:12px;padding:10px 12px}
  table{font-size:14px}td,th{padding:8px 4px}
- #pad{font-size:64px;padding:8px}
+ #pad{width:104px;height:104px}
  #toast{bottom:calc(100px + env(safe-area-inset-bottom));max-width:90vw;text-align:center}
 }
 </style></head><body>
@@ -111,11 +113,7 @@ footer{text-align:center;padding:30px 20px 50px}
  <div class="stats sticker card"><div><b id="spts">0</b>points</div><div><b id="streak">0</b>day streak</div><div><b id="rank">–</b>status</div></div><br>
  <div class="grid">
   <div class="sticker card"><div class="em">📅</div><h3>Daily check-in</h3><p>+10 and streak bonus</p><br><button class="btn sm" onclick="doEarn('daily')">Check in</button></div>
-  <div class="sticker card"><div class="em">💬</div><h3>Social</h3><p>+15 · once a day</p><br><button class="btn sm" onclick="doEarn('social')">I joined in</button></div>
-  <div class="sticker card"><div class="em">🏆</div><h3>Challenge</h3><p>+25 · once a day</p><br><button class="btn sm" onclick="doEarn('challenge')">Done!</button></div>
- </div>
- <div class="grid" style="margin-top:18px">
-  <div class="sticker card" style="text-align:center"><h3>🎮 Splash Tap</h3><p>Tap Fiji 10 times for +5 (5 plays/day)</p><div id="pad" onclick="tap()">🐰</div><div class="bar"><i id="tb"></i></div></div>
+  <div class="sticker card" style="text-align:center"><h3>🎮 Splash Tap</h3><p>Tap Fiji 10 times for +5 (5 plays/day)</p><img id="pad" src="fiji.png" alt="Tap Fiji" onclick="tap()" draggable="false"><div class="bar"><i id="tb"></i></div></div>
   <div class="sticker card"><h3>🤝 Referral link</h3><p>+50 for every friend who joins</p><input id="ref" readonly><button class="btn sm alt" onclick="navigator.clipboard.writeText($('ref').value);toast('Copied!')">Copy link</button></div>
  </div></section>
 
@@ -226,7 +224,12 @@ async function doEarn(t){
  if(!wallet)return toast('Connect your wallet first');
  if(!db)return toast('Supabase not set up yet');
  const {data,error}=await db.rpc('fiji_earn',{p_wallet:wallet,p_type:t});if(error)return toast(error.message);setProfile(data);toast('Points earned ⭐')}
-function tap(){if(!wallet)return toast('Connect your wallet first');$('tb').style.width=(++taps*10)+'%';
+/* optional: drop a fiji-hurt.png next to fiji.png and it swaps in on every tap */
+let hurtOK=false;const hurtImg=new Image();hurtImg.onload=()=>hurtOK=true;hurtImg.src='fiji-hurt.png';
+function tap(){if(!wallet)return toast('Connect your wallet first');
+ const p=$('pad');p.classList.remove('hurt');void p.offsetWidth;p.classList.add('hurt');
+ if(hurtOK){p.src='fiji-hurt.png';setTimeout(()=>p.src='fiji.png',250)}
+ $('tb').style.width=(++taps*10)+'%';
  if(taps>=10){taps=0;setTimeout(()=>$('tb').style.width='0',300);doEarn('game')}}
 async function postMeme(){
  if(!wallet)return toast('Connect your wallet first');
