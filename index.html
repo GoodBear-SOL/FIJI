@@ -3,7 +3,7 @@
 <meta name="theme-color" content="#FFF3C4">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#FFF3C4;--ink:#12305C;--blue:#2E8BFF;--teal:#3FB6C9;--sun:#FFD21F;--card:#fff;--r:26px}
+:root{--bg:#FFF3C4;--ink:#12305C;--blue:#2E8BFF;--teal:#3FB6C9;--sun:#FFD21F;--card:#fff;--r:26px;--up:#2FCB7B;--upi:#0E8F52;--dn:#FF5C7A;--dni:#D6304F}
 *{box-sizing:border-box;margin:0}html{scroll-behavior:smooth}
 body{font:600 17px/1.55 Nunito,system-ui,sans-serif;color:var(--ink);background:var(--bg);
  background-image:radial-gradient(#ffe38a 2px,transparent 2px);background-size:28px 28px}
@@ -19,6 +19,7 @@ h1,h2,h3,.logo,button,.pill{font-family:Fredoka,sans-serif}
 .nav a:hover,.nav a.on{background:var(--sun)}
 .btn{background:var(--blue);color:#fff;border:3px solid var(--ink);border-radius:99px;padding:9px 20px;font-size:17px;font-weight:600;cursor:pointer;box-shadow:0 4px 0 var(--ink);transition:.1s}
 .btn:hover{transform:translateY(2px);box-shadow:0 2px 0 var(--ink)}.btn.alt{background:#fff;color:var(--ink)}.btn.sm{padding:6px 14px;font-size:15px}
+a.btn{text-decoration:none;display:inline-block}
 /* hero */
 .hero{display:grid;grid-template-columns:1.1fr .9fr;gap:30px;align-items:center;padding:56px 0 30px}
 .eyebrow{display:inline-block;background:#fff;border:2.5px solid var(--ink);border-radius:99px;padding:3px 14px;font:600 15px Fredoka;transform:rotate(-2deg)}
@@ -47,11 +48,69 @@ input{width:100%;padding:12px 16px;border:3px solid var(--ink);border-radius:16p
 #pad{width:120px;height:120px;object-fit:cover;border-radius:50%;border:3px solid var(--ink);cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-user-drag:none;-webkit-tap-highlight-color:transparent;display:inline-block;margin:8px 0;transition:.08s}#pad:active{transform:scale(.85) rotate(-6deg)}
 #pad.hurt{animation:ouch .35s;filter:sepia(1) saturate(6) hue-rotate(-30deg)}
 @keyframes ouch{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px) rotate(-8deg)}40%{transform:translateX(10px) rotate(8deg)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
-#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 20px;border-radius:99px;display:none;z-index:20;font-family:Fredoka}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 20px;border-radius:99px;display:none;z-index:40;font-family:Fredoka}
 footer{text-align:center;padding:30px 20px 50px}
+
+/* ---- fiji market ---- */
+sub{font-size:.62em;line-height:0}
+.mk-live{display:flex;align-items:center;gap:12px;margin:0 0 16px}
+.live{font:600 14px Fredoka;display:flex;align-items:center;gap:8px}
+.live i{width:11px;height:11px;border-radius:50%;background:var(--up);border:2px solid var(--ink);animation:pulse 1.6s infinite}
+@keyframes pulse{50%{transform:scale(1.5);opacity:.5}}
+.mk{position:relative;overflow:hidden;cursor:pointer;transition:transform .1s,box-shadow .1s}
+.mk:hover{transform:translateY(3px);box-shadow:0 3px 0 var(--ink)}
+.mk-hero{position:relative;overflow:hidden;margin-bottom:22px}
+.mk-hrow{display:flex;align-items:center;gap:16px;margin-bottom:12px}
+.mk-fj{width:84px;height:84px;border-radius:50%;object-fit:cover;border:3px solid var(--ink);box-shadow:0 5px 0 var(--ink);flex:none}
+.mk-fj.up{animation:hop 1s ease-in-out infinite}
+.mk-fj.dn{animation:sway 2.6s ease-in-out infinite;filter:saturate(.6)}
+.mk-fj.flat{animation:float 4s ease-in-out infinite}
+@keyframes hop{50%{transform:translateY(-14px) scale(1.05)}}
+@keyframes sway{50%{transform:translateY(5px) rotate(-4deg)}}
+.mk-say{background:var(--bg);border:2.5px solid var(--ink);border-radius:18px;padding:8px 16px;font:600 18px Fredoka}
+.mk-hp{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.mk-price{font:700 24px Fredoka;letter-spacing:-.3px;word-break:break-all}.mk-price.big{font-size:40px}
+.mk-chips{display:flex;gap:8px;flex-wrap:wrap}
+.mk-chip{font-size:14px;padding:1px 10px}
+.mk-chip.up{background:#B8F5D2;color:var(--upi)}.mk-chip.dn{background:#FFD0D8;color:var(--dni)}.mk-chip.flat{background:#EAF6FF}
+.wv{width:100%;height:38px;display:block;margin:8px 0}
+.mk-hs{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin:8px 0 16px}
+.mk-hs b{display:block;font:700 20px Fredoka}
+.mk-majors{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px}
+.mk-mini{padding:14px 16px}.mk-mini .mk-price{font-size:22px;margin:2px 0 6px}
+.mk-bar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;margin-bottom:12px}
+.mk-pills{display:flex;gap:8px;flex-wrap:wrap}
+.mk-p{border:2.5px solid var(--ink);background:#fff;border-radius:99px;padding:5px 14px;font:600 15px Fredoka;cursor:pointer;color:var(--ink);transition:.1s}
+.mk-p:hover{background:#fff6cf}.mk-p.on{background:var(--sun)}
+.mk-top{display:flex;align-items:center;gap:10px}
+.mk-top img,.mk-ph{width:42px;height:42px;border-radius:50%;border:2.5px solid var(--ink);object-fit:cover;flex:none;background:#EAF6FF;display:flex;align-items:center;justify-content:center;font-size:20px}
+.mk-nm{min-width:0;margin-right:auto;display:flex;flex-direction:column;line-height:1.15}
+.mk-nm b{font:600 18px Fredoka;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mk-nm span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mk .mk-price{margin-top:8px}
+.mk-meter{position:relative;height:12px;border:2.5px solid var(--ink);border-radius:99px;background:#fff;overflow:hidden;margin:6px 0 8px}
+.mk-meter:after{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--ink);opacity:.35}
+.mk-meter i{position:absolute;top:0;bottom:0;transition:width .4s}
+.mk-meter i.up{left:50%;background:var(--up)}.mk-meter i.dn{right:50%;background:var(--dn)}
+.mk-stats{display:flex;justify-content:space-between;gap:8px}
+.mk-empty{padding:22px;text-align:center}
+.fl-up{animation:flu 1.2s}.fl-dn{animation:fld 1.2s}
+@keyframes flu{0%{background:#b8f5d2}100%{background:#fff}}
+@keyframes fld{0%{background:#ffd0d8}100%{background:#fff}}
+.mk-bub{position:absolute;right:14px;bottom:12px;font-size:22px;pointer-events:none;animation:rise 1.4s forwards}
+.mk-bub.dn{top:12px;bottom:auto;animation:sink 1.4s forwards}
+@keyframes rise{to{transform:translateY(-46px);opacity:0}}
+@keyframes sink{to{transform:translateY(46px);opacity:0}}
+.mk-modal{position:fixed;inset:0;background:rgba(18,48,92,.45);z-index:30;display:flex;align-items:center;justify-content:center;padding:16px}
+.mk-sheet{width:100%;max-width:560px;max-height:92vh;overflow-y:auto}
+.mk-frame{width:100%;height:380px;border:3px solid var(--ink);border-radius:18px;margin:12px 0;background:#fff}
+.mk-acts{display:flex;gap:10px;flex-wrap:wrap}
+@media(prefers-reduced-motion:reduce){.mk-fj,.live i,.mk-bub,.fl-up,.fl-dn{animation:none}}
+
 @media(max-width:760px){.hero{grid-template-columns:1fr;text-align:center;padding-top:34px}.hero p{margin-inline:auto}.hero .btns{justify-content:center}.mascot{order:-1}.nav a{padding:6px 10px;font-size:15px}}
 
 .ic{display:none}.card{overflow-x:auto}
+.mk,.mk-hero{overflow:hidden}
 @media(max-width:760px){
  body{font-size:16px;padding-bottom:calc(96px + env(safe-area-inset-bottom))}
  .wrap{padding:0 14px}.nav{top:8px;padding:0 12px}
@@ -67,6 +126,11 @@ footer{text-align:center;padding:30px 20px 50px}
  table{font-size:14px}td,th{padding:8px 4px}
  #pad{width:104px;height:104px}
  #toast{bottom:calc(100px + env(safe-area-inset-bottom));max-width:90vw;text-align:center}
+ .mk-fj{width:68px;height:68px}.mk-say{font-size:16px}.mk-price.big{font-size:32px}
+ .mk-majors{gap:8px}.mk-mini{padding:10px}.mk-mini .mk-price{font-size:16px}.mk-mini .mk-chip{font-size:12px;padding:0 8px}
+ .mk-pills{flex-wrap:nowrap;overflow-x:auto;max-width:100%;padding-bottom:4px}.mk-p{white-space:nowrap;min-height:38px}
+ .mk-bar{flex-direction:column}
+ .mk-frame{height:320px}.mk-modal{align-items:flex-end;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
 }
 </style></head><body>
 
@@ -105,7 +169,21 @@ footer{text-align:center;padding:30px 20px 50px}
  <div class="sticker quote"><p id="line"></p><button class="btn sm" onclick="say()">Say something else</button></div>
 </section>
 
-<section class="pg" id="wallet"><div class="tag">my wallet</div><h2>Your little corner of the pond.</h2>
+<section class="pg" id="wallet">
+ <div class="tag">fiji market</div><h2>Splash into the market.</h2>
+ <div class="mk-live small"><span class="live"><i></i><span id="mkAgo">loading…</span></span><button class="btn sm alt" onclick="refreshMarket(true)">Refresh</button></div>
+
+ <div class="sticker card mk-hero" id="mkHero"><div class="mk-empty">Fetching Fiji… 💧</div></div>
+
+ <div class="mk-majors" id="mkMajors"></div>
+
+ <div class="mk-bar"><div class="mk-pills" id="mkChains"></div></div>
+ <div class="mk-bar"><div class="mk-pills" id="mkTf"></div><div class="mk-pills" id="mkSort"></div></div>
+ <p class="small" id="mkNote" style="margin-bottom:12px"></p>
+ <div class="grid" id="mkGrid"></div>
+ <p class="small" style="margin-top:14px">Market data from DexScreener, refreshed about every 30 seconds. For fun and information only, not financial advice. Meme coins can lose value fast, and look-alike tokens exist, so always check the contract address.</p>
+
+ <div class="tag">my wallet</div><h2>Your little corner of the pond.</h2>
  <div class="sticker card"><p id="wstat">Connect a Solana wallet (Jupiter, Phantom, Solflare, Backpack) to see your assets and whether you hold FIJI.</p>
   <div id="holder" style="margin:12px 0"></div><table id="assets"></table><br><button class="btn sm" onclick="loadAssets()">Refresh</button></div></section>
 
@@ -138,12 +216,11 @@ let wallet=null,taps=0;const pages=['home','wallet','earn','memes','board'];
 const ico={home:'🏠',wallet:'👛',earn:'⭐',memes:'🎨',board:'🏆'};
 $('links').innerHTML=pages.map(p=>`<a data-p="${p}" onclick="go('${p}')"><span class="ic">${ico[p]}</span><span>${p[0].toUpperCase()+p.slice(1)}</span></a>`).join('');
 function go(p){pages.forEach(x=>$(x).classList.toggle('on',x==p));document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('on',a.dataset.p==p));
- scrollTo({top:0});if(p=='board')loadBoard();if(p=='memes')loadMemes();if(p=='wallet')loadAssets()}
-go('home');$('mint').textContent=CFG.FIJI_MINT;
+ scrollTo({top:0});if(p=='board')loadBoard();if(p=='memes')loadMemes();if(p=='wallet'){loadAssets();startMarket()}else stopMarket()}
 const lines=["you opened this app to check your points. cute.","have some water. then check in.","drip, drip. one more meme, then nap.","the roadmap is simple: be fuzzy, splash around, nap.","you don't need a chart. you need a snack and a friend."];
 let li=0;function say(){$('line').textContent='“'+lines[li++%lines.length]+'”'}say();
 function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2600)}
-const short=a=>a.slice(0,4)+'…'+a.slice(-4),esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const short=a=>a.slice(0,4)+'…'+a.slice(-4),esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function copyMint(){navigator.clipboard.writeText(CFG.FIJI_MINT);toast('Contract copied 💧')}
 function setProfile(p){$('spts').textContent=p.points;$('streak').textContent=p.streak;$('ref').value=location.origin+location.pathname+'?ref='+p.ref_code}
 
@@ -245,4 +322,212 @@ async function loadBoard(){
  if(!db)return;
  const {data}=await db.from('fiji_profiles').select('wallet,points,streak').order('points',{ascending:false}).limit(25);
  $('lb').innerHTML='<tr><th>#</th><th>Wallet</th><th>Points</th><th>Streak</th></tr>'+(data||[]).map((p,i)=>`<tr><td>${['🥇','🥈','🥉'][i]||i+1}</td><td>${short(p.wallet)}</td><td>${p.points}</td><td>🔥 ${p.streak}</td></tr>`).join('')}
+
+/* ================= FIJI MARKET (data: DexScreener, free, no key) ================= */
+const DS='https://api.dexscreener.com';
+const MK={chain:'solana',tf:'h24',sort:'chg',cache:{},last:{},pairs:{},list:[],maj:null,err:'',timer:null,tick:null,at:0,busy:false};
+const OOPS='Couldn’t reach DexScreener right now. Trying again in a moment 💧';
+const LOADING='<div class="sticker card mk-empty" style="grid-column:1/-1">Splashing through the pond… 💦</div>';
+const CHAINS={
+ solana:{name:'Solana',emoji:'◎',quote:'SOL',list:['BONK','WIF','POPCAT','FARTCOIN','PNUT','MEW']},
+ ethereum:{name:'Ethereum',emoji:'⟠',quote:'WETH',list:['PEPE','SHIB','FLOKI','MOG','TURBO']},
+ bsc:{name:'BNB Chain',emoji:'🔶',quote:'WBNB',list:['FLOKI','BabyDoge','DOGE','SHIB','PEPE']},
+ base:{name:'Base',emoji:'🔵',quote:'WETH',list:['BRETT','DEGEN','TOSHI','KEYCAT','MIGGLES']},
+ hot:{name:'Hot',emoji:'🔥'}
+};
+const MAJORS=[
+ {sym:'SOL',em:'◎',chain:'solana',q:'SOL/USDC',match:['SOL']},
+ {sym:'ETH',em:'⟠',chain:'ethereum',q:'WETH/USDC',match:['WETH','ETH']},
+ {sym:'BNB',em:'🔶',chain:'bsc',q:'WBNB/USDT',match:['WBNB','BNB']}
+];
+const TFS={m5:'5m',h1:'1h',h6:'6h',h24:'24h'};
+const SORTS={chg:'🌊 Splashiest',vol:'📊 Volume',liq:'💧 Liquidity'};
+
+const num=x=>{const n=parseFloat(x);return isFinite(n)?n:null};
+const liq=p=>num(p.liquidity&&p.liquidity.usd)||0;
+const best=a=>a.reduce((m,p)=>!m||liq(p)>liq(m)?p:m,null);
+const key=p=>p.chainId+':'+p.pairAddress;
+const safeImg=u=>/^https:\/\//.test(u||'')?u:'';
+const cls=v=>{const n=num(v);return n===null||Math.abs(n)<0.05?'flat':n>0?'up':'dn'};
+const fc=v=>{const n=num(v);return n===null?'–':(n>0?'+':'')+n.toFixed(Math.abs(n)>=100?0:1)+'%'};
+const fm=v=>{const n=num(v);if(n===null)return '–';const a=Math.abs(n);return '$'+(a>=1e9?(n/1e9).toFixed(2)+'B':a>=1e6?(n/1e6).toFixed(2)+'M':a>=1e3?(n/1e3).toFixed(1)+'K':n.toFixed(0))};
+function fp(v){const n=num(v);if(n===null)return '–';
+ if(n>=1000)return '$'+n.toLocaleString(undefined,{maximumFractionDigits:2});
+ if(n>=1)return '$'+n.toFixed(n>=10?2:3);
+ if(n>=0.01)return '$'+n.toFixed(4);
+ const m=n.toFixed(20).match(/^0\.(0+)(\d{1,4})/);
+ if(m&&m[1].length>=3)return '$0.0<sub>'+m[1].length+'</sub>'+m[2];
+ return '$'+n.toPrecision(3)}
+
+async function ds(path){
+ const c=MK.cache[path];if(c&&Date.now()-c.t<25000)return c.d;
+ const ac=new AbortController(),to=setTimeout(()=>ac.abort(),10000);
+ try{const r=await fetch(DS+path,{signal:ac.signal});if(!r.ok)throw new Error('DexScreener '+r.status);
+  const d=await r.json();MK.cache[path]={t:Date.now(),d};return d}
+ finally{clearTimeout(to)}}
+
+async function findPair(q,chain,syms){
+ const d=await ds('/latest/dex/search?q='+encodeURIComponent(q));
+ const want=syms.map(s=>s.toUpperCase());
+ return best((d.pairs||[]).filter(p=>p.chainId===chain&&p.baseToken&&want.includes(String(p.baseToken.symbol).toUpperCase())))}
+async function memePair(sym,chain){
+ let p=null;
+ try{p=await findPair(sym+'/'+CHAINS[chain].quote,chain,[sym])}catch(e){}
+ if(!p){try{p=await findPair(sym,chain,[sym])}catch(e){}}
+ return p&&liq(p)>=10000?p:null}
+async function loadFiji(){
+ const d=await ds('/token-pairs/v1/solana/'+encodeURIComponent(CFG.FIJI_MINT));
+ return best(Array.isArray(d)?d:[])}
+async function loadHot(){
+ const b=await ds('/token-boosts/top/v1'),by={};
+ (Array.isArray(b)?b:[]).slice(0,40).forEach(t=>{if(/^[a-z0-9-]+$/i.test(t.chainId||'')&&t.tokenAddress)(by[t.chainId]=by[t.chainId]||[]).push(t.tokenAddress)});
+ const out=[];
+ await Promise.all(Object.entries(by).map(async([c,addrs])=>{
+  try{const d=await ds('/tokens/v1/'+c+'/'+addrs.slice(0,30).map(encodeURIComponent).join(',')),g={};
+   (Array.isArray(d)?d:[]).forEach(p=>{const k=p.baseToken&&p.baseToken.address;if(k&&(!g[k]||liq(p)>liq(g[k])))g[k]=p});
+   Object.values(g).forEach(p=>{if(liq(p)>=5000)out.push(p)})}catch(e){}}));
+ return out}
+async function loadChain(chain){
+ if(chain=='hot')return loadHot();
+ const res=await Promise.all(CHAINS[chain].list.map(s=>memePair(s,chain)));
+ return res.filter(Boolean)}
+
+/* little wave drawn from the real 24h / 6h / 1h / 5m price changes */
+function wave(p){
+ const pc=p.priceChange||{},now=num(p.priceUsd);if(!now)return '';
+ const v=[];
+ ['h24','h6','h1','m5'].forEach(k=>{const c=num(pc[k]);if(c!==null&&c>-99)v.push(now/(1+c/100))});
+ if(!v.length)return '';
+ v.push(now);
+ const lo=Math.min(...v),hi=Math.max(...v),r=hi-lo||1,W=120,H=36,st=W/(v.length-1);
+ const pt=v.map((y,i)=>[i*st,hi===lo?H/2:H-4-((y-lo)/r)*(H-8)]);
+ let d='M'+pt[0][0]+' '+pt[0][1].toFixed(1);
+ for(let i=1;i<pt.length;i++){const a=pt[i-1],b=pt[i],mx=(a[0]+b[0])/2;d+=' C'+mx+' '+a[1].toFixed(1)+' '+mx+' '+b[1].toFixed(1)+' '+b[0]+' '+b[1].toFixed(1)}
+ const col=v[v.length-1]>=v[0]?'#2FCB7B':'#FF5C7A';
+ return '<svg class="wv" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true"><path d="'+d+' L'+W+' '+H+' L0 '+H+' Z" fill="'+col+'" opacity=".15"/><path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="3" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>'}
+
+function chips(pc){return ['m5','h1','h6','h24'].map(t=>`<span class="pill mk-chip ${cls(pc&&pc[t])}">${TFS[t]} ${fc(pc&&pc[t])}</span>`).join('')}
+
+function card(p,tf){
+ const c=p.priceChange?p.priceChange[tf]:null,k=cls(c),img=safeImg(p.info&&p.info.imageUrl);
+ const w=Math.min(Math.abs(num(c)||0),50)/50*50;
+ return `<div class="sticker card mk ${k}" data-k="${esc(key(p))}" onclick="openPair(this.dataset.k)">
+  <div class="mk-top">${img?`<img src="${esc(img)}" alt="" loading="lazy" onerror="this.outerHTML='<span class=&quot;mk-ph&quot;>💧</span>'">`:'<span class="mk-ph">💧</span>'}
+   <div class="mk-nm"><b>${esc(p.baseToken.symbol)}</b><span class="small">${esc(p.baseToken.name)}</span></div>
+   <span class="pill mk-chip ${k}">${fc(c)}</span></div>
+  <div class="mk-price">${fp(p.priceUsd)}</div>
+  ${wave(p)}
+  <div class="mk-meter"><i class="${k}" style="width:${w}%"></i></div>
+  <div class="mk-stats small"><span>Vol ${fm(p.volume&&p.volume.h24)}</span><span>Liq ${fm(liq(p))}</span></div></div>`}
+
+function bubble(el,up){const b=document.createElement('span');b.className='mk-bub'+(up?'':' dn');b.textContent=up?'💦':'💧';el.appendChild(b);setTimeout(()=>b.remove(),1500)}
+function flashEl(el){
+ const p=MK.pairs[el.dataset.k];if(!p)return;
+ const n=num(p.priceUsd),o=MK.last[el.dataset.k];
+ if(o!==undefined&&n!==null&&n!==o){el.classList.add(n>o?'fl-up':'fl-dn');bubble(el,n>o)}
+ if(n!==null)MK.last[el.dataset.k]=n}
+function flash(root){root.querySelectorAll('[data-k]').forEach(flashEl)}
+
+function renderHero(p){
+ const h=$('mkHero');
+ if(!p){h.innerHTML='<div class="mk-empty">Fiji isn’t showing on DexScreener yet. Check back soon 💧</div>';return}
+ const k=key(p);MK.pairs[k]=p;h.dataset.k=k;
+ const pc=p.priceChange||{},m=cls(pc.h24),t=(p.txns&&p.txns.h24)||{};
+ const say={up:'splashy day! 💦',dn:'drip drip… stay with me 💧',flat:'calm pond today 🌿'}[m];
+ h.innerHTML=`<div class="mk-hrow"><img class="mk-fj ${m}" src="fiji.png" alt="Fiji"><div class="mk-say">${say}</div></div>
+  <div class="mk-hp"><div><div class="small">FIJI price</div><div class="mk-price big">${fp(p.priceUsd)}</div></div><div class="mk-chips">${chips(pc)}</div></div>
+  ${wave(p)}
+  <div class="mk-hs">
+   <div><b>${fm(p.marketCap||p.fdv)}</b><span class="small">market cap</span></div>
+   <div><b>${fm(liq(p))}</b><span class="small">liquidity</span></div>
+   <div><b>${fm(p.volume&&p.volume.h24)}</b><span class="small">volume 24h</span></div>
+   <div><b>${t.buys==null?'–':t.buys} / ${t.sells==null?'–':t.sells}</b><span class="small">buys / sells 24h</span></div>
+  </div>
+  <button class="btn sm" data-open="${esc(k)}" onclick="openPair(this.dataset.open)">See chart</button>`;
+ flashEl(h)}
+
+function renderMajors(a){
+ if(!a)return;MK.maj=a;
+ $('mkMajors').innerHTML=a.map((p,i)=>{const M=MAJORS[i];
+  if(!p)return `<div class="sticker card mk-mini"><b>${M.em} ${M.sym}</b><div class="small">unavailable</div></div>`;
+  MK.pairs[key(p)]=p;const c=p.priceChange?p.priceChange[MK.tf]:null;
+  return `<div class="sticker card mk mk-mini ${cls(c)}" data-k="${esc(key(p))}" onclick="openPair(this.dataset.k)"><b>${M.em} ${M.sym}</b><div class="mk-price">${fp(p.priceUsd)}</div><span class="pill mk-chip ${cls(c)}">${fc(c)}</span></div>`}).join('');
+ flash($('mkMajors'))}
+
+function sorted(list){
+ const tf=MK.tf,v=p=>MK.sort=='chg'?(num(p.priceChange&&p.priceChange[tf])??-1e9):MK.sort=='vol'?(num(p.volume&&p.volume.h24)||0):liq(p);
+ return list.slice().sort((a,b)=>v(b)-v(a))}
+function renderList(){
+ const g=$('mkGrid');
+ if(MK.err){g.innerHTML='<div class="sticker card mk-empty" style="grid-column:1/-1">'+MK.err+'</div>';return}
+ if(!MK.list.length){g.innerHTML='<div class="sticker card mk-empty" style="grid-column:1/-1">No coins to show here right now 🌿</div>';return}
+ const l=sorted(MK.list).slice(0,18);l.forEach(p=>MK.pairs[key(p)]=p);
+ g.innerHTML=l.map(p=>card(p,MK.tf)).join('');flash(g)}
+
+function renderControls(){
+ $('mkChains').innerHTML=Object.entries(CHAINS).map(([k,v])=>`<button class="mk-p ${MK.chain==k?'on':''}" onclick="setChain('${k}')">${v.emoji} ${v.name}</button>`).join('');
+ $('mkTf').innerHTML=Object.entries(TFS).map(([k,v])=>`<button class="mk-p ${MK.tf==k?'on':''}" onclick="setTf('${k}')">${v}</button>`).join('');
+ $('mkSort').innerHTML=Object.entries(SORTS).map(([k,v])=>`<button class="mk-p ${MK.sort==k?'on':''}" onclick="setSort('${k}')">${v}</button>`).join('');
+ $('mkNote').textContent=MK.chain=='hot'?'Hot = coins with paid promotions on DexScreener. Extra risk, so double-check before trusting any of them.':''}
+function setChain(c){if(MK.chain==c)return;MK.chain=c;MK.list=[];MK.err='';renderControls();refreshList(true)}
+function setTf(t){MK.tf=t;renderControls();renderList();renderMajors(MK.maj)}
+function setSort(s){MK.sort=s;renderControls();renderList()}
+
+async function refreshList(loading){
+ const chain=MK.chain;
+ if(loading)$('mkGrid').innerHTML=LOADING;
+ try{const l=await loadChain(chain);if(chain!==MK.chain)return;MK.list=l;MK.err=''}
+ catch(e){if(chain!==MK.chain)return;console.error(e);MK.err=OOPS}
+ renderList()}
+async function refreshMarket(manual){
+ if(MK.busy)return;MK.busy=true;if(manual)MK.cache={};
+ const [f,m]=await Promise.allSettled([
+  loadFiji(),
+  Promise.all(MAJORS.map(x=>findPair(x.q,x.chain,x.match).catch(()=>null))),
+  refreshList(false)
+ ]);
+ if(f.status=='fulfilled')renderHero(f.value);else{console.error(f.reason);$('mkHero').innerHTML='<div class="mk-empty">'+OOPS+'</div>'}
+ if(m.status=='fulfilled')renderMajors(m.value);
+ MK.at=Date.now();tickLive();MK.busy=false}
+function tickLive(){$('mkAgo').textContent=MK.at?'live · updated '+Math.round((Date.now()-MK.at)/1000)+'s ago':'loading…'}
+function startMarket(){
+ renderControls();
+ if(!MK.list.length&&!MK.err)$('mkGrid').innerHTML=LOADING;
+ refreshMarket();
+ clearInterval(MK.timer);MK.timer=setInterval(()=>{if(!document.hidden)refreshMarket()},30000);
+ clearInterval(MK.tick);MK.tick=setInterval(tickLive,1000)}
+function stopMarket(){clearInterval(MK.timer);clearInterval(MK.tick)}
+
+/* detail sheet with DexScreener chart */
+function closePair(){document.querySelectorAll('.mk-modal').forEach(m=>m.remove())}
+document.addEventListener('keydown',e=>{if(e.key=='Escape')closePair()});
+function openPair(k){
+ const p=MK.pairs[k];if(!p)return;closePair();
+ const pc=p.priceChange||{},t=(p.txns&&p.txns.h24)||{},img=safeImg(p.info&&p.info.imageUrl);
+ const okC=/^[a-z0-9-]+$/i.test(p.chainId||''),okP=/^[A-Za-z0-9]+$/.test(p.pairAddress||'');
+ const link=okC&&okP?'https://dexscreener.com/'+p.chainId+'/'+p.pairAddress:'';
+ const d=document.createElement('div');d.className='mk-modal';
+ d.innerHTML=`<div class="sticker card mk-sheet">
+  <div class="mk-top">${img?`<img src="${esc(img)}" alt="">`:'<span class="mk-ph">💧</span>'}
+   <div class="mk-nm"><b>${esc(p.baseToken.symbol)}</b><span class="small">${esc(p.baseToken.name)} · ${esc(p.chainId)}</span></div>
+   <button class="btn sm alt mk-x">✕</button></div>
+  <div class="mk-price big">${fp(p.priceUsd)}</div>
+  <div class="mk-chips" style="margin:6px 0">${chips(pc)}</div>
+  ${wave(p)}
+  <table>
+   <tr><td>Market cap</td><td>${fm(p.marketCap||p.fdv)}</td></tr>
+   <tr><td>Liquidity</td><td>${fm(liq(p))}</td></tr>
+   <tr><td>Volume 24h</td><td>${fm(p.volume&&p.volume.h24)}</td></tr>
+   <tr><td>Buys / sells 24h</td><td>${t.buys==null?'–':t.buys} / ${t.sells==null?'–':t.sells}</td></tr>
+   <tr><td>Traded on</td><td>${esc(p.dexId)}</td></tr>
+  </table>
+  ${link?`<iframe class="mk-frame" title="Price chart" loading="lazy" sandbox="allow-scripts allow-same-origin allow-popups" src="${link}?embed=1&theme=light&trades=0&info=0"></iframe>`:''}
+  <div class="mk-acts">${link?`<a class="btn sm" href="${link}" target="_blank" rel="noopener">Open on DexScreener</a>`:''}
+   <button class="btn sm alt mk-cp" data-copy="${esc(p.baseToken.address)}">Copy contract</button></div></div>`;
+ d.onclick=e=>{if(e.target===d)closePair()};
+ d.querySelector('.mk-x').onclick=closePair;
+ d.querySelector('.mk-cp').onclick=function(){navigator.clipboard.writeText(this.dataset.copy);toast('Contract copied 💧')};
+ document.body.appendChild(d)}
+
+go('home');$('mint').textContent=CFG.FIJI_MINT;
 </script></body></html>
