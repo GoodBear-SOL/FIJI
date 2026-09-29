@@ -104,7 +104,7 @@ footer{text-align:center;padding:30px 20px 50px}
 </section>
 
 <section class="pg" id="wallet"><div class="tag">my wallet</div><h2>Your little corner of the pond.</h2>
- <div class="sticker card"><p id="wstat">Connect a Solana wallet (Phantom) to see your assets and whether you hold FIJI.</p>
+ <div class="sticker card"><p id="wstat">Connect a Solana wallet (Jupiter, Phantom, Solflare, Backpack) to see your assets and whether you hold FIJI.</p>
   <div id="holder" style="margin:12px 0"></div><table id="assets"></table><br><button class="btn sm" onclick="loadAssets()">Refresh</button></div></section>
 
 <section class="pg" id="earn"><div class="tag">earn points</div><h2>Splash around, collect points.</h2>
@@ -149,35 +149,65 @@ const short=a=>a.slice(0,4)+'…'+a.slice(-4),esc=s=>(s||'').replace(/[&<>"]/g,c
 function copyMint(){navigator.clipboard.writeText(CFG.FIJI_MINT);toast('Contract copied 💧')}
 function setProfile(p){$('spts').textContent=p.points;$('streak').textContent=p.streak;$('ref').value=location.origin+location.pathname+'?ref='+p.ref_code}
 
-/* ---- wallet detection: Phantom, Solflare, Backpack, or any injected window.solana ---- */
-function getProvider(){
- const w=window;
- if(w.phantom?.solana?.isPhantom)return w.phantom.solana;
- if(w.solflare?.isSolflare)return w.solflare;
- if(w.backpack?.solana)return w.backpack.solana;
- return w.solana||null}
-/* wallets inject a moment after page load, so wait briefly instead of checking once */
-function waitForProvider(ms=2500){
- return new Promise(res=>{
-  if(getProvider())return res(getProvider());
-  let done=false;
-  const fin=()=>{if(done)return;done=true;clearInterval(iv);res(getProvider())};
-  const iv=setInterval(()=>{if(getProvider())fin()},100);
-  window.addEventListener('phantom#initialized',fin,{once:true});
-  setTimeout(fin,ms)})}
-async function afterConnect(p,r){
- wallet=(r?.publicKey||p.publicKey).toString();$('cbtn').textContent=short(wallet)+' ✕';loadAssets();
+/* ---- wallets: Wallet Standard (Jupiter, Phantom, Solflare, Backpack...) + legacy injected providers ---- */
+const WS=[];
+(function(){
+ const api={register:(...ws)=>{ws.forEach(w=>{if(!WS.includes(w))WS.push(w)});return()=>{}}};
+ try{window.addEventListener('wallet-standard:register-wallet',e=>{try{e.detail(api)}catch(x){}})}catch(e){}
+ try{window.dispatchEvent(new CustomEvent('wallet-standard:app-ready',{detail:api}))}catch(e){}
+})();
+function legacyList(){
+ const w=window,out=[],seen=new Set();
+ const add=(name,p)=>{if(p&&!seen.has(p)){seen.add(p);out.push({name,legacy:p})}};
+ add('Phantom',w.phantom?.solana?.isPhantom?w.phantom.solana:null);
+ add('Solflare',w.solflare?.isSolflare?w.solflare:null);
+ add('Backpack',w.backpack?.solana);
+ add('Wallet',w.solana);
+ return out}
+function listWallets(){
+ const std=WS.filter(x=>x.features?.['standard:connect']&&(x.chains||[]).some(c=>String(c).startsWith('solana:'))).map(x=>({name:x.name,icon:x.icon,std:x}));
+ const names=new Set(std.map(x=>x.name.toLowerCase()));
+ return std.concat(legacyList().filter(x=>!names.has(x.name.toLowerCase())))}
+/* wallets register a moment after page load, so wait briefly instead of checking once */
+function waitForWallets(ms=2500){return new Promise(res=>{const t0=Date.now();let seen=0;
+ const iv=setInterval(()=>{const l=listWallets();if(l.length&&!seen)seen=Date.now();
+  if((seen&&Date.now()-seen>300)||Date.now()-t0>ms){clearInterval(iv);res(listWallets())}},100)})}
+async function connectWallet(o,opts){
+ if(o.legacy){const p=o.legacy,r=await p.connect(opts&&opts.silent?{onlyIfTrusted:true}:undefined);
+  p.on?.('disconnect',()=>{wallet=null;$('cbtn').textContent='Connect wallet'});
+  return{addr:(r?.publicKey||p.publicKey).toString(),off:()=>p.disconnect?.()}}
+ const r=await o.std.features['standard:connect'].connect(opts&&opts.silent?{silent:true}:undefined);
+ const a=(r&&r.accounts&&r.accounts[0])||o.std.accounts[0];if(!a)throw new Error('No account returned');
+ return{addr:a.address,off:()=>o.std.features['standard:disconnect']?.disconnect()}}
+function pick(list){return new Promise(res=>{
+ const d=document.createElement('div');
+ d.style.cssText='position:fixed;inset:0;background:rgba(18,48,92,.45);z-index:30;display:flex;align-items:center;justify-content:center;padding:20px';
+ d.innerHTML='<div class="sticker card" style="max-width:360px;width:100%"><h3>Choose a wallet</h3><div class="wl" style="display:grid;gap:10px;margin-top:12px"></div><br><button class="btn sm alt wx">Cancel</button></div>';
+ document.body.appendChild(d);const wl=d.querySelector('.wl');
+ list.forEach(o=>{const b=document.createElement('button');b.className='btn alt';b.style.cssText='display:flex;align-items:center;gap:10px;justify-content:center';
+  if(o.icon){const i=new Image();i.src=o.icon;i.style.cssText='width:26px;height:26px;border-radius:6px';b.appendChild(i)}
+  b.appendChild(document.createTextNode(o.name));b.onclick=()=>{d.remove();res(o)};wl.appendChild(b)});
+ const x=()=>{d.remove();res(null)};d.querySelector('.wx').onclick=x;d.onclick=e=>{if(e.target===d)x()}})}
+let cur=null;
+async function afterConnect(o,r){
+ wallet=r.addr;cur={off:r.off};try{localStorage.setItem('fiji_wallet',o.name)}catch(e){}
+ $('cbtn').textContent=short(wallet)+' ✕';loadAssets();
  if(!db)return toast('Wallet connected (Supabase not set up yet)');
  try{const {data,error}=await db.rpc('fiji_ensure_profile',{p_wallet:wallet,p_ref:new URLSearchParams(location.search).get('ref')});
   if(error)throw error;setProfile(data);toast('Wallet connected 💧')}catch(e){toast('Connected, but Supabase failed: '+(e.message||e))}}
 async function connect(){
- if(wallet){const p=getProvider();try{await p?.disconnect()}catch(e){}wallet=null;$('cbtn').textContent='Connect wallet';return toast('Disconnected')}
- const p=await waitForProvider();
- if(!p){if(/Android|iPhone|iPad/i.test(navigator.userAgent))return location.href='https://phantom.app/ul/browse/'+encodeURIComponent(location.href)+'?ref='+encodeURIComponent(location.origin);
-  toast('No Solana wallet found. Install Phantom, then refresh.');return window.open('https://phantom.app/download','_blank')}
- try{await afterConnect(p,await p.connect())}
- catch(e){toast(e.code==4001?'Connection request rejected':'Wallet error: '+(e.message||e))}}
-window.addEventListener('load',async()=>{const p=await waitForProvider();if(p)p.connect({onlyIfTrusted:true}).then(r=>afterConnect(p,r)).catch(()=>{});p?.on?.('disconnect',()=>{wallet=null;$('cbtn').textContent='Connect wallet'})});
+ if(wallet){try{await cur?.off()}catch(e){}wallet=null;cur=null;try{localStorage.removeItem('fiji_wallet')}catch(e){}$('cbtn').textContent='Connect wallet';return toast('Disconnected')}
+ const list=await waitForWallets();
+ if(!list.length){if(/Android|iPhone|iPad/i.test(navigator.userAgent))return location.href='https://phantom.app/ul/browse/'+encodeURIComponent(location.href)+'?ref='+encodeURIComponent(location.origin);
+  return toast('No Solana wallet detected. Unlock your wallet extension, allow it on this site, then refresh.')}
+ const o=list.length==1?list[0]:await pick(list);if(!o)return;
+ try{await afterConnect(o,await connectWallet(o))}
+ catch(e){toast(e.code==4001||/reject|denied|cancel/i.test(e.message||'')?'Connection request rejected':'Wallet error: '+(e.message||e))}}
+window.addEventListener('load',async()=>{
+ let saved=null;try{saved=localStorage.getItem('fiji_wallet')}catch(e){}
+ if(!saved)return;
+ const o=(await waitForWallets()).find(x=>x.name==saved);if(!o)return;
+ try{await afterConnect(o,await connectWallet(o,{silent:true}))}catch(e){}});
 async function loadAssets(){
  if(!wallet)return;const pk=new solanaWeb3.PublicKey(wallet);
  try{const [sol,tk]=await Promise.all([conn.getBalance(pk),conn.getParsedTokenAccountsByOwner(pk,{programId:new solanaWeb3.PublicKey(TOKEN)})]);
