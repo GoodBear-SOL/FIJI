@@ -133,9 +133,9 @@ footer{text-align:center;padding:30px 20px 50px}
 <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const CFG={SUPABASE_URL:'https://tmceqqciccnnlxjiobgc.supabase.co/rest/v1/',SUPABASE_KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtY2VxcWNpY2Nubmx4amlvYmdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxMjQ0MDEsImV4cCI6MjA5OTcwMDQwMX0.D63RvW8nmKtqYDhS49d0zvahBmL7Lg8Pt96w19U90Bo',FIJI_MINT:'98kfF7rmsg1QDUEoCqNE7g7M1FdrTt92TEp2CLzypump',RPC:'https://api.mainnet-beta.solana.com'};
+const CFG={SUPABASE_URL:'https://tmceqqciccnnlxjiobgc.supabase.co',SUPABASE_KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtY2VxcWNpY2Nubmx4amlvYmdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxMjQ0MDEsImV4cCI6MjA5OTcwMDQwMX0.D63RvW8nmKtqYDhS49d0zvahBmL7Lg8Pt96w19U90Bo',FIJI_MINT:'98kfF7rmsg1QDUEoCqNE7g7M1FdrTt92TEp2CLzypump',RPC:'https://mainnet.helius-rpc.com/?api-key=07f67b95-071b-4f9b-b265-762840342209'};
 const $=i=>document.getElementById(i);let db=null;try{db=supabase.createClient(CFG.SUPABASE_URL,CFG.SUPABASE_KEY)}catch(e){console.warn('Supabase not configured yet',e)}
-const conn=new solanaWeb3.Connection(CFG.RPC),TOKEN='TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
+const conn=new solanaWeb3.Connection(CFG.RPC),TOKEN='TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',TOKEN22='TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
 let wallet=null,taps=0;const pages=['home','wallet','earn','memes','board'];
 const ico={home:'🏠',wallet:'👛',earn:'⭐',memes:'🎨',board:'🏆'};
 $('links').innerHTML=pages.map(p=>`<a data-p="${p}" onclick="go('${p}')"><span class="ic">${ico[p]}</span><span>${p[0].toUpperCase()+p.slice(1)}</span></a>`).join('');
@@ -210,13 +210,18 @@ window.addEventListener('load',async()=>{
  try{await afterConnect(o,await connectWallet(o,{silent:true}))}catch(e){}});
 async function loadAssets(){
  if(!wallet)return;const pk=new solanaWeb3.PublicKey(wallet);
- try{const [sol,tk]=await Promise.all([conn.getBalance(pk),conn.getParsedTokenAccountsByOwner(pk,{programId:new solanaWeb3.PublicKey(TOKEN)})]);
-  const rows=tk.value.map(a=>a.account.data.parsed.info).filter(i=>i.tokenAmount.uiAmount>0),f=rows.find(i=>i.mint==CFG.FIJI_MINT);
+ try{
+  const [sol,a,b]=await Promise.all([
+   conn.getBalance(pk),
+   conn.getParsedTokenAccountsByOwner(pk,{programId:new solanaWeb3.PublicKey(TOKEN)}),
+   conn.getParsedTokenAccountsByOwner(pk,{programId:new solanaWeb3.PublicKey(TOKEN22)})
+  ]);
+  const rows=[...a.value,...b.value].map(x=>x.account.data.parsed.info).filter(i=>i.tokenAmount.uiAmount>0),f=rows.find(i=>i.mint==CFG.FIJI_MINT);
   $('wstat').innerHTML=`Connected as <b>${short(wallet)}</b>`;
   $('holder').innerHTML=f?`<span class="pill g">🐰 FIJI holder · ${f.tokenAmount.uiAmount.toLocaleString()} FIJI</span>`:`<span class="pill">No FIJI yet</span>`;
   $('rank').textContent=f?'Holder 🐰':'Visitor';
-  $('assets').innerHTML='<tr><th>Asset</th><th>Balance</th></tr><tr><td>◎ SOL</td><td>'+(sol/1e9).toFixed(4)+'</td></tr>'+rows.map(i=>`<tr><td>${i.mint==CFG.FIJI_MINT?'💧 FIJI':short(i.mint)}</td><td>${i.tokenAmount.uiAmount.toLocaleString()}</td></tr>`).join('')}
- catch(e){toast('Could not load assets (RPC busy?)')}}
+  $('assets').innerHTML='<tr><th>Asset</th><th>Balance</th></tr><tr><td>◎ SOL</td><td>'+(sol/1e9).toFixed(4)+'</td></tr>'+rows.map(i=>`<tr><td>${i.mint==CFG.FIJI_MINT?'💧 FIJI':short(i.mint)}</td><td>${i.tokenAmount.uiAmount.toLocaleString()}</td></tr>`).join('')
+ }catch(e){console.error(e);toast('Could not load assets: '+(e.message||e))}}
 async function doEarn(t){
  if(!wallet)return toast('Connect your wallet first');
  if(!db)return toast('Supabase not set up yet');
