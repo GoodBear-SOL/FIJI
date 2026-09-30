@@ -49,7 +49,7 @@ const TPCFG={
 
     https://YOUR_PROJECT.supabase.co/functions/v1/trade-router
   */
-  TRADE_ROUTER_URL:'',
+  TRADE_ROUTER_URL:'https://tmceqqciccnnlxjiobgc.supabase.co/functions/v1/trade-router',
 
   /*
     Optional PumpPortal API key.
