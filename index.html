@@ -224,11 +224,7 @@ const short=a=>a.slice(0,4)+'…'+a.slice(-4),esc=s=>String(s==null?'':s).replac
 function copyMint(){navigator.clipboard.writeText(CFG.FIJI_MINT);toast('Contract copied 💧')}
 function setProfile(p){$('spts').textContent=p.points;$('streak').textContent=p.streak;$('ref').value=location.origin+location.pathname+'?ref='+p.ref_code}
 
-/* ---- wallets: Solana wallet detection + Wallet Standard + legacy providers ----
-   Important: this section is intentionally independent from Supabase.
-   It never forces a user to install Phantom. It connects to whichever Solana
-   wallet is actually available in the current browser/environment.
-*/
+/* ---- wallets: Solana wallet detection + Wallet Standard + legacy providers ---- */
 const WS=[];
 (function(){
  const api={
@@ -248,13 +244,9 @@ function legacyList(){
   seen.add(p);
   out.push({name,legacy:p});
  };
-
- /* Prefer the wallet-specific injected providers. */
  add('Phantom',w.phantom?.solana?.isPhantom?w.phantom.solana:null);
  add('Solflare',w.solflare?.isSolflare?w.solflare:null);
  add('Backpack',w.backpack?.solana||null);
-
- /* Generic Solana injection can be another wallet. Avoid duplicating Phantom. */
  const generic=w.solana;
  if(generic&&!seen.has(generic)){
   const name=generic.isPhantom?'Phantom':generic.isBackpack?'Backpack':generic.isSolflare?'Solflare':'Solana Wallet';
@@ -280,18 +272,11 @@ function standardList(){
 function listWallets(){
  const legacy=legacyList();
  const standard=standardList();
-
- /* If a wallet exposes both legacy and Wallet Standard, use the injected
-    provider first. This is especially useful inside mobile wallet browsers. */
  const legacyNames=new Set(legacy.map(x=>x.name.toLowerCase()));
  const standardOnly=standard.filter(x=>!legacyNames.has(x.name.toLowerCase()));
-
- /* Legacy providers first = more predictable approval flow where available. */
  return legacy.concat(standardOnly);
 }
 
-/* Wallets can register shortly after page load. Wait briefly, but never
-   redirect the user to a particular wallet website. */
 function waitForWallets(ms=3000){
  return new Promise(resolve=>{
   const t0=Date.now();
@@ -345,11 +330,6 @@ async function connectWallet(o,opts){
  const feature=o.std?.features?.['standard:connect'];
  if(!feature)throw new Error('This wallet does not support Solana connection');
 
- /*
-   Standard wallets may differ in optional connect arguments. For a normal
-   user-initiated connection, call connect() without forcing Phantom-specific
-   behavior. For silent reconnect, request silent only when the wallet accepts it.
- */
  let r;
  if(opts?.silent){
   try{r=await feature.connect({silent:true})}
@@ -443,13 +423,6 @@ async function connect(){
  const list=await waitForWallets();
 
  if(!list.length){
-  /*
-    Do NOT redirect to Phantom or any other wallet.
-    A normal browser can only connect directly when a wallet exposes a
-    compatible provider. On mobile, if the user is not inside a wallet
-    browser and no wallet provider is available, there is no safe universal
-    browser API that can silently open/approve in an arbitrary wallet app.
-  */
   return toast('No Solana wallet detected. Open Fiji in your wallet browser or enable your wallet extension, then try again.');
  }
 
@@ -466,7 +439,6 @@ async function connect(){
  }
 }
 
-/* Restore an existing approved connection when the wallet provider supports it. */
 window.addEventListener('load',async()=>{
  let saved=null;
  try{saved=localStorage.getItem('fiji_wallet')}catch(e){}
@@ -498,7 +470,6 @@ async function doEarn(t){
  if(!wallet)return toast('Connect your wallet first');
  if(!db)return toast('Supabase not set up yet');
  const {data,error}=await db.rpc('fiji_earn',{p_wallet:wallet,p_type:t});if(error)return toast(error.message);setProfile(data);toast('Points earned ⭐')}
-/* optional: drop a fiji-hurt.png next to fiji.png and it swaps in on every tap */
 let hurtOK=false;const hurtImg=new Image();hurtImg.onload=()=>hurtOK=true;hurtImg.src='fiji-hurt.png';
 function tap(){if(!wallet)return toast('Connect your wallet first');
  const p=$('pad');p.classList.remove('hurt');void p.offsetWidth;p.classList.add('hurt');
@@ -589,7 +560,6 @@ async function loadChain(chain){
  const res=await Promise.all(CHAINS[chain].list.map(s=>memePair(s,chain)));
  return res.filter(Boolean)}
 
-/* little wave drawn from the real 24h / 6h / 1h / 5m price changes */
 function wave(p){
  const pc=p.priceChange||{},now=num(p.priceUsd);if(!now)return '';
  const v=[];
@@ -695,7 +665,6 @@ function startMarket(){
  clearInterval(MK.tick);MK.tick=setInterval(tickLive,1000)}
 function stopMarket(){clearInterval(MK.timer);clearInterval(MK.tick)}
 
-/* detail sheet with DexScreener chart */
 function closePair(){document.querySelectorAll('.mk-modal').forEach(m=>m.remove())}
 document.addEventListener('keydown',e=>{if(e.key=='Escape')closePair()});
 function openPair(k){
@@ -727,4 +696,7 @@ function openPair(k){
  document.body.appendChild(d)}
 
 go('home');$('mint').textContent=CFG.FIJI_MINT;
+</script>
+<script>
+/*TRADEPAD*/
 </script></body></html>
