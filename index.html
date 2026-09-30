@@ -1,244 +1,422 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Fiji · a fuzzy little friend</title>
 <meta name="theme-color" content="#FFF3C4">
+<meta name="description" content="FIJI — discover, check and trade Solana tokens.">
 
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<title>Fiji · Trade Pad</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link
+ href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800&display=swap"
+ rel="stylesheet"
+>
 
 <style>
+
+/* =========================================================
+   FIJI CORE
+========================================================= */
+
 :root{
+
  --bg:#FFF3C4;
  --ink:#12305C;
  --blue:#2E8BFF;
  --teal:#3FB6C9;
  --sun:#FFD21F;
- --card:#fff;
- --r:26px;
+
+ --card:#FFFFFF;
+
  --up:#2FCB7B;
- --upi:#0E8F52;
+ --upDark:#0E8F52;
+
  --dn:#FF5C7A;
- --dni:#D6304F
+ --dnDark:#D6304F;
+
+ --muted:#71809A;
+ --line:#CFD9EA;
+ --soft:#F7FAFF;
+ --softBlue:#EAF6FF;
+
+ --radius:24px;
+
+ --navHeight:70px;
+
 }
 
-*{box-sizing:border-box;margin:0}
+/* =========================================================
+   RESET
+========================================================= */
 
-html{scroll-behavior:smooth}
+*{
+ box-sizing:border-box;
+ margin:0;
+ padding:0
+}
+
+html{
+ scroll-behavior:smooth
+}
 
 body{
- font:600 17px/1.55 Nunito,system-ui,sans-serif;
+
+ font:600 16px/1.5 Nunito,system-ui,sans-serif;
+
  color:var(--ink);
+
  background:var(--bg);
- background-image:radial-gradient(#ffe38a 2px,transparent 2px);
- background-size:28px 28px
+
+ background-image:
+  radial-gradient(
+   #FFE38A 2px,
+   transparent 2px
+  );
+
+ background-size:28px 28px;
+
+ padding-bottom:
+  calc(
+   18px +
+   env(safe-area-inset-bottom)
+  );
+
 }
 
-h1,h2,h3,.logo,button,.pill{
+button,
+input,
+select{
+ font:inherit
+}
+
+button{
+ color:inherit
+}
+
+img{
+ max-width:100%
+}
+
+h1,
+h2,
+h3,
+h4,
+.logo,
+button,
+.pill,
+.trade-number,
+.trade-label{
  font-family:Fredoka,sans-serif
 }
 
+h2{
+ font-size:clamp(29px,5vw,44px);
+ line-height:1.05;
+ margin:6px 0 14px
+}
+
+h3{
+ line-height:1.1
+}
+
+a{
+ color:inherit
+}
+
+/* =========================================================
+   LAYOUT
+========================================================= */
+
 .wrap{
- max-width:1040px;
- margin:auto;
- padding:0 20px
+
+ width:min(
+  1100px,
+  calc(100% - 28px)
+ );
+
+ margin:auto
+
 }
 
 .sticker{
+
  background:var(--card);
+
  border:3px solid var(--ink);
- border-radius:var(--r);
- box-shadow:0 6px 0 var(--ink)
+
+ border-radius:var(--radius);
+
+ box-shadow:
+  0 6px 0 var(--ink);
+
 }
 
-/* ================= NAV ================= */
+.card{
+ padding:20px
+}
+
+/* =========================================================
+   TOP NAV
+========================================================= */
 
 .nav{
+
  position:sticky;
- top:12px;
- z-index:10;
- margin:12px auto 0;
- max-width:1040px;
- padding:0 20px
+
+ top:10px;
+
+ z-index:100;
+
+ width:min(
+  1100px,
+  calc(100% - 24px)
+ );
+
+ margin:10px auto 0;
+
 }
 
-.nav .sticker{
+.nav-inner{
+
  display:flex;
+
  align-items:center;
+
  gap:8px;
- padding:8px 10px 8px 16px;
- border-radius:99px;
- flex-wrap:wrap
+
+ padding:8px 10px 8px 14px;
+
+ border-radius:999px;
+
 }
 
 .logo{
- font-size:24px;
- font-weight:700;
+
  display:flex;
+
  align-items:center;
+
  gap:8px;
+
+ font-size:24px;
+
+ font-weight:700;
+
+ white-space:nowrap;
+
  margin-right:auto;
- min-width:0
+
 }
 
 .logo img{
- width:34px;
- height:34px;
+
+ width:36px;
+
+ height:36px;
+
  border-radius:50%;
- border:2px solid var(--ink)
+
+ object-fit:cover;
+
+ border:2px solid var(--ink);
+
+ flex:none;
+
 }
 
-/* ================= HEADER BALANCE ================= */
+/* =========================================================
+   HEADER WALLET BALANCE
+========================================================= */
 
 .header-balance{
+
  display:flex;
+
  align-items:center;
+
  gap:5px;
- background:#EAF6FF;
+
+ min-height:40px;
+
+ padding:5px 11px;
+
  border:2.5px solid var(--ink);
- border-radius:99px;
- padding:6px 11px;
- min-height:38px;
+
+ border-radius:999px;
+
+ background:var(--softBlue);
+
+ box-shadow:0 3px 0 var(--ink);
+
  white-space:nowrap;
+
  flex:none;
- box-shadow:0 3px 0 var(--ink)
+
 }
 
 .header-balance .coin{
- font-size:16px;
- line-height:1
+ font-size:17px
 }
 
 .header-balance b{
- font:700 15px Fredoka,sans-serif
+
+ font:700 15px Fredoka;
+
 }
 
-.header-balance span:last-child{
- font:600 12px Fredoka,sans-serif;
- opacity:.75
+.header-balance .unit{
+
+ font:600 12px Fredoka;
+
+ opacity:.7;
+
 }
 
-.nav a{
- padding:7px 14px;
- border-radius:99px;
- font:600 16px Fredoka;
- color:var(--ink);
- text-decoration:none;
- cursor:pointer
-}
-
-.nav a:hover,
-.nav a.on{
- background:var(--sun)
-}
+/* =========================================================
+   BUTTONS
+========================================================= */
 
 .btn{
- background:var(--blue);
- color:#fff;
+
  border:3px solid var(--ink);
- border-radius:99px;
- padding:9px 20px;
- font-size:17px;
- font-weight:600;
+
+ border-radius:999px;
+
+ padding:10px 18px;
+
+ background:var(--blue);
+
+ color:#fff;
+
  cursor:pointer;
+
  box-shadow:0 4px 0 var(--ink);
- transition:.1s
+
+ transition:
+  transform .08s,
+  box-shadow .08s,
+  background .08s;
+
+ font-size:16px;
+
 }
 
 .btn:hover{
+
  transform:translateY(2px);
- box-shadow:0 2px 0 var(--ink)
+
+ box-shadow:0 2px 0 var(--ink);
+
+}
+
+.btn:active{
+
+ transform:translateY(3px);
+
+ box-shadow:0 1px 0 var(--ink);
+
 }
 
 .btn.alt{
+
  background:#fff;
- color:var(--ink)
+
+ color:var(--ink);
+
+}
+
+.btn.green{
+
+ background:var(--up);
+
+}
+
+.btn.red{
+
+ background:var(--dn);
+
 }
 
 .btn.sm{
- padding:6px 14px;
- font-size:15px
+
+ padding:7px 13px;
+
+ font-size:14px;
+
 }
 
-a.btn{
- text-decoration:none;
- display:inline-block
+.btn.full{
+ width:100%
 }
 
-/* ================= HERO ================= */
+.btn:disabled{
 
-.hero{
- display:grid;
- grid-template-columns:1.1fr .9fr;
- gap:30px;
- align-items:center;
- padding:56px 0 30px
+ opacity:.55;
+
+ cursor:not-allowed;
+
+ transform:none;
+
+ box-shadow:0 4px 0 var(--ink);
+
 }
 
-.eyebrow{
- display:inline-block;
- background:#fff;
- border:2.5px solid var(--ink);
- border-radius:99px;
- padding:3px 14px;
- font:600 15px Fredoka;
- transform:rotate(-2deg)
-}
+/* =========================================================
+   NAVIGATION
+========================================================= */
 
-.hero h1{
- font-size:clamp(38px,6vw,68px);
- line-height:1.02;
- margin:16px 0;
- letter-spacing:-1px
-}
+#links{
 
-.hero h1 span{
- color:var(--blue)
-}
-
-.hero p{
- max-width:480px;
- margin-bottom:22px
-}
-
-.hero .btns{
  display:flex;
- gap:12px;
- flex-wrap:wrap
+
+ align-items:center;
+
+ gap:3px;
+
 }
 
-.mascot{
- position:relative;
- justify-self:center;
- width:min(360px,80vw)
+.nav-link{
+
+ text-decoration:none;
+
+ border:0;
+
+ background:transparent;
+
+ padding:8px 12px;
+
+ border-radius:999px;
+
+ cursor:pointer;
+
+ font:600 15px Fredoka;
+
+ white-space:nowrap;
+
 }
 
-.mascot img{
- width:100%;
- border:3px solid var(--ink);
- border-radius:44% 56% 52% 48%/48% 44% 56% 52%;
- box-shadow:0 8px 0 var(--ink);
- animation:float 4s ease-in-out infinite;
- display:block
+.nav-link:hover,
+.nav-link.on{
+
+ background:var(--sun);
+
 }
 
-.drop{
- position:absolute;
- font-size:34px;
- animation:float 3s ease-in-out infinite
+.nav-link .ic{
+ display:none
 }
 
-@keyframes float{
- 50%{transform:translateY(-12px) rotate(1.5deg)}
-}
-
-/* ================= SECTIONS ================= */
+/* =========================================================
+   SECTIONS
+========================================================= */
 
 section.pg{
  display:none;
- padding-bottom:50px
+ padding:34px 0 60px
 }
 
 section.pg.on{
@@ -246,1467 +424,2361 @@ section.pg.on{
 }
 
 .tag{
- font:600 14px Fredoka;
- letter-spacing:.12em;
+
+ margin-top:24px;
+
+ font:700 13px Fredoka;
+
+ letter-spacing:.13em;
+
  text-transform:uppercase;
+
  color:var(--blue);
- margin-top:46px
-}
 
-h2{
- font-size:clamp(28px,4vw,42px);
- line-height:1.1;
- margin:6px 0 14px
-}
-
-.grid{
- display:grid;
- grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
- gap:18px
-}
-
-.card{
- padding:22px
-}
-
-.card .em{
- font-size:36px
-}
-
-.card h3{
- font-size:22px;
- margin:6px 0 2px
-}
-
-.pill{
- display:inline-block;
- background:var(--sun);
- border:2.5px solid var(--ink);
- border-radius:99px;
- padding:2px 14px;
- font-weight:600
-}
-
-.pill.g{
- background:#7CF0A8
-}
-
-.mint{
- display:flex;
- gap:10px;
- align-items:center;
- flex-wrap:wrap;
- background:#EAF6FF;
- border:2.5px dashed var(--ink);
- border-radius:18px;
- padding:12px 16px;
- margin:14px 0;
- font:600 15px monospace;
- word-break:break-all
-}
-
-.stats{
- display:grid;
- grid-template-columns:repeat(3,1fr);
- gap:12px;
- text-align:center
-}
-
-.stats b{
- display:block;
- font:700 28px Fredoka
-}
-
-.quote{
- text-align:center;
- padding:34px 24px
-}
-
-.quote p{
- font:600 clamp(22px,3.4vw,32px)/1.25 Fredoka;
- margin-bottom:16px
 }
 
 .small{
- font-size:14px;
- opacity:.75
+
+ font-size:13px;
+
+ opacity:.75;
+
 }
 
-table{
+.muted{
+ color:var(--muted)
+}
+
+/* =========================================================
+   HOME
+========================================================= */
+
+.hero{
+
+ display:grid;
+
+ grid-template-columns:
+  1.05fr
+  .95fr;
+
+ gap:34px;
+
+ align-items:center;
+
+ padding:44px 0 30px;
+
+}
+
+.eyebrow{
+
+ display:inline-block;
+
+ background:#fff;
+
+ border:2.5px solid var(--ink);
+
+ border-radius:999px;
+
+ padding:4px 13px;
+
+ font:600 14px Fredoka;
+
+ transform:rotate(-2deg);
+
+}
+
+.hero h1{
+
+ font-size:
+  clamp(
+   40px,
+   7vw,
+   70px
+  );
+
+ line-height:1;
+
+ letter-spacing:-1.5px;
+
+ margin:16px 0;
+
+}
+
+.hero h1 span{
+ color:var(--blue)
+}
+
+.hero-copy{
+
+ max-width:530px;
+
+}
+
+.hero-copy p{
+ margin-bottom:22px
+}
+
+.hero-actions{
+
+ display:flex;
+
+ gap:10px;
+
+ flex-wrap:wrap;
+
+}
+
+.mascot{
+
+ width:min(
+  370px,
+  90vw
+ );
+
+ justify-self:center;
+
+ position:relative;
+
+}
+
+.mascot img{
+
+ display:block;
+
  width:100%;
- border-collapse:collapse
+
+ border:3px solid var(--ink);
+
+ border-radius:
+  44% 56% 52% 48%/
+  48% 44% 56% 52%;
+
+ box-shadow:
+  0 8px 0 var(--ink);
+
+ animation:
+  float 4s ease-in-out infinite;
+
 }
 
-td,th{
- padding:10px 8px;
- text-align:left;
- border-bottom:2px dashed #cfd9ea;
- word-break:break-all
+.drop{
+
+ position:absolute;
+
+ font-size:30px;
+
+ animation:
+  float 3s ease-in-out infinite;
+
 }
 
-th{
- font-family:Fredoka
+@keyframes float{
+
+ 50%{
+  transform:
+   translateY(-12px)
+   rotate(1.5deg)
+ }
+
+}
+
+/* =========================================================
+   HOME FEATURES
+========================================================= */
+
+.feature-grid{
+
+ display:grid;
+
+ grid-template-columns:
+  repeat(
+   auto-fit,
+   minmax(
+    190px,
+    1fr
+   )
+  );
+
+ gap:16px;
+
+}
+
+.feature-card{
+
+ min-height:145px;
+
+}
+
+.feature-icon{
+
+ font-size:34px;
+
+ margin-bottom:5px;
+
+}
+
+.feature-card h3{
+
+ font-size:20px;
+
+ margin-bottom:3px;
+
+}
+
+.mint-box{
+
+ display:flex;
+
+ align-items:center;
+
+ gap:9px;
+
+ flex-wrap:wrap;
+
+ background:var(--softBlue);
+
+ border:2.5px dashed var(--ink);
+
+ border-radius:18px;
+
+ padding:11px 13px;
+
+ margin:12px 0;
+
+}
+
+.mint-box code{
+
+ flex:1;
+
+ min-width:0;
+
+ overflow:hidden;
+
+ text-overflow:ellipsis;
+
+ white-space:nowrap;
+
+ font:600 12px monospace;
+
+}
+
+/* =========================================================
+   QUOTE
+========================================================= */
+
+.quote{
+
+ text-align:center;
+
+ padding:28px 18px;
+
+}
+
+.quote p{
+
+ font:600 clamp(
+  22px,
+  4vw,
+  31px
+ )/1.25 Fredoka;
+
+ margin-bottom:16px;
+
+}
+
+/* =========================================================
+   EARN
+========================================================= */
+
+.stats-grid{
+
+ display:grid;
+
+ grid-template-columns:
+  repeat(3,1fr);
+
+ gap:10px;
+
+}
+
+.stat-box{
+
+ text-align:center;
+
+ padding:18px 10px;
+
+ background:var(--soft);
+
+ border-radius:18px;
+
+}
+
+.stat-box b{
+
+ display:block;
+
+ font:700 28px Fredoka;
+
+}
+
+.earn-grid{
+
+ display:grid;
+
+ grid-template-columns:
+  repeat(
+   auto-fit,
+   minmax(
+    220px,
+    1fr
+   )
+  );
+
+ gap:16px;
+
+}
+
+.tap-card{
+ text-align:center
+}
+
+#pad{
+
+ width:112px;
+
+ height:112px;
+
+ object-fit:cover;
+
+ border-radius:50%;
+
+ border:3px solid var(--ink);
+
+ cursor:pointer;
+
+ margin:9px auto;
+
+ display:block;
+
+ user-select:none;
+
+ -webkit-user-select:none;
+
+ -webkit-user-drag:none;
+
+}
+
+#pad:active{
+
+ transform:
+  scale(.86)
+  rotate(-6deg);
+
+}
+
+#pad.hurt{
+
+ animation:
+  ouch .35s;
+
+ filter:
+  sepia(1)
+  saturate(6)
+  hue-rotate(-30deg);
+
+}
+
+@keyframes ouch{
+
+ 0%,100%{
+  transform:translateX(0)
+ }
+
+ 20%{
+  transform:
+   translateX(-10px)
+   rotate(-8deg)
+ }
+
+ 40%{
+  transform:
+   translateX(10px)
+   rotate(8deg)
+ }
+
+ 60%{
+  transform:translateX(-6px)
+ }
+
+ 80%{
+  transform:translateX(6px)
+ }
+
+}
+
+.progress{
+
+ height:15px;
+
+ border:2.5px solid var(--ink);
+
+ border-radius:999px;
+
+ background:#fff;
+
+ overflow:hidden;
+
+}
+
+.progress i{
+
+ display:block;
+
+ width:0;
+
+ height:100%;
+
+ background:var(--teal);
+
+ transition:.2s;
+
 }
 
 input,
 select{
+
  width:100%;
- padding:12px 16px;
+
+ padding:11px 13px;
+
+ margin:5px 0;
+
  border:3px solid var(--ink);
- border-radius:16px;
- font:600 16px Nunito;
- margin:6px 0;
+
+ border-radius:15px;
+
  background:#fff;
- color:var(--ink)
+
+ color:var(--ink);
+
+ outline:none;
+
 }
 
-select{
- cursor:pointer;
- appearance:auto
+input:focus,
+select:focus{
+
+ box-shadow:
+  0 0 0 3px
+  rgba(46,139,255,.16);
+
 }
 
-.bar{
- height:16px;
- border:2.5px solid var(--ink);
- border-radius:99px;
- background:#fff;
- overflow:hidden
-}
+/* =========================================================
+   TRADE PAD TOP
+========================================================= */
 
-.bar i{
- display:block;
- height:100%;
- background:var(--teal);
- width:0;
- transition:.3s
-}
+.trade-head{
 
-#pad{
- width:120px;
- height:120px;
- object-fit:cover;
- border-radius:50%;
- border:3px solid var(--ink);
- cursor:pointer;
- user-select:none;
- -webkit-user-select:none;
- -webkit-user-drag:none;
- -webkit-tap-highlight-color:transparent;
- display:inline-block;
- margin:8px 0;
- transition:.08s
-}
-
-#pad:active{
- transform:scale(.85) rotate(-6deg)
-}
-
-#pad.hurt{
- animation:ouch .35s;
- filter:sepia(1) saturate(6) hue-rotate(-30deg)
-}
-
-@keyframes ouch{
- 0%,100%{transform:translateX(0)}
- 20%{transform:translateX(-10px) rotate(-8deg)}
- 40%{transform:translateX(10px) rotate(8deg)}
- 60%{transform:translateX(-6px)}
- 80%{transform:translateX(6px)}
-}
-
-#toast{
- position:fixed;
- bottom:22px;
- left:50%;
- transform:translateX(-50%);
- background:var(--ink);
- color:#fff;
- padding:10px 20px;
- border-radius:99px;
- display:none;
- z-index:40;
- font-family:Fredoka;
- max-width:90vw;
- text-align:center
-}
-
-footer{
- text-align:center;
- padding:30px 20px 50px
-}
-
-/* ================= MARKET ================= */
-
-sub{
- font-size:.62em;
- line-height:0
-}
-
-.mk-live{
  display:flex;
+
+ justify-content:space-between;
+
+ align-items:flex-end;
+
+ gap:14px;
+
+ flex-wrap:wrap;
+
+ margin-bottom:14px;
+
+}
+
+.trade-title{
+
+ min-width:0;
+
+}
+
+.trade-title h1{
+
+ font-size:
+  clamp(
+   32px,
+   6vw,
+   52px
+  );
+
+ line-height:1;
+
+ margin:4px 0 7px;
+
+}
+
+.trade-head-wallet{
+
+ display:flex;
+
  align-items:center;
- gap:12px;
- margin:0 0 16px
+
+ gap:7px;
+
+ background:#fff;
+
+ border:3px solid var(--ink);
+
+ border-radius:18px;
+
+ padding:9px 12px;
+
+ box-shadow:0 4px 0 var(--ink);
+
+ white-space:nowrap;
+
+}
+
+.trade-head-wallet b{
+
+ font:700 20px Fredoka;
+
+}
+
+/* =========================================================
+   TRADE DISCOVERY NAV
+========================================================= */
+
+.discovery-card{
+
+ padding:12px;
+
+ margin-bottom:14px;
+
+}
+
+.discovery-row{
+
+ display:flex;
+
+ gap:7px;
+
+ overflow-x:auto;
+
+ padding-bottom:2px;
+
+ scrollbar-width:none;
+
+}
+
+.discovery-row::-webkit-scrollbar{
+ display:none
+}
+
+.discovery-tab{
+
+ flex:none;
+
+ border:2.5px solid var(--ink);
+
+ background:#fff;
+
+ color:var(--ink);
+
+ border-radius:999px;
+
+ padding:8px 13px;
+
+ font:600 14px Fredoka;
+
+ cursor:pointer;
+
+ white-space:nowrap;
+
+}
+
+.discovery-tab:hover,
+.discovery-tab.on{
+
+ background:var(--sun);
+
+}
+
+/* =========================================================
+   TRADE SEARCH
+========================================================= */
+
+.trade-search-row{
+
+ display:grid;
+
+ grid-template-columns:
+  1fr
+  auto;
+
+ gap:8px;
+
+ margin-bottom:14px;
+
+}
+
+.search-wrap{
+ position:relative
+}
+
+.search-wrap input{
+
+ margin:0;
+
+ padding-left:42px;
+
+}
+
+.search-icon{
+
+ position:absolute;
+
+ left:14px;
+
+ top:50%;
+
+ transform:translateY(-50%);
+
+ pointer-events:none;
+
+ font-size:18px;
+
+}
+
+/* =========================================================
+   LIVE STATUS
+========================================================= */
+
+.live-strip{
+
+ display:flex;
+
+ align-items:center;
+
+ justify-content:space-between;
+
+ gap:10px;
+
+ flex-wrap:wrap;
+
+ margin-bottom:12px;
+
 }
 
 .live{
- font:600 14px Fredoka;
+
  display:flex;
+
  align-items:center;
- gap:8px
+
+ gap:7px;
+
+ font:600 13px Fredoka;
+
 }
 
-.live i{
- width:11px;
- height:11px;
+.live-dot{
+
+ width:10px;
+
+ height:10px;
+
  border-radius:50%;
+
  background:var(--up);
+
  border:2px solid var(--ink);
- animation:pulse 1.6s infinite
+
+ animation:pulse 1.5s infinite;
+
 }
 
 @keyframes pulse{
+
  50%{
-  transform:scale(1.5);
-  opacity:.5
+  transform:scale(1.45);
+  opacity:.55;
  }
+
 }
 
-.mk{
- position:relative;
- overflow:hidden;
- cursor:pointer;
- transition:transform .1s,box-shadow .1s
-}
+/* =========================================================
+   TRADE LAYOUT
+========================================================= */
 
-.mk:hover{
- transform:translateY(3px);
- box-shadow:0 3px 0 var(--ink)
-}
+.trade-layout{
 
-.mk-hero{
- position:relative;
- overflow:hidden;
- margin-bottom:22px
-}
+ display:grid;
 
-.mk-hrow{
- display:flex;
- align-items:center;
+ grid-template-columns:
+  minmax(0,1.35fr)
+  minmax(290px,.65fr);
+
  gap:16px;
- margin-bottom:12px
+
+ align-items:start;
+
 }
 
-.mk-fj{
- width:84px;
- height:84px;
- border-radius:50%;
- object-fit:cover;
- border:3px solid var(--ink);
- box-shadow:0 5px 0 var(--ink);
- flex:none
-}
+/* =========================================================
+   DISCOVERY FEED
+========================================================= */
 
-.mk-fj.up{
- animation:hop 1s ease-in-out infinite
-}
+.feed{
 
-.mk-fj.dn{
- animation:sway 2.6s ease-in-out infinite;
- filter:saturate(.6)
-}
-
-.mk-fj.flat{
- animation:float 4s ease-in-out infinite
-}
-
-@keyframes hop{
- 50%{transform:translateY(-14px) scale(1.05)}
-}
-
-@keyframes sway{
- 50%{transform:translateY(5px) rotate(-4deg)}
-}
-
-.mk-say{
- background:var(--bg);
- border:2.5px solid var(--ink);
- border-radius:18px;
- padding:8px 16px;
- font:600 18px Fredoka
-}
-
-.mk-hp{
- display:flex;
- justify-content:space-between;
- align-items:flex-end;
- gap:12px;
- flex-wrap:wrap
-}
-
-.mk-price{
- font:700 24px Fredoka;
- letter-spacing:-.3px;
- word-break:break-all
-}
-
-.mk-price.big{
- font-size:40px
-}
-
-.mk-chips{
- display:flex;
- gap:8px;
- flex-wrap:wrap
-}
-
-.mk-chip{
- font-size:14px;
- padding:1px 10px
-}
-
-.mk-chip.up{
- background:#B8F5D2;
- color:var(--upi)
-}
-
-.mk-chip.dn{
- background:#FFD0D8;
- color:var(--dni)
-}
-
-.mk-chip.flat{
- background:#EAF6FF
-}
-
-.wv{
- width:100%;
- height:38px;
- display:block;
- margin:8px 0
-}
-
-.mk-hs{
  display:grid;
- grid-template-columns:repeat(auto-fit,minmax(110px,1fr));
+
  gap:10px;
- margin:8px 0 16px
+
 }
 
-.mk-hs b{
- display:block;
- font:700 20px Fredoka
-}
+.token-card{
 
-.mk-majors{
- display:grid;
- grid-template-columns:repeat(3,1fr);
- gap:14px;
- margin-bottom:22px
-}
-
-.mk-mini{
- padding:14px 16px
-}
-
-.mk-mini .mk-price{
- font-size:22px;
- margin:2px 0 6px
-}
-
-.mk-bar{
- display:flex;
- gap:10px;
- flex-wrap:wrap;
- justify-content:space-between;
- margin-bottom:12px
-}
-
-.mk-pills{
- display:flex;
- gap:8px;
- flex-wrap:wrap
-}
-
-.mk-p{
- border:2.5px solid var(--ink);
  background:#fff;
- border-radius:99px;
- padding:5px 14px;
- font:600 15px Fredoka;
- cursor:pointer;
- color:var(--ink);
- transition:.1s
-}
 
-.mk-p:hover{
- background:#fff6cf
-}
-
-.mk-p.on{
- background:var(--sun)
-}
-
-.mk-top{
- display:flex;
- align-items:center;
- gap:10px
-}
-
-.mk-top img,
-.mk-ph{
- width:42px;
- height:42px;
- border-radius:50%;
- border:2.5px solid var(--ink);
- object-fit:cover;
- flex:none;
- background:#EAF6FF;
- display:flex;
- align-items:center;
- justify-content:center;
- font-size:20px
-}
-
-.mk-nm{
- min-width:0;
- margin-right:auto;
- display:flex;
- flex-direction:column;
- line-height:1.15
-}
-
-.mk-nm b{
- font:600 18px Fredoka;
- white-space:nowrap;
- overflow:hidden;
- text-overflow:ellipsis
-}
-
-.mk-nm span{
- white-space:nowrap;
- overflow:hidden;
- text-overflow:ellipsis
-}
-
-.mk .mk-price{
- margin-top:8px
-}
-
-.mk-meter{
- position:relative;
- height:12px;
- border:2.5px solid var(--ink);
- border-radius:99px;
- background:#fff;
- overflow:hidden;
- margin:6px 0 8px
-}
-
-.mk-meter:after{
- content:"";
- position:absolute;
- left:50%;
- top:0;
- bottom:0;
- width:2px;
- background:var(--ink);
- opacity:.35
-}
-
-.mk-meter i{
- position:absolute;
- top:0;
- bottom:0;
- transition:width .4s
-}
-
-.mk-meter i.up{
- left:50%;
- background:var(--up)
-}
-
-.mk-meter i.dn{
- right:50%;
- background:var(--dn)
-}
-
-.mk-stats{
- display:flex;
- justify-content:space-between;
- gap:8px
-}
-
-.mk-empty{
- padding:22px;
- text-align:center
-}
-
-.fl-up{
- animation:flu 1.2s
-}
-
-.fl-dn{
- animation:fld 1.2s
-}
-
-@keyframes flu{
- 0%{background:#b8f5d2}
- 100%{background:#fff}
-}
-
-@keyframes fld{
- 0%{background:#ffd0d8}
- 100%{background:#fff}
-}
-
-.mk-bub{
- position:absolute;
- right:14px;
- bottom:12px;
- font-size:22px;
- pointer-events:none;
- animation:rise 1.4s forwards
-}
-
-.mk-bub.dn{
- top:12px;
- bottom:auto;
- animation:sink 1.4s forwards
-}
-
-@keyframes rise{
- to{
-  transform:translateY(-46px);
-  opacity:0
- }
-}
-
-@keyframes sink{
- to{
-  transform:translateY(46px);
-  opacity:0
- }
-}
-
-.mk-modal{
- position:fixed;
- inset:0;
- background:rgba(18,48,92,.45);
- z-index:30;
- display:flex;
- align-items:center;
- justify-content:center;
- padding:16px
-}
-
-.mk-sheet{
- width:100%;
- max-width:560px;
- max-height:92vh;
- overflow-y:auto
-}
-
-.mk-frame{
- width:100%;
- height:380px;
  border:3px solid var(--ink);
- border-radius:18px;
- margin:12px 0;
- background:#fff
-}
 
-.mk-acts{
- display:flex;
- gap:10px;
- flex-wrap:wrap
-}
-
-/* ================= TRADE PAD ================= */
-
-.trade-shell{
- display:grid;
- grid-template-columns:minmax(0,1.25fr) minmax(300px,.75fr);
- gap:18px;
- align-items:start
-}
-
-.trade-main{
- min-width:0
-}
-
-.trade-side{
- min-width:0
-}
-
-.trade-toolbar{
- display:grid;
- grid-template-columns:1fr 180px;
- gap:12px;
- margin-bottom:14px
-}
-
-.trade-search{
- position:relative
-}
-
-.trade-search input{
- padding-left:44px;
- margin:0
-}
-
-.trade-search-icon{
- position:absolute;
- left:16px;
- top:50%;
- transform:translateY(-50%);
- font-size:20px;
- pointer-events:none
-}
-
-.trade-select{
- margin:0
-}
-
-.trade-tabs{
- display:flex;
- gap:8px;
- overflow-x:auto;
- padding-bottom:6px;
- margin-bottom:14px
-}
-
-.trade-tab{
- border:2.5px solid var(--ink);
- background:#fff;
- color:var(--ink);
- border-radius:99px;
- padding:7px 14px;
- font:600 15px Fredoka;
- white-space:nowrap;
- cursor:pointer
-}
-
-.trade-tab:hover,
-.trade-tab.on{
- background:var(--sun)
-}
-
-.trade-list{
- display:grid;
- gap:10px
-}
-
-.trade-token{
- background:#fff;
- border:3px solid var(--ink);
  border-radius:20px;
- padding:13px;
- box-shadow:0 4px 0 var(--ink);
+
+ padding:12px;
+
+ box-shadow:
+  0 4px 0 var(--ink);
+
  cursor:pointer;
- transition:.1s
+
+ transition:
+  transform .08s,
+  box-shadow .08s;
+
 }
 
-.trade-token:hover{
+.token-card:hover{
+
  transform:translateY(2px);
- box-shadow:0 2px 0 var(--ink)
+
+ box-shadow:
+  0 2px 0 var(--ink);
+
 }
 
-.trade-token-top{
+.token-main{
+
  display:flex;
+
  align-items:center;
- gap:10px
+
+ gap:10px;
+
+ min-width:0;
+
 }
 
-.trade-token-icon{
+.token-icon{
+
  width:46px;
+
  height:46px;
- border:2.5px solid var(--ink);
+
  border-radius:50%;
+
+ border:2.5px solid var(--ink);
+
  object-fit:cover;
- background:#EAF6FF;
+
+ background:var(--softBlue);
+
  flex:none;
+
  display:flex;
+
  align-items:center;
+
  justify-content:center;
- font-size:20px
-}
 
-.trade-token-name{
- min-width:0;
- flex:1
-}
-
-.trade-token-name b{
- display:block;
- font:600 19px Fredoka;
- white-space:nowrap;
- overflow:hidden;
- text-overflow:ellipsis
-}
-
-.trade-token-name span{
- display:block;
- font-size:12px;
- opacity:.7;
- white-space:nowrap;
- overflow:hidden;
- text-overflow:ellipsis
-}
-
-.trade-chain{
- font:600 12px Fredoka;
- border:2px solid var(--ink);
- border-radius:99px;
- padding:2px 8px;
- white-space:nowrap
-}
-
-.trade-price{
- font:700 22px Fredoka;
- margin-top:8px
-}
-
-.trade-token-stats{
- display:grid;
- grid-template-columns:repeat(4,1fr);
- gap:8px;
- margin-top:8px
-}
-
-.trade-token-stat{
- background:#F7FAFF;
- border:2px dashed #b9c7dc;
- border-radius:12px;
- padding:6px 8px
-}
-
-.trade-token-stat b{
- display:block;
- font:600 14px Fredoka
-}
-
-.trade-token-stat span{
- font-size:11px;
- opacity:.7
-}
-
-.trade-chart{
- min-height:430px;
- padding:18px
-}
-
-.trade-detail-head{
- display:flex;
- align-items:center;
- gap:12px
-}
-
-.trade-detail-icon{
- width:58px;
- height:58px;
- border-radius:50%;
- border:3px solid var(--ink);
- object-fit:cover;
- background:#EAF6FF;
- flex:none
-}
-
-.trade-detail-title{
- min-width:0;
- margin-right:auto
-}
-
-.trade-detail-title h3{
- font-size:25px;
- line-height:1
-}
-
-.trade-detail-title p{
- font-size:13px;
- opacity:.7
-}
-
-.trade-star{
- background:#fff;
- border:2.5px solid var(--ink);
- border-radius:50%;
- width:42px;
- height:42px;
- cursor:pointer;
  font-size:20px;
- flex:none
+
 }
 
-.trade-star.on{
+.token-name{
+
+ flex:1;
+
+ min-width:0;
+
+}
+
+.token-name b{
+
+ display:block;
+
+ font:700 18px Fredoka;
+
+ white-space:nowrap;
+
+ overflow:hidden;
+
+ text-overflow:ellipsis;
+
+}
+
+.token-name span{
+
+ display:block;
+
+ font-size:12px;
+
+ opacity:.7;
+
+ white-space:nowrap;
+
+ overflow:hidden;
+
+ text-overflow:ellipsis;
+
+}
+
+.token-badge{
+
+ flex:none;
+
+ font:600 12px Fredoka;
+
+ border:2px solid var(--ink);
+
+ border-radius:999px;
+
+ padding:2px 7px;
+
+ white-space:nowrap;
+
+}
+
+.token-price{
+
+ margin-top:8px;
+
+ font:700 23px Fredoka;
+
+}
+
+.token-meta{
+
+ display:grid;
+
+ grid-template-columns:
+  repeat(4,1fr);
+
+ gap:6px;
+
+ margin-top:8px;
+
+}
+
+.meta-item{
+
+ background:var(--soft);
+
+ border:2px dashed var(--line);
+
+ border-radius:12px;
+
+ padding:6px 7px;
+
+ min-width:0;
+
+}
+
+.meta-item b{
+
+ display:block;
+
+ font:600 13px Fredoka;
+
+ white-space:nowrap;
+
+ overflow:hidden;
+
+ text-overflow:ellipsis;
+
+}
+
+.meta-item span{
+
+ display:block;
+
+ font-size:10px;
+
+ opacity:.65;
+
+}
+
+.token-bottom{
+
+ display:flex;
+
+ justify-content:space-between;
+
+ align-items:center;
+
+ gap:8px;
+
+ margin-top:9px;
+
+}
+
+.change.up{
+ color:var(--upDark);
+ background:#B8F5D2;
+}
+
+.change.dn{
+ color:var(--dnDark);
+ background:#FFD0D8;
+}
+
+.change.flat{
+ background:var(--softBlue);
+}
+
+.mini-pill{
+
+ border:2px solid var(--ink);
+
+ border-radius:999px;
+
+ padding:3px 8px;
+
+ font:600 12px Fredoka;
+
+ background:#fff;
+
+ white-space:nowrap;
+
+}
+
+.quick-buy{
+
+ border:2.5px solid var(--ink);
+
+ background:var(--sun);
+
+ border-radius:999px;
+
+ padding:6px 10px;
+
+ font:600 12px Fredoka;
+
+ cursor:pointer;
+
+ white-space:nowrap;
+
+}
+
+.quick-buy:hover{
+ transform:translateY(1px)
+}
+
+/* =========================================================
+   SELECTED TOKEN
+========================================================= */
+
+.selected-card{
+
+ padding:16px;
+
+ margin-top:14px;
+
+}
+
+.selected-head{
+
+ display:flex;
+
+ align-items:center;
+
+ gap:11px;
+
+}
+
+.selected-icon{
+
+ width:58px;
+
+ height:58px;
+
+ border-radius:50%;
+
+ border:3px solid var(--ink);
+
+ object-fit:cover;
+
+ background:var(--softBlue);
+
+ flex:none;
+
+}
+
+.selected-name{
+
+ min-width:0;
+
+ flex:1;
+
+}
+
+.selected-name h3{
+
+ font-size:26px;
+
+ white-space:nowrap;
+
+ overflow:hidden;
+
+ text-overflow:ellipsis;
+
+}
+
+.selected-name p{
+
+ font-size:12px;
+
+ opacity:.7;
+
+}
+
+.star-btn{
+
+ width:43px;
+
+ height:43px;
+
+ border:2.5px solid var(--ink);
+
+ border-radius:50%;
+
+ background:#fff;
+
+ cursor:pointer;
+
+ font-size:20px;
+
+ flex:none;
+
+}
+
+.star-btn.on{
  background:var(--sun)
 }
 
-.trade-metrics{
+.metric-grid{
+
  display:grid;
- grid-template-columns:repeat(4,1fr);
- gap:8px;
- margin:14px 0
+
+ grid-template-columns:
+  repeat(4,1fr);
+
+ gap:7px;
+
+ margin:13px 0;
+
 }
 
-.trade-metric{
- background:#EAF6FF;
+.metric{
+
+ background:var(--softBlue);
+
  border:2px solid var(--ink);
- border-radius:14px;
- padding:9px
+
+ border-radius:13px;
+
+ padding:8px;
+
+ min-width:0;
+
 }
 
-.trade-metric b{
+.metric b{
+
  display:block;
- font:600 16px Fredoka
-}
 
-.trade-metric span{
- font-size:11px;
- opacity:.7
-}
+ font:600 15px Fredoka;
 
-.trade-chart-box{
- height:300px;
- border:3px solid var(--ink);
- border-radius:20px;
- background:#F8FBFF;
  overflow:hidden;
- position:relative
-}
 
-.trade-chart-grid{
- position:absolute;
- inset:0;
- background:
-  linear-gradient(#d8e2ef 1px,transparent 1px),
-  linear-gradient(90deg,#d8e2ef 1px,transparent 1px);
- background-size:25% 25%;
- opacity:.7
-}
-
-.trade-chart-line{
- position:absolute;
- left:3%;
- right:3%;
- top:10%;
- bottom:10%;
- width:94%;
- height:80%
-}
-
-.trade-chart-label{
- position:absolute;
- left:12px;
- top:10px;
- background:#fff;
- border:2px solid var(--ink);
- border-radius:99px;
- padding:3px 9px;
- font:600 12px Fredoka
-}
-
-.trade-chart-empty{
- position:absolute;
- inset:0;
- display:flex;
- align-items:center;
- justify-content:center;
- text-align:center;
- padding:20px;
- font:600 17px Fredoka
-}
-
-.trade-contract{
- margin-top:12px;
- display:flex;
- gap:8px;
- align-items:center;
- background:#EAF6FF;
- border:2px dashed var(--ink);
- border-radius:14px;
- padding:9px
-}
-
-.trade-contract code{
- flex:1;
- font:600 12px monospace;
- overflow:hidden;
  text-overflow:ellipsis;
- white-space:nowrap
+
+ white-space:nowrap;
+
 }
 
-.trade-section-title{
+.metric span{
+
+ display:block;
+
+ font-size:10px;
+
+ opacity:.65;
+
+}
+
+/* =========================================================
+   CHART
+========================================================= */
+
+.chart-box{
+
+ height:230px;
+
+ border:3px solid var(--ink);
+
+ border-radius:18px;
+
+ background:
+  linear-gradient(
+   #D8E2EF 1px,
+   transparent 1px
+  ),
+  linear-gradient(
+   90deg,
+   #D8E2EF 1px,
+   transparent 1px
+  );
+
+ background-size:
+ 25% 25%;
+
+ position:relative;
+
+ overflow:hidden;
+
+}
+
+.chart-label{
+
+ position:absolute;
+
+ left:9px;
+
+ top:8px;
+
+ background:#fff;
+
+ border:2px solid var(--ink);
+
+ border-radius:999px;
+
+ padding:3px 8px;
+
+ font:600 11px Fredoka;
+
+ z-index:2;
+
+}
+
+.chart-line{
+
+ position:absolute;
+
+ inset:13% 3% 9% 3%;
+
+ width:94%;
+
+ height:78%;
+
+}
+
+.chart-placeholder{
+
+ position:absolute;
+
+ inset:0;
+
  display:flex;
- justify-content:space-between;
+
  align-items:center;
- gap:8px;
- margin-bottom:10px
+
+ justify-content:center;
+
+ text-align:center;
+
+ padding:20px;
+
+ font:600 15px Fredoka;
+
+ opacity:.65;
+
 }
 
-.trade-section-title h3{
+/* =========================================================
+   SWAP PANEL
+========================================================= */
+
+.swap-card{
+
+ padding:15px;
+
+ position:sticky;
+
+ top:88px;
+
+}
+
+.swap-head{
+
+ display:flex;
+
+ justify-content:space-between;
+
+ align-items:center;
+
+ gap:10px;
+
+ margin-bottom:9px;
+
+}
+
+.swap-head h3{
+ font-size:24px
+}
+
+.balance-chip{
+
+ display:inline-flex;
+
+ align-items:center;
+
+ gap:5px;
+
+ background:var(--softBlue);
+
+ border:2px solid var(--ink);
+
+ border-radius:999px;
+
+ padding:4px 8px;
+
+ font:600 12px Fredoka;
+
+ white-space:nowrap;
+
+}
+
+.swap-tabs{
+
+ display:grid;
+
+ grid-template-columns:1fr 1fr;
+
+ gap:7px;
+
+ margin-bottom:9px;
+
+}
+
+.swap-tab{
+
+ border:3px solid var(--ink);
+
+ border-radius:14px;
+
+ background:#fff;
+
+ padding:9px;
+
+ cursor:pointer;
+
+ font:600 16px Fredoka;
+
+}
+
+.swap-tab.on.buy{
+
+ background:#B8F5D2;
+
+}
+
+.swap-tab.on.sell{
+
+ background:#FFD0D8;
+
+}
+
+.swap-box{
+
+ background:var(--soft);
+
+ border:2px dashed var(--line);
+
+ border-radius:17px;
+
+ padding:10px;
+
+ margin-bottom:8px;
+
+}
+
+.swap-box-top{
+
+ display:flex;
+
+ justify-content:space-between;
+
+ align-items:center;
+
+ gap:10px;
+
+ margin-bottom:5px;
+
+}
+
+.swap-label{
+
+ font:600 12px Fredoka;
+
+ opacity:.7;
+
+}
+
+.swap-asset{
+
+ display:flex;
+
+ align-items:center;
+
+ gap:7px;
+
+ font:700 18px Fredoka;
+
+}
+
+.swap-dot{
+
+ width:25px;
+
+ height:25px;
+
+ border:2px solid var(--ink);
+
+ border-radius:50%;
+
+ background:var(--softBlue);
+
+ display:flex;
+
+ align-items:center;
+
+ justify-content:center;
+
+ font-size:12px;
+
+}
+
+.swap-input-row{
+
+ display:flex;
+
+ align-items:center;
+
+ gap:8px;
+
+}
+
+.swap-input-row input{
+
+ border:0;
+
+ background:transparent;
+
+ padding:3px 0;
+
+ margin:0;
+
+ font:700 26px Fredoka;
+
+ min-width:0;
+
+}
+
+.swap-input-row input:focus{
+ box-shadow:none
+}
+
+.swap-input-row .unit{
+
+ font:600 13px Fredoka;
+
+ opacity:.65;
+
+}
+
+.swap-switch{
+
+ width:38px;
+
+ height:38px;
+
+ border:3px solid var(--ink);
+
+ border-radius:50%;
+
+ background:var(--sun);
+
+ display:flex;
+
+ align-items:center;
+
+ justify-content:center;
+
+ margin:-3px auto 4px;
+
+ position:relative;
+
+ z-index:2;
+
+ cursor:pointer;
+
+ box-shadow:0 3px 0 var(--ink);
+
+}
+
+.presets{
+
+ display:grid;
+
+ grid-template-columns:
+  repeat(4,1fr);
+
+ gap:5px;
+
+ margin:6px 0 9px;
+
+}
+
+.preset{
+
+ border:2px solid var(--ink);
+
+ border-radius:11px;
+
+ background:#fff;
+
+ padding:6px 4px;
+
+ font:600 12px Fredoka;
+
+ cursor:pointer;
+
+}
+
+.preset:hover{
+ background:#FFF6CF
+}
+
+.swap-info{
+
+ border:2px dashed var(--line);
+
+ border-radius:13px;
+
+ padding:8px;
+
+ background:#fff;
+
+ margin:8px 0;
+
+}
+
+.swap-info-row{
+
+ display:flex;
+
+ justify-content:space-between;
+
+ gap:10px;
+
+ padding:3px 0;
+
+ font-size:12px;
+
+}
+
+.swap-info-row b{
+ font-family:Fredoka
+}
+
+.trade-fee-note{
+
+ font-size:11px;
+
+ background:#FFF6CF;
+
+ border:2px dashed var(--ink);
+
+ border-radius:12px;
+
+ padding:7px 9px;
+
+ margin-bottom:8px;
+
+}
+
+/* =========================================================
+   PORTFOLIO
+========================================================= */
+
+.portfolio-card{
+
+ padding:15px;
+
+ margin-top:14px;
+
+}
+
+.portfolio-head{
+
+ display:flex;
+
+ align-items:center;
+
+ justify-content:space-between;
+
+ gap:10px;
+
+ margin-bottom:10px;
+
+}
+
+.portfolio-head h3{
  font-size:22px
 }
 
-.trade-side-card{
- padding:16px;
- margin-bottom:18px
-}
+.portfolio-total{
 
-.trade-action-tabs{
- display:grid;
- grid-template-columns:1fr 1fr;
- gap:8px;
- margin-bottom:10px
-}
+ background:var(--softBlue);
 
-.trade-action-tab{
- border:3px solid var(--ink);
+ border:2px solid var(--ink);
+
  border-radius:14px;
- padding:9px;
- background:#fff;
- font:600 17px Fredoka;
- cursor:pointer
+
+ padding:7px 10px;
+
+ font:700 17px Fredoka;
+
+ white-space:nowrap;
+
 }
 
-.trade-action-tab.on.buy{
- background:#B8F5D2
+.portfolio-status{
+
+ display:flex;
+
+ align-items:center;
+
+ gap:7px;
+
+ flex-wrap:wrap;
+
+ margin-bottom:9px;
+
 }
 
-.trade-action-tab.on.sell{
- background:#FFD0D8
-}
+.holding-list{
 
-.trade-input-row{
- position:relative
-}
-
-.trade-input-row input{
- margin:5px 0;
- padding-right:55px
-}
-
-.trade-unit{
- position:absolute;
- right:14px;
- top:50%;
- transform:translateY(-50%);
- font:600 13px Fredoka
-}
-
-.trade-presets{
  display:grid;
- grid-template-columns:repeat(4,1fr);
+
  gap:6px;
- margin-bottom:8px
+
 }
 
-.trade-preset{
- border:2px solid var(--ink);
- background:#fff;
- border-radius:12px;
- padding:6px;
- font:600 13px Fredoka;
- cursor:pointer
-}
+.holding{
 
-.trade-preset:hover{
- background:#fff6cf
-}
-
-.trade-summary{
- background:#F7FAFF;
- border:2px dashed #b9c7dc;
- border-radius:14px;
- padding:10px;
- margin:10px 0
-}
-
-.trade-summary-row{
  display:flex;
- justify-content:space-between;
- gap:10px;
- font-size:13px;
- padding:3px 0
-}
 
-.trade-primary{
- width:100%;
- border-radius:16px;
- padding:12px;
- font-size:18px
-}
-
-.sniper-card{
- background:#FFFDF1
-}
-
-.sniper-status{
- display:flex;
  align-items:center;
+
  gap:8px;
- margin-bottom:10px
+
+ padding:8px;
+
+ background:var(--soft);
+
+ border-radius:13px;
+
 }
 
-.sniper-dot{
- width:12px;
- height:12px;
+.holding-icon{
+
+ width:32px;
+
+ height:32px;
+
  border-radius:50%;
+
  border:2px solid var(--ink);
- background:#aaa
-}
 
-.sniper-dot.armed{
- background:var(--up);
- animation:pulse 1.5s infinite
-}
+ background:var(--softBlue);
 
-.sniper-grid{
- display:grid;
- grid-template-columns:1fr 1fr;
- gap:8px
-}
-
-.trade-check{
  display:flex;
+
  align-items:center;
- gap:8px;
- font-size:13px;
- padding:7px 0
+
+ justify-content:center;
+
+ flex:none;
+
 }
 
-.trade-check input{
- width:auto;
- margin:0
+.holding-name{
+
+ flex:1;
+
+ min-width:0;
+
 }
 
-.activity{
+.holding-name b{
+
+ display:block;
+
+ font:600 14px Fredoka;
+
+ overflow:hidden;
+
+ text-overflow:ellipsis;
+
+ white-space:nowrap;
+
+}
+
+.holding-name span{
+
+ display:block;
+
+ font-size:10px;
+
+ opacity:.65;
+
+}
+
+.holding-amount{
+
+ font:600 13px Fredoka;
+
+}
+
+/* =========================================================
+   ADVANCED SECTIONS
+========================================================= */
+
+.advanced-card{
+
+ margin-top:14px;
+
+ padding:0;
+
+ overflow:hidden;
+
+}
+
+.advanced-card details{
+
+ border-bottom:2px dashed var(--line);
+
+}
+
+.advanced-card details:last-child{
+ border-bottom:0
+}
+
+.advanced-card summary{
+
+ cursor:pointer;
+
+ list-style:none;
+
+ padding:13px 15px;
+
+ display:flex;
+
+ justify-content:space-between;
+
+ align-items:center;
+
+ font:600 17px Fredoka;
+
+}
+
+.advanced-card summary::-webkit-details-marker{
+ display:none
+}
+
+.advanced-content{
+
+ padding:0 15px 14px;
+
+}
+
+.activity-list{
+
  display:grid;
- gap:7px
+
+ gap:6px;
+
 }
 
 .activity-row{
+
  display:flex;
+
  align-items:center;
+
  gap:8px;
- background:#F7FAFF;
+
+ padding:7px;
+
+ background:var(--soft);
+
  border-radius:12px;
- padding:8px
+
 }
 
-.activity-side{
- width:10px;
- height:10px;
+.activity-dot{
+
+ width:9px;
+
+ height:9px;
+
  border-radius:50%;
+
  border:2px solid var(--ink);
- flex:none
+
+ flex:none;
+
 }
 
-.activity-side.buy,
-.activity-side.up{
+.activity-dot.buy{
  background:var(--up)
 }
 
-.activity-side.sell,
-.activity-side.dn{
+.activity-dot.sell{
  background:var(--dn)
 }
 
-.activity-side.flat{
- background:#EAF6FF
-}
+.activity-text{
 
-.activity-info{
  min-width:0;
- flex:1
+
+ flex:1;
+
 }
 
-.activity-info b{
- font:600 14px Fredoka
-}
+.activity-text b{
 
-.activity-info span{
  display:block;
- font-size:11px;
- opacity:.7
+
+ font:600 13px Fredoka;
+
 }
 
-.activity-amount{
- font:600 13px Fredoka
+.activity-text span{
+
+ display:block;
+
+ font-size:10px;
+
+ opacity:.65;
+
 }
 
-.watch-empty{
+/* =========================================================
+   EMPTY STATES
+========================================================= */
+
+.empty-state{
+
+ padding:25px 15px;
+
  text-align:center;
- padding:15px;
- border:2px dashed #b9c7dc;
- border-radius:14px;
- background:#F7FAFF
+
+ border:2px dashed var(--line);
+
+ border-radius:17px;
+
+ background:var(--soft);
+
 }
 
-.trade-notice{
- padding:11px 13px;
- background:#FFF6CF;
- border:2px dashed var(--ink);
- border-radius:15px;
- font-size:13px;
- margin-bottom:14px
+.empty-icon{
+
+ font-size:30px;
+
+ margin-bottom:5px;
+
 }
 
-/* ================= TRADE WALLET ================= */
+/* =========================================================
+   BOARD
+========================================================= */
 
-.trade-wallet-card{
- margin-bottom:18px;
- padding:18px
+.lb-wrap{
+
+ overflow-x:auto;
+
 }
 
-.trade-wallet-head{
+.lb-table{
+
+ width:100%;
+
+ min-width:500px;
+
+ border-collapse:collapse;
+
+}
+
+.lb-table td,
+.lb-table th{
+
+ padding:10px 8px;
+
+ text-align:left;
+
+ border-bottom:2px dashed var(--line);
+
+}
+
+.lb-table th{
+
+ font:600 14px Fredoka;
+
+}
+
+/* =========================================================
+   TOAST
+========================================================= */
+
+#toast{
+
+ position:fixed;
+
+ left:50%;
+
+ bottom:22px;
+
+ transform:
+  translateX(-50%);
+
+ background:var(--ink);
+
+ color:#fff;
+
+ padding:10px 18px;
+
+ border-radius:999px;
+
+ z-index:500;
+
+ display:none;
+
+ font:600 14px Fredoka;
+
+ max-width:90vw;
+
+ text-align:center;
+
+ box-shadow:
+  0 5px 0 rgba(18,48,92,.22);
+
+}
+
+/* =========================================================
+   MODAL
+========================================================= */
+
+.modal{
+
+ position:fixed;
+
+ inset:0;
+
+ background:
+  rgba(
+   18,
+   48,
+   92,
+   .45
+  );
+
+ z-index:400;
+
  display:flex;
- justify-content:space-between;
+
  align-items:center;
- gap:12px;
- flex-wrap:wrap;
- margin-bottom:12px
+
+ justify-content:center;
+
+ padding:14px;
+
 }
 
-.trade-wallet-balance{
- background:#EAF6FF;
- border:2.5px solid var(--ink);
- border-radius:18px;
- padding:9px 13px;
- display:flex;
- align-items:center;
- gap:7px;
- white-space:nowrap
+.modal-sheet{
+
+ width:100%;
+
+ max-width:440px;
+
+ max-height:90vh;
+
+ overflow:auto;
+
 }
 
-.trade-wallet-balance b{
- font:700 20px Fredoka
-}
+/* =========================================================
+   DESKTOP
+========================================================= */
 
-.trade-wallet-status{
- display:flex;
- align-items:center;
- gap:8px;
- flex-wrap:wrap;
- margin-bottom:10px
-}
+@media(min-width:761px){
 
-.trade-wallet-assets{
- overflow-x:auto
-}
-
-.trade-wallet-assets table{
- min-width:430px
-}
-
-.trade-wallet-actions{
- display:flex;
- gap:8px;
- flex-wrap:wrap;
- margin-top:12px
-}
-
-/* ================= MOBILE ================= */
-
-@media(prefers-reduced-motion:reduce){
-
- .mk-fj,
- .live i,
- .mk-bub,
- .fl-up,
- .fl-dn{
-  animation:none
+ .trade-mobile-wallet{
+  display:none
  }
 
 }
+
+/* =========================================================
+   MOBILE
+========================================================= */
 
 @media(max-width:760px){
 
  body{
-  font-size:16px;
-  padding-bottom:calc(96px + env(safe-area-inset-bottom))
+
+  padding-bottom:
+   calc(
+    92px +
+    env(safe-area-inset-bottom)
+   );
+
  }
 
  .wrap{
-  padding:0 14px
+
+  width:
+   calc(
+    100% - 24px
+   );
+
  }
 
  .nav{
-  top:8px;
-  padding:0 12px
+
+  top:7px;
+
+  width:
+   calc(
+    100% - 18px
+   );
+
  }
 
- .nav .sticker{
-  padding:6px 8px 6px 12px;
-  flex-wrap:nowrap;
-  gap:6px
+ .nav-inner{
+
+  padding:
+   6px
+   8px
+   6px
+   11px;
+
+  border-radius:20px;
+
+  gap:5px;
+
  }
 
  .logo{
-  font-size:21px;
-  margin-right:0;
+
+  font-size:20px;
+
   gap:6px;
-  min-width:0
+
  }
 
  .logo img{
-  width:31px;
-  height:31px
+
+  width:30px;
+
+  height:30px;
+
  }
 
  .header-balance{
-  padding:5px 8px;
+
+  padding:
+   4px
+   8px;
+
   min-height:36px;
-  gap:4px
+
  }
 
  .header-balance .coin{
-  font-size:14px
+  font-size:13px
  }
 
  .header-balance b{
-  font-size:13px
+  font-size:12px
  }
 
- .header-balance span:last-child{
-  font-size:10px
+ .header-balance .unit{
+  font-size:9px
  }
 
  #cbtn{
-  min-height:40px;
-  font-size:14px;
-  padding:6px 11px;
-  white-space:nowrap
+
+  padding:
+   6px
+   9px;
+
+  min-height:38px;
+
+  font-size:13px;
+
  }
 
  #links{
+
   position:fixed;
-  left:12px;
-  right:12px;
-  bottom:calc(10px + env(safe-area-inset-bottom));
-  z-index:15;
+
+  left:10px;
+
+  right:10px;
+
+  bottom:
+   calc(
+    8px +
+    env(safe-area-inset-bottom)
+   );
+
+  z-index:120;
+
   display:flex;
+
   justify-content:space-around;
+
   background:#fff;
+
   border:3px solid var(--ink);
-  border-radius:24px;
-  box-shadow:0 5px 0 var(--ink);
-  padding:6px
+
+  border-radius:22px;
+
+  box-shadow:
+   0 5px 0 var(--ink);
+
+  padding:5px;
+
  }
 
- .nav a{
+ .nav-link{
+
+  flex:1;
+
   display:flex;
+
   flex-direction:column;
+
   align-items:center;
-  gap:2px;
-  padding:6px 10px;
-  font-size:12px;
-  line-height:1.1;
-  border-radius:16px
+
+  justify-content:center;
+
+  gap:1px;
+
+  padding:6px 5px;
+
+  border-radius:15px;
+
+  font-size:11px;
+
+  line-height:1.05;
+
  }
 
- .nav a .ic{
+ .nav-link .ic{
+
   display:block;
-  font-size:21px
+
+  font-size:19px;
+
+ }
+
+ section.pg{
+
+  padding:
+   22px
+   0
+   45px;
+
  }
 
  .hero{
-  padding:22px 0 6px;
-  gap:18px
- }
 
- .hero h1{
-  font-size:36px
+  grid-template-columns:1fr;
+
+  gap:18px;
+
+  padding:
+   25px
+   0
+   15px;
+
  }
 
  .mascot{
+
   order:-1;
-  width:min(250px,68vw)
+
+  width:min(
+   230px,
+   68vw
+  );
+
+ }
+
+ .hero h1{
+
+  font-size:37px;
+
+ }
+
+ .hero-copy p{
+
+  font-size:15px;
+
  }
 
  .eyebrow{
-  font-size:13px
+  font-size:12px
  }
 
- .tag{
-  margin-top:34px
+ .feature-grid{
+
+  grid-template-columns:
+   repeat(
+    2,
+    1fr
+   );
+
+  gap:9px;
+
  }
 
- .card{
-  padding:16px
+ .feature-card{
+
+  min-height:125px;
+
+  padding:13px;
+
  }
 
- .quote{
-  padding:22px 16px
+ .feature-icon{
+  font-size:27px
  }
 
- .stats b{
-  font-size:22px
+ .feature-card h3{
+  font-size:17px
  }
 
- .btn{
-  min-height:44px
+ .stats-grid{
+
+  gap:7px;
+
  }
 
- .btn.sm{
-  padding:8px 14px
- }
+ .stat-box{
 
- .mint{
+  padding:
+   14px 5px;
+
   font-size:12px;
-  padding:10px 12px
+
  }
 
- table{
-  font-size:14px
+ .stat-box b{
+
+  font-size:22px;
+
  }
 
- td,th{
-  padding:8px 4px
+ .trade-head{
+
+  align-items:stretch;
+
  }
 
- #pad{
-  width:104px;
-  height:104px
+ .trade-title h1{
+
+  font-size:34px;
+
  }
 
- #toast{
-  bottom:calc(100px + env(safe-area-inset-bottom))
- }
+ .trade-head-wallet{
 
- .mk-fj{
-  width:68px;
-  height:68px
- }
-
- .mk-say{
-  font-size:16px
- }
-
- .mk-price.big{
-  font-size:32px
- }
-
- .mk-majors{
-  gap:8px
- }
-
- .mk-mini{
-  padding:10px
- }
-
- .mk-mini .mk-price{
-  font-size:16px
- }
-
- .mk-mini .mk-chip{
-  font-size:12px;
-  padding:0 8px
- }
-
- .mk-pills{
-  flex-wrap:nowrap;
-  overflow-x:auto;
-  max-width:100%;
-  padding-bottom:4px
- }
-
- .mk-p{
-  white-space:nowrap;
-  min-height:38px
- }
-
- .mk-bar{
-  flex-direction:column
- }
-
- .mk-frame{
-  height:320px
- }
-
- .mk-modal{
-  align-items:flex-end;
-  padding:10px 10px calc(10px + env(safe-area-inset-bottom))
- }
-
- .trade-shell{
-  grid-template-columns:1fr
- }
-
- .trade-toolbar{
-  grid-template-columns:1fr
- }
-
- .trade-metrics{
-  grid-template-columns:repeat(2,1fr)
- }
-
- .trade-token-stats{
-  grid-template-columns:repeat(2,1fr)
- }
-
- .trade-chart{
-  padding:12px
- }
-
- .trade-chart-box{
-  height:280px
- }
-
- .sniper-grid{
-  grid-template-columns:1fr
- }
-
- .trade-wallet-card{
-  padding:14px
- }
-
- .trade-wallet-head{
-  align-items:flex-start
- }
-
- .trade-wallet-balance{
   width:100%;
-  justify-content:center
+
+  justify-content:center;
+
  }
 
- .trade-wallet-assets table{
-  min-width:390px
+ .trade-layout{
+
+  grid-template-columns:1fr;
+
+ }
+
+ .swap-card{
+
+  position:static;
+
+  order:-1;
+
+ }
+
+ .trade-search-row{
+
+  grid-template-columns:1fr;
+
+ }
+
+ .token-meta{
+
+  grid-template-columns:
+   repeat(
+    2,
+    1fr
+   );
+
+ }
+
+ .metric-grid{
+
+  grid-template-columns:
+   repeat(
+    2,
+    1fr
+   );
+
+ }
+
+ .selected-card{
+
+  padding:13px;
+
+ }
+
+ .selected-name h3{
+
+  font-size:22px;
+
+ }
+
+ .chart-box{
+
+  height:220px;
+
+ }
+
+ .portfolio-total{
+
+  font-size:15px;
+
+ }
+
+ .swap-input-row input{
+
+  font-size:23px;
+
+ }
+
+ .presets{
+
+  gap:4px;
+
+ }
+
+ .preset{
+
+  font-size:11px;
+
+ }
+
+ .token-bottom{
+
+  align-items:flex-start;
+
+ }
+
+ .quick-buy{
+
+  min-height:34px;
+
+ }
+
+ .live-strip{
+
+  align-items:flex-start;
+
  }
 
 }
 
-.ic{
- display:none
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media(prefers-reduced-motion:reduce){
+
+ *{
+
+  scroll-behavior:auto!important;
+
+  animation:none!important;
+
+  transition:none!important;
+
+ }
+
 }
 
-.card{
- overflow-x:auto
-}
-
-.mk,
-.mk-hero{
- overflow:hidden
-}
 </style>
 </head>
 
+
 <body>
 
-<!-- ================= NAV ================= -->
 
-<div class="nav">
+<!-- =========================================================
+     NAVIGATION
+========================================================= -->
 
- <div class="sticker">
+<header class="nav">
+
+ <div class="sticker nav-inner">
+
 
   <div class="logo">
 
    <img
     src="fiji.png"
-    alt=""
+    alt="Fiji"
    >
 
-   fiji
+   <span>
+    fiji
+   </span>
 
   </div>
 
@@ -1725,14 +2797,17 @@ sub{
     —
    </b>
 
-   <span>
+   <span class="unit">
     SOL
    </span>
 
   </div>
 
 
-  <div id="links"></div>
+  <!-- DESKTOP NAV -->
+
+  <div id="links">
+  </div>
 
 
   <button
@@ -1744,15 +2819,16 @@ sub{
 
   </button>
 
+
  </div>
 
-</div>
+</header>
 
 
 <main class="wrap">
 
 
-<!-- ========================================================
+<!-- =========================================================
      HOME
 ========================================================= -->
 
@@ -1760,46 +2836,53 @@ sub{
  class="pg on"
  id="home">
 
+
  <div class="hero">
 
-  <div>
+
+  <div class="hero-copy">
+
 
    <span class="eyebrow">
-    💧 utility, but make it cute
+    💧 discover · check · trade
    </span>
 
 
    <h1>
     A fuzzy blue friend
     <span>
-     worth coming back to.
+     for the Solana pond.
     </span>
    </h1>
 
 
    <p>
-    Fiji is a community meme coin with a little hub:
-    check in daily, make memes, play games, invite friends
-    and explore your wallet and the market from one cozy place.
+
+    Discover new Solana tokens,
+    watch what's moving,
+    check the market and trade
+    from one simple Trade Pad.
+
    </p>
 
 
-   <div class="btns">
+   <div class="hero-actions">
+
 
     <button
      class="btn"
-     onclick="go('earn')">
+     onclick="go('trade')">
 
-     Start earning points
+     Open Trade Pad
 
     </button>
 
 
     <button
      class="btn alt"
-     onclick="go('trade')">
+     onclick="go('earn')">
 
-     Open Trade Pad
+     Earn points
 
     </button>
 
@@ -1818,15 +2901,19 @@ sub{
 
    <span
     class="drop"
-    style="top:-10px;right:-6px">
+    style="top:-8px;right:-4px">
+
     💧
+
    </span>
 
 
    <span
     class="drop"
-    style="bottom:20px;left:-14px;animation-delay:1s">
+    style="bottom:15px;left:-10px;animation-delay:1s">
+
     💦
+
    </span>
 
   </div>
@@ -1836,10 +2923,13 @@ sub{
 
  <div class="sticker card">
 
+
   <div
    class="tag"
-   style="margin:0">
+   style="margin-top:0">
+
    the contract
+
   </div>
 
 
@@ -1848,9 +2938,11 @@ sub{
   </h2>
 
 
-  <div class="mint">
+  <div class="mint-box">
 
-   <span id="mint"></span>
+
+   <code id="mint">
+   </code>
 
 
    <button
@@ -1866,126 +2958,119 @@ sub{
 
   <p class="small">
 
-   Fiji is a community token for fun, not financial advice.
-   Tokens carry risk. Admins never DM first or ask for your seed phrase.
+   Fiji is a community character and trading interface.
+   Crypto assets are risky. Never share your seed phrase
+   or private key.
 
   </p>
+
 
  </div>
 
 
  <div class="tag">
-  how points work
+  why come back
  </div>
 
 
  <h2>
-  Now there's a reason to return.
+  One place. Less confusion.
  </h2>
 
 
- <div class="grid">
+ <div class="feature-grid">
 
-  <div class="sticker card">
 
-   <div class="em">
-    📅
+  <div class="sticker card feature-card">
+
+   <div class="feature-icon">
+    🆕
    </div>
 
    <h3>
-    Daily visit
+    New tokens
    </h3>
 
-   Check in and grow a streak bonus.
+   Find fresh Solana launches.
 
   </div>
 
 
-  <div class="sticker card">
+  <div class="sticker card feature-card">
 
-   <div class="em">
-    🎨
+   <div class="feature-icon">
+    🔥
    </div>
 
    <h3>
-    Meme creation
+    Trending
    </h3>
 
-   Post your best Fiji memes.
+   See current activity.
 
   </div>
 
 
-  <div class="sticker card">
+  <div class="sticker card feature-card">
 
-   <div class="em">
-    🏆
+   <div class="feature-icon">
+    📈
    </div>
 
    <h3>
-    Challenges
+    Bonding
    </h3>
 
-   A fresh community task each day.
+   Watch tokens still moving through launch curves.
 
   </div>
 
 
-  <div class="sticker card">
+  <div class="sticker card feature-card">
 
-   <div class="em">
-    🤝
+   <div class="feature-icon">
+    🎓
    </div>
 
    <h3>
-    Referrals
+    Migrated
    </h3>
 
-   Bring a friend, both of you win.
+   See tokens that reached their next stage.
 
   </div>
 
 
-  <div class="sticker card">
+  <div class="sticker card feature-card">
 
-   <div class="em">
-    🎮
+   <div class="feature-icon">
+    ⭐
    </div>
 
    <h3>
-    Games
+    Watchlist
    </h3>
 
-   Quick splash games for bonus points.
+   Keep tokens saved to your account.
 
   </div>
 
 
-  <div class="sticker card">
+  <div class="sticker card feature-card">
 
-   <div class="em">
-    💬
+   <div class="feature-icon">
+    ⚡
    </div>
 
    <h3>
-    Social
+    Quick trade
    </h3>
 
-   Join in on X and Telegram.
+   Discover a token and prepare a trade in the same flow.
 
   </div>
 
  </div>
-
-
- <p
-  class="small"
-  style="margin-top:14px">
-
-  Points are for community fun only.
-  They have no cash value and no rewards are promised.
-
- </p>
 
 
  <div class="tag">
@@ -2000,7 +3085,9 @@ sub{
 
  <div class="sticker quote">
 
-  <p id="line"></p>
+
+  <p id="line">
+  </p>
 
 
   <button
@@ -2013,27 +3100,32 @@ sub{
 
  </div>
 
+
 </section>
 
 
-<!-- ========================================================
-     WALLET
-     LEFT BLANK FOR NOW
+<!-- =========================================================
+     WALLET TAB
+     INTENTIONALLY BLANK
 ========================================================= -->
 
 <section
  class="pg"
  id="wallet">
+
+ <!-- Reserved for a future FIJI feature. -->
+
 </section>
 
 
-<!-- ========================================================
+<!-- =========================================================
      EARN
 ========================================================= -->
 
 <section
  class="pg"
  id="earn">
+
 
  <div class="tag">
   earn points
@@ -2045,9 +3137,10 @@ sub{
  </h2>
 
 
- <div class="stats sticker card">
+ <div class="stats-grid">
 
-  <div>
+
+  <div class="sticker stat-box">
 
    <b id="spts">
     0
@@ -2058,7 +3151,7 @@ sub{
   </div>
 
 
-  <div>
+  <div class="sticker stat-box">
 
    <b id="streak">
     0
@@ -2069,7 +3162,7 @@ sub{
   </div>
 
 
-  <div>
+  <div class="sticker stat-box">
 
    <b id="rank">
     –
@@ -2085,21 +3178,26 @@ sub{
  <br>
 
 
- <div class="grid">
+ <div class="earn-grid">
+
 
   <div class="sticker card">
 
-   <div class="em">
+
+   <div class="feature-icon">
     📅
    </div>
+
 
    <h3>
     Daily check-in
    </h3>
 
-   <p>
-    +10 and streak bonus
+
+   <p class="small">
+    Check in once each day and grow your streak.
    </p>
+
 
    <br>
 
@@ -2116,15 +3214,16 @@ sub{
 
 
   <div
-   class="sticker card"
-   style="text-align:center">
+   class="sticker card tap-card">
+
 
    <h3>
     🎮 Splash Tap
    </h3>
 
-   <p>
-    Tap Fiji 10 times for +5 (5 plays/day)
+
+   <p class="small">
+    Tap Fiji 10 times for +5 points.
    </p>
 
 
@@ -2132,42 +3231,45 @@ sub{
     id="pad"
     src="fiji.png"
     alt="Tap Fiji"
-    onclick="tap()"
     draggable="false"
+    onclick="tap()"
    >
 
 
-   <div class="bar">
-    <i id="tb"></i>
+   <div class="progress">
+
+    <i id="tb">
+    </i>
+
    </div>
+
 
   </div>
 
 
   <div class="sticker card">
 
+
    <h3>
     🤝 Referral link
    </h3>
 
 
-   <p>
-    +50 for every friend who joins
+   <p class="small">
+    Share your Fiji invite link.
    </p>
 
 
    <input
     id="ref"
     readonly
+    placeholder="Connect wallet first"
    >
 
 
    <button
     class="btn sm alt"
-    onclick="
-     navigator.clipboard.writeText($('ref').value);
-     toast('Copied!')
-    ">
+    onclick="copyReferral()">
 
     Copy link
 
@@ -2175,12 +3277,14 @@ sub{
 
   </div>
 
+
  </div>
+
 
 </section>
 
 
-<!-- ========================================================
+<!-- =========================================================
      TRADE PAD
 ========================================================= -->
 
@@ -2188,250 +3292,124 @@ sub{
  class="pg"
  id="trade">
 
- <div class="tag">
-  fiji trade pad
- </div>
+
+ <!-- HEADER -->
+
+ <div class="trade-head">
 
 
- <h2>
-  Find it. Watch it. Trade it.
- </h2>
+  <div class="trade-title">
 
 
- <div class="trade-notice">
-
-  ⚡ <b>Trade Pad</b> is Fiji's all-in-one market workspace.
-  Discover tokens, inspect markets, view your wallet,
-  manage your watchlist and prepare trades from the same tab.
-  Actual transaction execution remains disabled in this version.
-
- </div>
+   <div class="tag" style="margin-top:0">
+    solana trade pad
+   </div>
 
 
- <!-- ================= MARKET ================= -->
-
- <div class="tag" style="margin-top:28px">
-  fiji market
- </div>
+   <h1>
+    Find it. Check it. Trade it.
+   </h1>
 
 
- <div class="mk-live small">
+   <p class="small">
+    Live discovery for New, Trending, Bonding and Migrated Solana tokens.
+   </p>
 
-  <span class="live">
+  </div>
 
-   <i></i>
 
-   <span id="mkAgo">
-    loading…
+  <div class="trade-head-wallet">
+
+   <span>
+    ◎
    </span>
 
-  </span>
+   <b id="tradeSolBalance">
+    —
+   </b>
 
-
-  <button
-   class="btn sm alt"
-   onclick="refreshMarket(true)">
-
-   Refresh
-
-  </button>
-
- </div>
-
-
- <div
-  class="sticker card mk-hero"
-  id="mkHero">
-
-  <div class="mk-empty">
-   Fetching Fiji… 💧
-  </div>
-
- </div>
-
-
- <div
-  class="mk-majors"
-  id="mkMajors">
- </div>
-
-
- <div class="mk-bar">
-
-  <div
-   class="mk-pills"
-   id="mkChains">
-  </div>
-
- </div>
-
-
- <div class="mk-bar">
-
-  <div
-   class="mk-pills"
-   id="mkTf">
-  </div>
-
-
-  <div
-   class="mk-pills"
-   id="mkSort">
-  </div>
-
- </div>
-
-
- <p
-  class="small"
-  id="mkNote"
-  style="margin-bottom:12px">
- </p>
-
-
- <div
-  class="grid"
-  id="mkGrid">
- </div>
-
-
- <p
-  class="small"
-  style="margin-top:14px">
-
-  Market data from DexScreener, refreshed about every 30 seconds.
-  For fun and information only, not financial advice.
-  Meme coins can lose value fast, and look-alike tokens exist,
-  so always check the contract address.
-
- </p>
-
-
- <!-- ================= PORTFOLIO ================= -->
-
- <div
-  class="tag"
-  style="margin-top:34px">
-
-  my wallet
-
- </div>
-
-
- <h2 style="font-size:30px">
-  Your little corner of the pond.
- </h2>
-
-
- <div
-  class="sticker card trade-wallet-card">
-
-  <div class="trade-wallet-head">
-
-   <div>
-
-    <h3>
-     👛 Portfolio
-    </h3>
-
-
-    <div class="small">
-
-     Your wallet balances now live directly inside Trade Pad.
-
-    </div>
-
-   </div>
-
-
-   <div class="trade-wallet-balance">
-
-    <span>
-     ◎
-    </span>
-
-    <b id="tradeSolBalance">
-     —
-    </b>
-
-    <span>
-     SOL
-    </span>
-
-   </div>
-
-  </div>
-
-
-  <div
-   id="wstat"
-   class="trade-wallet-status">
-
-   <span class="pill">
-    Connect a Solana wallet to view your assets.
+   <span class="small">
+    SOL
    </span>
 
   </div>
 
 
-  <div
-   id="holder"
-   style="margin:12px 0">
-  </div>
+ </div>
 
 
-  <div class="trade-wallet-assets">
+ <!-- DISCOVERY NAV -->
 
-   <table id="assets"></table>
-
-  </div>
+ <div class="sticker discovery-card">
 
 
-  <div class="trade-wallet-actions">
+  <div class="discovery-row">
+
 
    <button
-    class="btn sm"
-    onclick="loadAssets()">
+    class="discovery-tab on"
+    data-mode="new"
+    onclick="tradeSetMode('new')">
 
-    Refresh assets
+    🆕 New
 
    </button>
 
 
    <button
-    class="btn sm alt"
-    onclick="connect()">
+    class="discovery-tab"
+    data-mode="trending"
+    onclick="tradeSetMode('trending')">
 
-    Connect / Change wallet
+    🔥 Trending
 
    </button>
+
+
+   <button
+    class="discovery-tab"
+    data-mode="bonding"
+    onclick="tradeSetMode('bonding')">
+
+    📈 Bonding
+
+   </button>
+
+
+   <button
+    class="discovery-tab"
+    data-mode="migrated"
+    onclick="tradeSetMode('migrated')">
+
+    🎓 Migrated
+
+   </button>
+
+
+   <button
+    class="discovery-tab"
+    data-mode="watchlist"
+    onclick="tradeSetMode('watchlist')">
+
+    ⭐ Watchlist
+
+   </button>
+
 
   </div>
 
  </div>
 
 
- <!-- ================= DISCOVERY ================= -->
+ <!-- SEARCH -->
 
- <div
-  class="tag"
-  style="margin-top:34px">
-
-  token discovery
-
- </div>
+ <div class="trade-search-row">
 
 
- <h2 style="font-size:30px">
-  What's moving?
- </h2>
+  <div class="search-wrap">
 
 
- <div class="trade-toolbar">
-
-  <div class="trade-search">
-
-   <span class="trade-search-icon">
+   <span class="search-icon">
     🔎
    </span>
 
@@ -2440,123 +3418,126 @@ sub{
     id="tradeSearch"
     placeholder="Search token, ticker or contract..."
     autocomplete="off"
-    oninput="tradeSearchChanged()"
    >
 
   </div>
 
 
-  <select
-   id="tradeChain"
-   class="trade-select"
-   onchange="tradeChainChanged()">
+  <button
+   class="btn"
+   id="tradeSearchBtn"
+   onclick="tradeRefresh(true)">
 
-   <option value="solana">
-    ◎ Solana
-   </option>
+   Refresh
 
-   <option value="ethereum">
-    ⟠ Ethereum
-   </option>
+  </button>
 
-   <option value="bsc">
-    🔶 BSC
-   </option>
-
-   <option value="base">
-    🔵 Base
-   </option>
-
-   <option value="all">
-    🌐 All Chains
-   </option>
-
-  </select>
 
  </div>
 
 
- <div class="trade-shell">
+ <!-- LIVE -->
+
+ <div class="live-strip">
 
 
-  <!-- ================= LEFT ================= -->
+  <span class="live">
 
-  <div class="trade-main">
+   <span class="live-dot">
+   </span>
 
-   <div class="trade-tabs">
+   <span id="tradeLiveText">
+    Connecting to live token feed…
+   </span>
 
-    <button
-     class="trade-tab on"
-     data-mode="trending"
-     onclick="setTradeMode('trending')">
-     🔥 Trending
-    </button>
+  </span>
 
 
-    <button
-     class="trade-tab"
-     data-mode="new"
-     onclick="setTradeMode('new')">
-     🆕 New
-    </button>
+  <span
+   class="small"
+   id="tradeUpdated">
+  </span>
+
+ </div>
 
 
-    <button
-     class="trade-tab"
-     data-mode="gainers"
-     onclick="setTradeMode('gainers')">
-     📈 Gainers
-    </button>
+ <!-- MAIN TRADE LAYOUT -->
+
+ <div class="trade-layout">
 
 
-    <button
-     class="trade-tab"
-     data-mode="volume"
-     onclick="setTradeMode('volume')">
-     📊 Volume
-    </button>
+  <!-- ======================================================
+       LEFT / DISCOVERY
+  ======================================================= -->
+
+  <div>
 
 
-    <button
-     class="trade-tab"
-     data-mode="watchlist"
-     onclick="setTradeMode('watchlist')">
-     ⭐ Watchlist
-    </button>
+   <div
+    id="tradeList"
+    class="feed">
+
+
+    <div class="empty-state">
+
+     <div class="empty-icon">
+      🌊
+     </div>
+
+
+     <h3>
+      Loading live Solana tokens
+     </h3>
+
+
+     <p class="small">
+      The Trade Pad engine will populate
+      this feed with current discoveries.
+     </p>
+
+    </div>
+
 
    </div>
 
 
-   <div class="sticker card trade-chart">
+   <!-- SELECTED TOKEN -->
 
-    <div class="trade-detail-head">
+   <div
+    class="sticker selected-card"
+    id="selectedTokenCard">
+
+
+    <div class="selected-head">
+
 
      <img
       id="tradeDetailIcon"
-      class="trade-detail-icon"
+      class="selected-icon"
       src="fiji.png"
       alt=""
      >
 
 
-     <div class="trade-detail-title">
+     <div class="selected-name">
+
 
       <h3 id="tradeDetailSymbol">
-       FIJI
+       Select a token
       </h3>
 
 
       <p id="tradeDetailName">
-       Select a token to inspect
+       Choose a token from the live feed.
       </p>
 
      </div>
 
 
      <button
+      class="star-btn"
       id="tradeStar"
-      class="trade-star"
-      onclick="toggleTradeWatch()">
+      onclick="tradeToggleWatch()">
 
       ☆
 
@@ -2565,12 +3546,13 @@ sub{
     </div>
 
 
-    <div class="trade-metrics">
+    <div class="metric-grid">
 
-     <div class="trade-metric">
+
+     <div class="metric">
 
       <b id="tradePrice">
-       –
+       —
       </b>
 
       <span>
@@ -2580,10 +3562,10 @@ sub{
      </div>
 
 
-     <div class="trade-metric">
+     <div class="metric">
 
       <b id="tradeMc">
-       –
+       —
       </b>
 
       <span>
@@ -2593,10 +3575,10 @@ sub{
      </div>
 
 
-     <div class="trade-metric">
+     <div class="metric">
 
       <b id="tradeLiq">
-       –
+       —
       </b>
 
       <span>
@@ -2606,10 +3588,10 @@ sub{
      </div>
 
 
-     <div class="trade-metric">
+     <div class="metric">
 
       <b id="tradeVol">
-       –
+       —
       </b>
 
       <span>
@@ -2618,63 +3600,69 @@ sub{
 
      </div>
 
+
     </div>
 
 
-    <div class="trade-chart-box">
-
-     <div class="trade-chart-grid"></div>
+    <div class="chart-box">
 
 
-     <div
-      class="trade-chart-label"
+     <div class="chart-label"
       id="tradeChartLabel">
 
-      FIJI · 24h
+      24h
 
      </div>
 
 
      <svg
-      class="trade-chart-line"
+      class="chart-line"
       viewBox="0 0 100 50"
       preserveAspectRatio="none"
       aria-hidden="true">
 
+
       <polyline
        id="tradeChartPath"
-       points="0,40 8,37 16,41 25,29 33,32 42,22 50,26 58,18 66,21 75,13 83,17 92,8 100,11"
+       points="0,38 8,35 16,39 25,30 34,32 43,23 51,27 60,18 68,22 76,14 85,17 92,9 100,12"
        fill="none"
        stroke="#2E8BFF"
        stroke-width="1.8"
        vector-effect="non-scaling-stroke"
-      />
+      >
+
+
+      </polyline>
+
 
      </svg>
 
 
      <div
-      class="trade-chart-empty"
       id="tradeChartEmpty"
-      style="display:none">
+      class="chart-placeholder">
 
-      Select a token to load its market chart.
+      Select a token to load its live market information.
 
      </div>
+
 
     </div>
 
 
-    <div class="trade-contract">
+    <div
+     class="mint-box"
+     style="margin-bottom:0">
+
 
      <code id="tradeContract">
-      Select a token
+      Contract address will appear here
      </code>
 
 
      <button
       class="btn sm alt"
-      onclick="copyTradeContract()">
+      onclick="tradeCopyContract()">
 
       Copy
 
@@ -2683,66 +3671,142 @@ sub{
     </div>
 
 
-    <br>
-
-
-    <button
-     class="btn sm alt"
-     onclick="openSelectedDex()">
-
-     📊 Open DexScreener
-
-    </button>
-
    </div>
 
 
-   <div
-    id="tradeList"
-    class="trade-list">
+   <!-- PORTFOLIO -->
 
-    <div class="sticker card mk-empty">
-     Loading tokens… 💧
+   <div class="sticker portfolio-card">
+
+
+    <div class="portfolio-head">
+
+
+     <div>
+
+      <h3>
+       👛 Your Portfolio
+      </h3>
+
+      <p class="small">
+       Balances available to the connected Solana wallet.
+      </p>
+
+     </div>
+
+
+     <div
+      class="portfolio-total"
+      id="portfolioSolTotal">
+
+      — SOL
+
+     </div>
+
     </div>
 
+
+    <div
+     class="portfolio-status"
+     id="portfolioStatus">
+
+     <span class="pill">
+      Wallet not connected
+     </span>
+
+    </div>
+
+
+    <div
+     class="holding-list"
+     id="portfolioList">
+
+
+     <div class="empty-state">
+
+      <div class="empty-icon">
+       👛
+      </div>
+
+      <p class="small">
+       Connect your wallet to see SOL,
+       FIJI and other Solana tokens.
+      </p>
+
+     </div>
+
+
+    </div>
+
+
+    <div style="margin-top:10px;display:flex;gap:7px;flex-wrap:wrap">
+
+
+     <button
+      class="btn sm"
+      onclick="loadAssets()">
+
+      Refresh balances
+
+     </button>
+
+
+     <button
+      class="btn sm alt"
+      onclick="connect()">
+
+      Connect / Change wallet
+
+     </button>
+
+
+    </div>
+
+
    </div>
+
 
   </div>
 
 
-  <!-- ================= RIGHT ================= -->
+  <!-- ======================================================
+       RIGHT / TRADE
+  ======================================================= -->
 
-  <aside class="trade-side">
+  <aside>
 
 
-   <!-- TRADE -->
+   <!-- SWAP -->
 
-   <div class="sticker card trade-side-card">
+   <div class="sticker swap-card">
 
-    <div class="trade-section-title">
+
+    <div class="swap-head">
+
 
      <h3>
-      💱 Trade
+      Swap
      </h3>
 
 
-     <span class="pill">
+     <span
+      class="balance-chip"
+      id="swapWalletBalance">
 
-      <span id="tradeSelectedChain">
-       Solana
-      </span>
+      ◎ — SOL
 
      </span>
 
     </div>
 
 
-    <div class="trade-action-tabs">
+    <div class="swap-tabs">
+
 
      <button
+      class="swap-tab on buy"
       id="buyTab"
-      class="trade-action-tab on buy"
-      onclick="setTradeAction('buy')">
+      onclick="tradeSetAction('buy')">
 
       BUY
 
@@ -2750,9 +3814,9 @@ sub{
 
 
      <button
+      class="swap-tab"
       id="sellTab"
-      class="trade-action-tab sell"
-      onclick="setTradeAction('sell')">
+      onclick="tradeSetAction('sell')">
 
       SELL
 
@@ -2761,33 +3825,136 @@ sub{
     </div>
 
 
-    <div class="trade-input-row">
+    <!-- PAY -->
 
-     <input
-      id="tradeAmount"
-      type="number"
-      min="0"
-      step="any"
-      placeholder="Amount"
-     >
+    <div class="swap-box">
 
 
-     <span
-      class="trade-unit"
-      id="tradeUnit">
+     <div class="swap-box-top">
 
-      SOL
 
-     </span>
+      <span class="swap-label">
+       You pay
+      </span>
+
+
+      <span
+       class="swap-label"
+       id="tradePayBalance">
+
+       Balance: —
+
+      </span>
+
+     </div>
+
+
+     <div class="swap-input-row">
+
+
+      <div class="swap-asset">
+
+
+       <span class="swap-dot">
+        ◎
+       </span>
+
+
+       <span id="tradePayAsset">
+        SOL
+       </span>
+
+      </div>
+
+
+      <input
+       id="tradeAmount"
+       type="number"
+       min="0"
+       step="any"
+       placeholder="0.00"
+       inputmode="decimal"
+      >
+
+      <span
+       class="unit"
+       id="tradeAmountUnit">
+
+       SOL
+
+      </span>
+
+     </div>
 
     </div>
 
 
-    <div class="trade-presets">
+    <button
+     class="swap-switch"
+     onclick="tradeFlipSide()">
+
+     ↕️
+
+    </button>
+
+
+    <!-- RECEIVE -->
+
+    <div class="swap-box">
+
+
+     <div class="swap-box-top">
+
+
+      <span class="swap-label">
+       You receive
+      </span>
+
+
+      <span class="swap-label">
+       Estimated
+      </span>
+
+     </div>
+
+
+     <div class="swap-input-row">
+
+
+      <div class="swap-asset">
+
+
+       <span class="swap-dot">
+        💧
+       </span>
+
+
+       <span id="tradeReceiveAsset">
+        TOKEN
+       </span>
+
+      </div>
+
+
+      <input
+       id="tradeReceiveAmount"
+       readonly
+       placeholder="—"
+      >
+
+     </div>
+
+    </div>
+
+
+    <!-- QUICK AMOUNTS -->
+
+    <div class="presets">
+
 
      <button
-      class="trade-preset"
-      onclick="setTradeAmount('25')">
+      class="preset"
+      onclick="tradeSetPreset(25)">
 
       25%
 
@@ -2795,8 +3962,8 @@ sub{
 
 
      <button
-      class="trade-preset"
-      onclick="setTradeAmount('50')">
+      class="preset"
+      onclick="tradeSetPreset(50)">
 
       50%
 
@@ -2804,8 +3971,8 @@ sub{
 
 
      <button
-      class="trade-preset"
-      onclick="setTradeAmount('75')">
+      class="preset"
+      onclick="tradeSetPreset(75)">
 
       75%
 
@@ -2813,12 +3980,13 @@ sub{
 
 
      <button
-      class="trade-preset"
-      onclick="setTradeAmount('100')">
+      class="preset"
+      onclick="tradeSetPreset(100)">
 
       MAX
 
      </button>
+
 
     </div>
 
@@ -2828,7 +3996,8 @@ sub{
     </label>
 
 
-    <select id="tradeSlippage">
+    <select
+     id="tradeSlippage">
 
      <option value="auto">
       Auto
@@ -2853,472 +4022,389 @@ sub{
     </select>
 
 
-    <div class="trade-summary">
+    <div class="swap-info">
 
-     <div class="trade-summary-row">
+
+     <div class="swap-info-row">
 
       <span>
        Selected token
       </span>
 
       <b id="summaryToken">
-       FIJI
+       —
       </b>
 
      </div>
 
 
-     <div class="trade-summary-row">
+     <div class="swap-info-row">
 
       <span>
        Liquidity
       </span>
 
       <b id="summaryLiq">
-       –
+       —
       </b>
 
      </div>
 
 
-     <div class="trade-summary-row">
+     <div class="swap-info-row">
 
       <span>
-       Price
+       Price impact
       </span>
 
-      <b id="summaryPrice">
-       –
+      <b id="summaryImpact">
+       —
       </b>
 
      </div>
 
 
-     <div class="trade-summary-row">
+     <div class="swap-info-row">
 
       <span>
-       Execution
+       Route
       </span>
 
-      <b>
-       Coming soon
+      <b id="summaryRoute">
+       —
       </b>
 
      </div>
+
+
+     <div class="swap-info-row">
+
+      <span>
+       Network fee
+      </span>
+
+      <b id="summaryNetworkFee">
+       —
+      </b>
+
+     </div>
+
+
+    </div>
+
+
+    <!-- FUTURE FEE DISPLAY -->
+
+    <div
+     class="trade-fee-note"
+     id="tradeFeeNote">
+
+     FIJI platform fee will be shown here before a transaction is signed.
 
     </div>
 
 
     <button
-     class="btn trade-primary"
-     onclick="prepareTrade()">
+     class="btn full"
+     id="tradeExecuteButton"
+     onclick="tradeExecute()">
 
-     🔒 Connect / Prepare Trade
+     Select a token
 
     </button>
 
 
     <p
      class="small"
-     style="margin-top:9px;text-align:center">
+     style="margin-top:8px;text-align:center">
 
-     No transaction will be sent in this version.
+     Your wallet will be asked to sign the transaction.
+     FIJI never needs your private key.
 
     </p>
+
 
    </div>
 
 
-   <!-- SNIPER -->
+   <!-- SECURITY / ADVANCED -->
 
-   <div class="sticker card trade-side-card sniper-card">
-
-    <div class="trade-section-title">
-
-     <h3>
-      ⚡ Sniper Mode
-     </h3>
+   <div class="sticker advanced-card">
 
 
-     <span
-      class="pill"
-      id="sniperState">
-
-      OFF
-
-     </span>
-
-    </div>
+    <details open>
 
 
-    <div class="sniper-status">
+     <summary>
 
-     <span
-      class="sniper-dot"
-      id="sniperDot">
-     </span>
+      🛡 Token Check
 
+      <span>
+       ＋
+      </span>
 
-     <span
-      class="small"
-      id="sniperText">
-
-      Ready to configure
-
-     </span>
-
-    </div>
+     </summary>
 
 
-    <label class="small">
-     Target contract
-    </label>
+     <div class="advanced-content">
 
 
-    <input
-     id="sniperContract"
-     placeholder="Token contract address"
-    >
+      <div class="swap-info">
 
 
-    <div class="sniper-grid">
+       <div class="swap-info-row">
 
-     <div>
+        <span>
+         Contract
+        </span>
 
-      <label class="small">
-       Amount
-      </label>
+        <b id="securityAddress">
+         —
+        </b>
+
+       </div>
+
+
+       <div class="swap-info-row">
+
+        <span>
+         Token age
+        </span>
+
+        <b id="securityAge">
+         —
+        </b>
+
+       </div>
+
+
+       <div class="swap-info-row">
+
+        <span>
+         Liquidity
+        </span>
+
+        <b id="securityLiq">
+         —
+        </b>
+
+       </div>
+
+
+       <div class="swap-info-row">
+
+        <span>
+         DEX
+        </span>
+
+        <b id="securityDex">
+         —
+        </b>
+
+       </div>
+
+
+       <div class="swap-info-row">
+
+        <span>
+         Status
+        </span>
+
+        <b id="securityStatus">
+         Not checked
+        </b>
+
+       </div>
+
+
+      </div>
+
+
+      <p class="small">
+
+       Security information is informational only.
+       No automated check can guarantee a token is safe.
+
+      </p>
+
+
+     </div>
+
+    </details>
+
+
+    <details>
+
+
+     <summary>
+
+      ⚡ Sniper / Advanced
+
+      <span>
+       ＋
+      </span>
+
+     </summary>
+
+
+     <div class="advanced-content">
+
+
+      <p class="small">
+
+       Advanced automated execution will be added after the core
+       Trade Pad and manual swap flow are fully tested.
+
+      </p>
+
+
+      <br>
 
 
       <input
-       id="sniperAmount"
-       placeholder="0.10"
+       id="sniperContract"
+       placeholder="Target token contract"
       >
 
-     </div>
 
+      <div
+       style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
 
-     <div>
+       <input
+        id="sniperAmount"
+        placeholder="0.10 SOL"
+       >
 
-      <label class="small">
-       Max slippage
-      </label>
 
+       <select id="sniperSlippage">
 
-      <select id="sniperSlippage">
+        <option>
+         Auto
+        </option>
 
-       <option>
-        Auto
-       </option>
+        <option>
+         3%
+        </option>
 
-       <option>
-        3%
-       </option>
+        <option>
+         5%
+        </option>
 
-       <option>
-        5%
-       </option>
+        <option>
+         10%
+        </option>
 
-       <option>
-        10%
-       </option>
-
-      </select>
-
-     </div>
-
-    </div>
-
-
-    <div class="trade-check">
-
-     <input
-      type="checkbox"
-      id="sniperLiq"
-      checked
-     >
-
-     <label for="sniperLiq">
-      Check minimum liquidity
-     </label>
-
-    </div>
-
-
-    <div class="trade-check">
-
-     <input
-      type="checkbox"
-      id="sniperAge"
-      checked
-     >
-
-     <label for="sniperAge">
-      Check token age
-     </label>
-
-    </div>
-
-
-    <div class="trade-check">
-
-     <input
-      type="checkbox"
-      id="sniperSecurity"
-      checked
-     >
-
-     <label for="sniperSecurity">
-      Run security checks
-     </label>
-
-    </div>
-
-
-    <div class="trade-check">
-
-     <input
-      type="checkbox"
-      id="sniperHolders"
-      checked
-     >
-
-     <label for="sniperHolders">
-      Check holder concentration
-     </label>
-
-    </div>
-
-
-    <button
-     class="btn trade-primary"
-     id="sniperButton"
-     onclick="toggleSniper()">
-
-     ⚡ Arm Sniper
-
-    </button>
-
-
-    <p
-     class="small"
-     style="margin-top:9px">
-
-     All Chains mode will monitor supported chains together.
-     Actual automated execution will be added later.
-
-    </p>
-
-   </div>
-
-
-   <!-- WATCHLIST -->
-
-   <div class="sticker card trade-side-card">
-
-    <div class="trade-section-title">
-
-     <h3>
-      ⭐ Watchlist
-     </h3>
-
-
-     <button
-      class="btn sm alt"
-      onclick="setTradeMode('watchlist')">
-
-      View
-
-     </button>
-
-    </div>
-
-
-    <div id="tradeWatchPreview">
-
-     <div class="watch-empty">
-      No tokens in your watchlist yet.
-     </div>
-
-    </div>
-
-   </div>
-
-
-   <!-- ACTIVITY -->
-
-   <div class="sticker card trade-side-card">
-
-    <div class="trade-section-title">
-
-     <h3>
-      📡 Live Activity
-     </h3>
-
-
-     <span class="live">
-      <i></i>
-      live
-     </span>
-
-    </div>
-
-
-    <div
-     id="tradeActivity"
-     class="activity">
-
-     <div class="activity-row">
-
-      <span class="activity-side buy"></span>
-
-
-      <div class="activity-info">
-
-       <b>
-        BUY · FIJI
-       </b>
-
-       <span>
-        Solana · just now
-       </span>
+       </select>
 
       </div>
 
 
-      <span class="activity-amount">
-       —
-      </span>
+      <div
+       style="display:flex;align-items:center;gap:7px;margin:5px 0">
 
-     </div>
+       <input
+        type="checkbox"
+        id="sniperLiq"
+        checked
+        style="width:auto;margin:0"
+       >
 
+       <label
+        for="sniperLiq"
+        class="small">
 
-     <div class="activity-row">
+        Check minimum liquidity
 
-      <span class="activity-side sell"></span>
-
-
-      <div class="activity-info">
-
-       <b>
-        SELL · waiting
-       </b>
-
-       <span>
-        Live trades will appear here
-       </span>
+       </label>
 
       </div>
 
 
-      <span class="activity-amount">
-       —
-      </span>
+      <button
+       class="btn alt full"
+       id="sniperButton"
+       onclick="tradeToggleSniper()">
+
+       ⚡ Arm Sniper
+
+      </button>
+
+
+      <p
+       class="small"
+       style="margin-top:8px">
+
+       Monitor-only until the execution system is enabled.
+
+      </p>
+
 
      </div>
 
-    </div>
+    </details>
+
+
+    <details>
+
+
+     <summary>
+
+      📡 Activity
+
+      <span>
+       ＋
+      </span>
+
+     </summary>
+
+
+     <div class="advanced-content">
+
+
+      <div
+       class="activity-list"
+       id="tradeActivity">
+
+       <div class="empty-state">
+
+        <div class="empty-icon">
+         📡
+        </div>
+
+        <p class="small">
+         Live activity will appear here.
+        </p>
+
+       </div>
+
+      </div>
+
+
+     </div>
+
+    </details>
+
 
    </div>
 
-
-   <!-- SECURITY -->
-
-   <div class="sticker card trade-side-card">
-
-    <div class="trade-section-title">
-
-     <h3>
-      🛡️ Token Check
-     </h3>
-
-    </div>
-
-
-    <table>
-
-     <tr>
-      <td>
-       Liquidity
-      </td>
-
-      <td id="securityLiq">
-       –
-      </td>
-     </tr>
-
-
-     <tr>
-      <td>
-       Token age
-      </td>
-
-      <td id="securityAge">
-       –
-      </td>
-     </tr>
-
-
-     <tr>
-      <td>
-       Pair
-      </td>
-
-      <td id="securityPair">
-       –
-      </td>
-     </tr>
-
-
-     <tr>
-      <td>
-       DEX
-      </td>
-
-      <td id="securityDex">
-       –
-      </td>
-     </tr>
-
-
-     <tr>
-      <td>
-       Contract
-      </td>
-
-      <td id="securityAddress">
-       –
-      </td>
-     </tr>
-
-    </table>
-
-
-    <p
-     class="small"
-     style="margin-top:9px">
-
-     These are informational market signals,
-     not a guarantee that a token is safe.
-
-    </p>
-
-   </div>
 
   </aside>
 
+
  </div>
+
 
 </section>
 
 
-<!-- ========================================================
+<!-- =========================================================
      BOARD
 ========================================================= -->
 
 <section
  class="pg"
  id="board">
+
 
  <div class="tag">
   leaderboard
@@ -3330,11 +4416,18 @@ sub{
  </h2>
 
 
- <div class="sticker card">
+ <div class="sticker card lb-wrap">
 
-  <table id="lb"></table>
+
+  <table
+   id="lb"
+   class="lb-table">
+
+  </table>
+
 
  </div>
+
 
 </section>
 
@@ -3342,10 +4435,12 @@ sub{
 </main>
 
 
-<footer class="small">
+<footer
+ class="small"
+ style="text-align:center;padding:20px">
 
- Fiji is a community character for entertainment.
- Not financial advice. © 2026 Fiji.
+ Fiji is a community character and interface.
+ Crypto assets are risky. © 2026 Fiji.
 
 </footer>
 
@@ -3353,8 +4448,8 @@ sub{
 <div id="toast"></div>
 
 
-<!-- ========================================================
-     LIBRARIES
+<!-- =========================================================
+     CORE LIBRARIES
 ========================================================= -->
 
 <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
@@ -3365,7 +4460,7 @@ sub{
 <script>
 
 /* =========================================================
-   CONFIG
+   FIJI CORE CONFIG
 ========================================================= */
 
 const CFG={
@@ -3404,7 +4499,7 @@ try{
 }catch(e){
 
  console.warn(
-  'Supabase not configured yet',
+  'Supabase initialization failed',
   e
  );
 
@@ -3413,95 +4508,149 @@ try{
 
 const conn=
  new solanaWeb3.Connection(
-  CFG.RPC
+  CFG.RPC,
+  'confirmed'
  );
 
 
-const TOKEN=
+const TOKEN_PROGRAM=
  'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
 
 
-const TOKEN22=
+const TOKEN_2022_PROGRAM=
  'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
 
 
 let wallet=null;
 
+let currentWalletProvider=null;
+
 let taps=0;
 
-let cur=null;
+let tapBusy=false;
 
 
 /* =========================================================
-   NAVIGATION
+   EXPOSE CORE TO FUTURE TRADEPAD.JS
+========================================================= */
+
+window.FIJI_CORE={
+
+ CFG,
+
+ $,
+
+ getWallet:()=>wallet,
+
+ getProvider:()=>currentWalletProvider,
+
+ getConnection:()=>conn,
+
+ getSupabase:()=>db,
+
+ loadAssets,
+
+ toast,
+
+ go
+
+};
+
+
+/* =========================================================
+   NAV
 ========================================================= */
 
 const pages=[
+
  'home',
+
  'wallet',
+
  'earn',
+
  'trade',
+
  'board'
+
 ];
 
 
-const ico={
+const icons={
+
  home:'🏠',
+
  wallet:'👛',
+
  earn:'⭐',
+
  trade:'⚡',
+
  board:'🏆'
+
 };
 
 
 $('links').innerHTML=
- pages
-  .map(p=>`
+ pages.map(
+  p=>`
 
-   <a
+   <button
+    class="nav-link"
     data-p="${p}"
     onclick="go('${p}')">
 
     <span class="ic">
-     ${ico[p]}
+     ${icons[p]}
     </span>
 
     <span>
      ${
       p==='trade'
-       ?'Trade Pad'
+       ?'Trade'
        :p[0].toUpperCase()+p.slice(1)
      }
     </span>
 
-   </a>
+   </button>
 
-  `)
-  .join('');
+  `
+ )
+ .join('');
 
 
 function go(p){
 
- pages.forEach(x=>{
+ if(
+  !pages.includes(p)
+ )
+  return;
 
-  $(x).classList.toggle(
-   'on',
-   x===p
-  );
 
- });
+ pages.forEach(
+  x=>{
+
+   $(x).classList.toggle(
+    'on',
+    x===p
+   );
+
+  }
+ );
 
 
  document
-  .querySelectorAll('.nav a')
-  .forEach(a=>{
+  .querySelectorAll('.nav-link')
+  .forEach(
+   a=>{
 
-   a.classList.toggle(
-    'on',
-    a.dataset.p===p
-   );
+    a.classList.toggle(
+     'on',
+     a.dataset.p===p
+    );
 
-  });
+   }
+  );
 
 
  window.scrollTo({
@@ -3510,21 +4659,37 @@ function go(p){
  });
 
 
- if(p==='board')
+ /*
+  Future tradepad.js will expose:
+  FIJI_TRADE.start()
+  FIJI_TRADE.stop()
+ */
+
+ if(
+  p==='trade'&&
+  window.FIJI_TRADE?.start
+ ){
+
+  window.FIJI_TRADE.start();
+
+ }
+
+
+ if(
+  p!=='trade'&&
+  window.FIJI_TRADE?.stop
+ ){
+
+  window.FIJI_TRADE.stop();
+
+ }
+
+
+ if(
+  p==='board'
+ ){
+
   loadBoard();
-
-
- if(p==='trade'){
-
-  loadAssets();
-
-  startMarket();
-
-  startTradePad();
-
- }else{
-
-  stopMarket();
 
  }
 
@@ -3532,54 +4697,17 @@ function go(p){
 
 
 /* =========================================================
-   FIJI VOICE
+   TOAST
 ========================================================= */
 
-const lines=[
-
- "you opened this app to check your points. cute.",
-
- "have some water. then check in.",
-
- "drip, drip. one more meme, then nap.",
-
- "the roadmap is simple: be fuzzy, splash around, nap.",
-
- "you don't need a chart. you need a snack and a friend."
-
-];
-
-
-let li=0;
-
-
-function say(){
-
- $('line').textContent=
-  '“'+
-  lines[
-   li++%lines.length
-  ]+
-  '”';
-
-}
-
-
-say();
-
-
-/* =========================================================
-   HELPERS
-========================================================= */
-
-function toast(m){
+function toast(message){
 
  const t=
   $('toast');
 
 
  t.textContent=
-  m;
+  String(message||'');
 
 
  t.style.display=
@@ -3602,62 +4730,221 @@ function toast(m){
 }
 
 
+/* =========================================================
+   HELPERS
+========================================================= */
+
 const short=
- a=>
-  String(a||'').slice(0,4)+
-  '…'+
-  String(a||'').slice(-4);
+ value=>{
+
+  const s=
+   String(value||'');
+
+  if(
+   s.length<=10
+  )
+   return s;
+
+  return(
+   s.slice(0,4)+
+   '…'+
+   s.slice(-4)
+  );
+
+};
 
 
 const esc=
- s=>
+ value=>
   String(
-   s==null?'':s
+   value==null?'':value
   )
   .replace(
    /[&<>"]/g,
    c=>({
+
     '&':'&amp;',
     '<':'&lt;',
     '>':'&gt;',
     '"':'&quot;'
+
    }[c])
   );
 
 
-function copyMint(){
+const number=
+ value=>{
 
- if(
-  navigator.clipboard
- ){
+  const n=
+   Number(value);
 
-  navigator.clipboard.writeText(
-   CFG.FIJI_MINT
+  return isFinite(n)
+   ?n
+   :null;
+
+};
+
+
+/* =========================================================
+   FIJI VOICE
+========================================================= */
+
+const lines=[
+
+ "you opened the Trade Pad. nice choice.",
+
+ "new tokens move fast. keep your eyes open.",
+
+ "check the contract before you chase the splash.",
+
+ "find it. check it. then decide.",
+
+ "drink some water. then check the chart."
+
+];
+
+
+let lineIndex=0;
+
+
+function say(){
+
+ $('line').textContent=
+  '“'+
+  lines[
+   lineIndex++%
+   lines.length
+  ]+
+  '”';
+
+}
+
+
+say();
+
+
+/* =========================================================
+   COPY
+========================================================= */
+
+async function safeCopy(text){
+
+ try{
+
+  await navigator.clipboard.writeText(
+   String(text||'')
   );
 
+  return true;
+
+ }catch(e){
+
+  try{
+
+   const ta=
+    document.createElement(
+     'textarea'
+    );
+
+   ta.value=
+    String(text||'');
+
+   ta.style.position=
+    'fixed';
+
+   ta.style.opacity=
+    '0';
+
+   document.body.appendChild(ta);
+
+   ta.select();
+
+   document.execCommand(
+    'copy'
+   );
+
+   ta.remove();
+
+   return true;
+
+  }catch(x){
+
+   return false;
+
+  }
+
  }
+
+}
+
+
+function copyMint(){
+
+ safeCopy(
+  CFG.FIJI_MINT
+ );
 
 
  toast(
   'Contract copied 💧'
  );
 
+}
+
+
+function copyReferral(){
+
+ const input=
+  $('ref');
+
+
+ if(
+  !input.value
+ ){
+
+  return toast(
+   'Connect your wallet first'
+  );
+
+ }
+
+
+ safeCopy(
+  input.value
+ );
+
+
+ toast(
+  'Referral link copied 🤝'
+ );
 
 }
 
 
-function setProfile(p){
+/* =========================================================
+   PROFILE
+========================================================= */
 
- if(!p)
+function setProfile(profile){
+
+ if(
+  !profile
+ )
   return;
 
 
  $('spts').textContent=
-  p.points??0;
+  profile.points??0;
 
 
  $('streak').textContent=
-  p.streak??0;
+  profile.streak??0;
+
+
+ $('rank').textContent=
+  profile.points>=1000
+   ?'Active'
+   :'Member';
 
 
  $('ref').value=
@@ -3665,7 +4952,7 @@ function setProfile(p){
   location.pathname+
   '?ref='+
   (
-   p.ref_code||
+   profile.ref_code||
    ''
   );
 
@@ -3673,26 +4960,40 @@ function setProfile(p){
 
 
 /* =========================================================
-   HEADER / WALLET BALANCE
+   HEADER BALANCE
 ========================================================= */
 
-function setHeaderBalance(value){
+function setSolBalance(value){
 
  const n=
   Number(value);
 
 
- if(!isFinite(n)){
+ if(
+  !isFinite(n)
+ ){
 
   $('headerSolBalance').textContent=
    '—';
+
+  $('tradeSolBalance').textContent=
+   '—';
+
+  $('portfolioSolTotal').textContent=
+   '— SOL';
+
+  $('swapWalletBalance').textContent=
+   '◎ — SOL';
+
+  $('tradePayBalance').textContent=
+   'Balance: —';
 
   return;
 
  }
 
 
- $('headerSolBalance').textContent=
+ const formatted=
   n.toLocaleString(
    undefined,
    {
@@ -3701,48 +5002,39 @@ function setHeaderBalance(value){
    }
   );
 
-}
 
-
-function resetWalletUI(){
-
- setHeaderBalance(null);
+ $('headerSolBalance').textContent=
+  formatted;
 
 
  $('tradeSolBalance').textContent=
-  '—';
+  formatted;
 
 
- $('wstat').innerHTML=`
-
-  <span class="pill">
-   Connect a Solana wallet to view your assets.
-  </span>
-
- `;
+ $('portfolioSolTotal').textContent=
+  formatted+
+  ' SOL';
 
 
- $('holder').innerHTML='';
-
- $('assets').innerHTML='';
-
-
- TP.watch=[];
-
- renderWatchPreview();
+ $('swapWalletBalance').textContent=
+  '◎ '+
+  formatted+
+  ' SOL';
 
 
- if(TP.mode==='watchlist')
-  renderTradeList();
+ $('tradePayBalance').textContent=
+  'Balance: '+
+  formatted+
+  ' SOL';
 
 }
 
 
 /* =========================================================
-   WALLET DETECTION
+   WALLET STANDARD REGISTRATION
 ========================================================= */
 
-const WS=[];
+const standardWallets=[];
 
 
 (function(){
@@ -3751,15 +5043,20 @@ const WS=[];
 
   register:(...wallets)=>{
 
-   wallets.forEach(w=>{
+   wallets.forEach(
+    w=>{
 
-    if(
-     w&&
-     !WS.includes(w)
-    )
-     WS.push(w);
+     if(
+      w&&
+      !standardWallets.includes(w)
+     ){
 
-   });
+      standardWallets.push(w);
+
+     }
+
+    }
+   );
 
 
    return()=>{};
@@ -3773,13 +5070,15 @@ const WS=[];
 
   window.addEventListener(
    'wallet-standard:register-wallet',
-   e=>{
+   event=>{
 
     try{
 
-     e.detail(api);
+     event.detail(
+      api
+     );
 
-    }catch(x){}
+    }catch(e){}
 
    }
   );
@@ -3790,12 +5089,14 @@ const WS=[];
  try{
 
   window.dispatchEvent(
+
    new CustomEvent(
     'wallet-standard:app-ready',
     {
      detail:api
     }
    )
+
   );
 
  }catch(e){}
@@ -3803,33 +5104,36 @@ const WS=[];
 })();
 
 
-function legacyList(){
+function legacyWallets(){
 
  const w=
   window;
 
 
- const out=[];
+ const result=[];
 
  const seen=
   new Set();
 
 
- const add=(name,p)=>{
+ const add=(name,provider)=>{
 
   if(
-   !p||
-   seen.has(p)
+   !provider||
+   seen.has(provider)
   )
    return;
 
 
-  seen.add(p);
+  seen.add(provider);
 
 
-  out.push({
+  result.push({
+
    name,
-   legacy:p
+
+   legacy:provider
+
   });
 
  };
@@ -3867,7 +5171,7 @@ function legacyList(){
   !seen.has(generic)
  ){
 
-  const name=
+  add(
 
    generic.isPhantom
     ?'Phantom'
@@ -3878,88 +5182,90 @@ function legacyList(){
    :generic.isSolflare
     ?'Solflare'
 
-   :'Solana Wallet';
+   :'Solana Wallet',
 
-
-  add(
-   name,
    generic
+
   );
 
  }
 
 
- return out;
+ return result;
 
 }
 
 
-function standardList(){
+function standardSolanaWallets(){
 
- const out=[];
+ const result=[];
 
  const seen=
   new Set();
 
 
- for(
-  const x of WS
- ){
+ standardWallets.forEach(
+  x=>{
 
-  if(
-   !x||
-   !x.features?.['standard:connect']
-  )
-   continue;
+   if(
+    !x||
+    !x.features?.[
+     'standard:connect'
+    ]
+   )
+    return;
 
 
-  if(
-   !(x.chains||[])
+   const solana=
+    (x.chains||[])
     .some(
-     c=>
-      String(c)
-       .startsWith('solana:')
-    )
-  )
-   continue;
+     chain=>
+      String(chain)
+       .startsWith(
+        'solana:'
+       )
+    );
 
 
-  const name=
-   String(
-    x.name||
-    'Solana Wallet'
-   );
+   if(!solana)
+    return;
 
 
-  const key=
-   name.toLowerCase();
+   const name=
+    String(
+     x.name||
+     'Solana Wallet'
+    );
 
 
-  if(
-   seen.has(key)
-  )
-   continue;
+   const key=
+    name.toLowerCase();
 
 
-  seen.add(key);
+   if(
+    seen.has(key)
+   )
+    return;
 
 
-  out.push({
-
-   name,
-
-   icon:
-    x.icon,
-
-   std:
-    x
-
-  });
-
- }
+   seen.add(key);
 
 
- return out;
+   result.push({
+
+    name,
+
+    icon:x.icon,
+
+    standard:x
+
+   });
+
+  }
+ );
+
+
+ return result;
 
 }
 
@@ -3967,11 +5273,11 @@ function standardList(){
 function listWallets(){
 
  const legacy=
-  legacyList();
+  legacyWallets();
 
 
  const standard=
-  standardList();
+  standardSolanaWallets();
 
 
  const legacyNames=
@@ -3983,37 +5289,35 @@ function listWallets(){
   );
 
 
- const standardOnly=
+ return legacy.concat(
   standard.filter(
    x=>
     !legacyNames.has(
      x.name.toLowerCase()
     )
-  );
-
-
- return legacy.concat(
-  standardOnly
+  )
  );
 
 }
 
 
-function waitForWallets(ms=3000){
+function waitForWallets(
+ maxMs=3000
+){
 
  return new Promise(
   resolve=>{
 
-   const t0=
+   const started=
     Date.now();
-
-
-   let stable=0;
 
    let lastCount=-1;
 
+   let stableSince=
+    Date.now();
 
-   const iv=
+
+   const timer=
     setInterval(
      ()=>{
 
@@ -4028,7 +5332,7 @@ function waitForWallets(ms=3000){
        lastCount=
         list.length;
 
-       stable=
+       stableSince=
         Date.now();
 
       }
@@ -4037,17 +5341,19 @@ function waitForWallets(ms=3000){
       if(
 
        (
-        list.length&&
-        Date.now()-stable>350
+        list.length>0&&
+        Date.now()-stableSince>350
        )
 
        ||
 
-       Date.now()-t0>ms
+       Date.now()-started>=maxMs
 
       ){
 
-       clearInterval(iv);
+       clearInterval(
+        timer
+       );
 
        resolve(
         listWallets()
@@ -4065,331 +5371,180 @@ function waitForWallets(ms=3000){
 }
 
 
-async function connectWallet(o,opts){
-
- if(o.legacy){
-
-  const p=
-   o.legacy;
-
-
-  const r=
-   await p.connect(
-    opts?.silent
-     ?{
-       onlyIfTrusted:true
-      }
-     :undefined
-   );
-
-
-  p.on?.(
-   'disconnect',
-   ()=>{
-
-    wallet=null;
-
-    cur=null;
-
-    $('cbtn').textContent=
-     'Connect wallet';
-
-    resetWalletUI();
-
-   }
-  );
-
-
-  p.on?.(
-   'accountChanged',
-   pk=>{
-
-    if(!pk){
-
-     wallet=null;
-
-     cur=null;
-
-     $('cbtn').textContent=
-      'Connect wallet';
-
-     resetWalletUI();
-
-     return;
-
-    }
-
-
-    wallet=
-     pk.toString();
-
-
-    $('cbtn').textContent=
-     short(wallet)+' ✕';
-
-
-    loadAssets();
-
-    loadSupabaseWatchlist();
-
-   }
-  );
-
-
-  const pk=
-   r?.publicKey||
-   p.publicKey;
-
-
-  if(!pk)
-   throw new Error(
-    'Wallet connected but no public key was returned'
-   );
-
-
-  return{
-
-   addr:
-    pk.toString(),
-
-
-   off:async()=>{
-
-    try{
-
-     await p.disconnect?.();
-
-    }catch(e){}
-
-   }
-
-  };
-
- }
-
-
- const feature=
-  o.std?.features?.[
-   'standard:connect'
-  ];
-
-
- if(!feature)
-  throw new Error(
-   'This wallet does not support Solana connection'
-  );
-
-
- let r;
-
-
- if(opts?.silent){
-
-  try{
-
-   r=
-    await feature.connect({
-     silent:true
-    });
-
-  }catch(e){
-
-   r=
-    await feature.connect();
-
-  }
-
- }else{
-
-  r=
-   await feature.connect();
-
- }
-
-
- const a=
-  (
-   r?.accounts&&
-   r.accounts[0]
-  )||
-  o.std?.accounts?.[0];
-
-
- if(!a)
-  throw new Error(
-   'No account returned by wallet'
-  );
-
-
- return{
-
-  addr:
-   a.address,
-
-
-  off:async()=>{
-
-   try{
-
-    await o.std
-     ?.features?.[
-      'standard:disconnect'
-     ]
-     ?.disconnect();
-
-   }catch(e){}
-
-  }
-
- };
-
-}
-
-
-function pick(list){
+/* =========================================================
+   WALLET PICKER
+========================================================= */
+
+function chooseWallet(
+ list
+){
 
  return new Promise(
-  res=>{
+  resolve=>{
 
-   const d=
+   const overlay=
     document.createElement(
      'div'
     );
 
 
-   d.style.cssText=
-    'position:fixed;inset:0;background:rgba(18,48,92,.45);z-index:30;display:flex;align-items:center;justify-content:center;padding:20px';
+   overlay.className=
+    'modal';
 
 
-   d.innerHTML=`
+   const sheet=
+    document.createElement(
+     'div'
+    );
+
+
+   sheet.className=
+    'sticker card modal-sheet';
+
+
+   sheet.innerHTML=`
+
+    <h3>
+     Choose a wallet
+    </h3>
+
+    <p
+     class="small"
+     style="margin-top:4px">
+
+     Pick a Solana wallet available on this device.
+
+    </p>
 
     <div
-     class="sticker card"
-     style="max-width:360px;width:100%">
-
-     <h3>
-      Choose a wallet
-     </h3>
-
-
-     <div
-      style="font-size:13px;opacity:.75;margin-top:5px">
-
-      Connect with a Solana wallet available on your device.
-
-     </div>
-
-
-     <div
-      class="wl"
-      style="display:grid;gap:10px;margin-top:12px">
-     </div>
-
-
-     <br>
-
-
-     <button class="btn sm alt wx">
-      Cancel
-     </button>
+     class="wallet-choice-list"
+     style="display:grid;gap:9px;margin-top:13px">
 
     </div>
+
+    <br>
+
+    <button
+     class="btn sm alt"
+     id="walletCancel">
+
+     Cancel
+
+    </button>
 
    `;
 
 
-   document.body.appendChild(d);
+   overlay.appendChild(
+    sheet
+   );
 
 
-   const wl=
-    d.querySelector(
-     '.wl'
+   document.body.appendChild(
+    overlay
+   );
+
+
+   const listBox=
+    sheet.querySelector(
+     '.wallet-choice-list'
     );
 
 
-   list.forEach(o=>{
+   list.forEach(
+    item=>{
 
-    const b=
-     document.createElement(
-      'button'
+     const b=
+      document.createElement(
+       'button'
+      );
+
+
+     b.className=
+      'btn alt';
+
+
+     b.style.cssText=
+      'display:flex;align-items:center;justify-content:center;gap:9px';
+
+
+     if(item.icon){
+
+      const image=
+       new Image();
+
+
+      image.src=
+       item.icon;
+
+
+      image.alt='';
+
+
+      image.style.cssText=
+       'width:25px;height:25px;border-radius:6px;object-fit:contain';
+
+
+      b.appendChild(
+       image
+      );
+
+     }
+
+
+     b.appendChild(
+      document.createTextNode(
+       item.name
+      )
      );
 
 
-    b.className=
-     'btn alt';
+     b.onclick=()=>{
+
+      overlay.remove();
+
+      resolve(
+       item
+      );
+
+     };
 
 
-    b.style.cssText=
-     'display:flex;align-items:center;gap:10px;justify-content:center';
-
-
-    if(o.icon){
-
-     const i=
-      new Image();
-
-
-     i.src=
-      o.icon;
-
-
-     i.alt='';
-
-
-     i.style.cssText=
-      'width:26px;height:26px;border-radius:6px;object-fit:contain';
-
-
-     b.appendChild(i);
+     listBox.appendChild(
+      b
+     );
 
     }
-
-
-    b.appendChild(
-     document.createTextNode(
-      o.name
-     )
-    );
-
-
-    b.onclick=()=>{
-
-     d.remove();
-
-     res(o);
-
-    };
-
-
-    wl.appendChild(b);
-
-   });
+   );
 
 
    const cancel=()=>{
 
-    d.remove();
+    overlay.remove();
 
-    res(null);
+    resolve(null);
 
    };
 
 
-   d.querySelector(
-    '.wx'
-   )
-   .onclick=
-    cancel;
-
-
-   d.onclick=e=>{
-
-    if(
-     e.target===d
+   sheet
+    .querySelector(
+     '#walletCancel'
     )
-     cancel();
+    .onclick=
+     cancel;
 
-   };
+
+   overlay.onclick=
+    event=>{
+
+     if(
+      event.target===
+      overlay
+     )
+      cancel();
+
+    };
 
   }
  );
@@ -4398,54 +5553,251 @@ function pick(list){
 
 
 /* =========================================================
-   CONNECTED WALLET
+   CONNECT WALLET
 ========================================================= */
 
-async function afterConnect(o,r){
+async function connectProvider(
+ item,
+ options={}
+){
 
- wallet=
-  r.addr;
+ if(
+  item.legacy
+ ){
+
+  const provider=
+   item.legacy;
 
 
- cur={
-  off:r.off
- };
+  const response=
+   await provider.connect(
+    options.silent
+     ?{
+       onlyIfTrusted:true
+      }
+     :undefined
+   );
 
 
- try{
+  provider.on?.(
+   'disconnect',
+   ()=>{
 
-  localStorage.setItem(
-   'fiji_wallet',
-   o.name
+    wallet=null;
+
+    currentWalletProvider=
+     null;
+
+    $('cbtn').textContent=
+     'Connect wallet';
+
+    setSolBalance(
+     null
+    );
+
+    resetPortfolioUI();
+
+    if(
+     window.FIJI_TRADE?.walletChanged
+    ){
+
+     window.FIJI_TRADE.walletChanged(
+      null
+     );
+
+    }
+
+   }
   );
 
- }catch(e){}
+
+  provider.on?.(
+   'accountChanged',
+   async publicKey=>{
+
+    if(
+     !publicKey
+    ){
+
+     wallet=null;
+
+     currentWalletProvider=
+      null;
+
+     $('cbtn').textContent=
+      'Connect wallet';
+
+     setSolBalance(
+      null
+     );
+
+     resetPortfolioUI();
+
+     if(
+      window.FIJI_TRADE?.walletChanged
+     ){
+
+      window.FIJI_TRADE.walletChanged(
+       null
+      );
+
+     }
+
+     return;
+
+    }
 
 
- $('cbtn').textContent=
-  short(wallet)+' ✕';
+    wallet=
+     publicKey.toString();
 
 
- $('headerSolBalance').textContent=
-  '…';
+    currentWalletProvider=
+     provider;
 
 
- $('tradeSolBalance').textContent=
-  '…';
+    $('cbtn').textContent=
+     short(wallet)+
+     ' ✕';
 
 
- loadAssets();
+    await loadAssets();
 
- loadSupabaseWatchlist();
+    await loadProfile();
+
+    if(
+     window.FIJI_TRADE?.walletChanged
+    ){
+
+     window.FIJI_TRADE.walletChanged(
+      wallet
+     );
+
+    }
+
+   }
+  );
 
 
- if(!db){
+  const publicKey=
+   response?.publicKey||
+   provider.publicKey;
 
-  return toast(
-   'Wallet connected'
+
+  if(
+   !publicKey
+  ){
+
+   throw new Error(
+    'Wallet connected but no public key was returned'
+   );
+
+  }
+
+
+  return{
+
+   address:
+    publicKey.toString(),
+
+   provider,
+
+   standard:false
+
+  };
+
+ }
+
+
+ const feature=
+  item.standard
+   ?.features?.[
+    'standard:connect'
+   ];
+
+
+ if(
+  !feature
+ ){
+
+  throw new Error(
+   'Wallet does not support Solana connection'
   );
 
  }
+
+
+ let response;
+
+
+ if(
+  options.silent
+ ){
+
+  try{
+
+   response=
+    await feature.connect({
+     silent:true
+    });
+
+  }catch(e){
+
+   response=
+    await feature.connect();
+
+  }
+
+ }else{
+
+  response=
+   await feature.connect();
+
+ }
+
+
+ const account=
+  response?.accounts?.[0]||
+  item.standard?.accounts?.[0];
+
+
+ if(
+  !account
+ ){
+
+  throw new Error(
+   'No wallet account returned'
+  );
+
+ }
+
+
+ return{
+
+  address:
+   account.address,
+
+  provider:
+   item.standard,
+
+  standard:true
+
+ };
+
+}
+
+
+/* =========================================================
+   PROFILE LOAD
+========================================================= */
+
+async function loadProfile(){
+
+ if(
+  !wallet||
+  !db
+ )
+  return;
 
 
  try{
@@ -4472,28 +5824,106 @@ async function afterConnect(o,r){
    throw error;
 
 
-  setProfile(data);
-
-
-  toast(
-   'Wallet connected 💧'
+  setProfile(
+   data
   );
-
 
  }catch(e){
 
-  toast(
-   'Connected, but Supabase failed: '+
-   (
-    e.message||
-    e
-   )
+  console.warn(
+   'Profile load error',
+   e
   );
 
  }
 
+
 }
 
+
+async function afterWalletConnected(
+ item,
+ connected
+){
+
+ wallet=
+  connected.address;
+
+
+ currentWalletProvider=
+  connected.provider;
+
+
+ try{
+
+  localStorage.setItem(
+   'fiji_wallet',
+   item.name
+  );
+
+ }catch(e){}
+
+
+ $('cbtn').textContent=
+  short(wallet)+
+  ' ✕';
+
+
+ $('headerSolBalance').textContent=
+  '…';
+
+
+ $('tradeSolBalance').textContent=
+  '…';
+
+
+ $('portfolioSolTotal').textContent=
+  '… SOL';
+
+
+ $('swapWalletBalance').textContent=
+  '◎ … SOL';
+
+
+ $('portfolioStatus').innerHTML=`
+
+  <span class="pill g">
+   🟢 Connected
+  </span>
+
+  <span class="small">
+   ${short(wallet)}
+  </span>
+
+ `;
+
+
+ await loadAssets();
+
+ await loadProfile();
+
+
+ if(
+  window.FIJI_TRADE?.walletChanged
+ ){
+
+  window.FIJI_TRADE.walletChanged(
+   wallet
+  );
+
+ }
+
+
+ toast(
+  'Wallet connected 💧'
+ );
+
+}
+
+
+/* =========================================================
+   PUBLIC CONNECT FUNCTION
+========================================================= */
 
 async function connect(){
 
@@ -4501,14 +5931,22 @@ async function connect(){
 
   try{
 
-   await cur?.off();
+   if(
+    currentWalletProvider
+     ?.disconnect
+   ){
+
+    await currentWalletProvider.disconnect();
+
+   }
 
   }catch(e){}
 
 
   wallet=null;
 
-  cur=null;
+  currentWalletProvider=
+   null;
 
 
   try{
@@ -4524,49 +5962,83 @@ async function connect(){
    'Connect wallet';
 
 
-  resetWalletUI();
+  setSolBalance(
+   null
+  );
 
 
-  return toast(
+  resetPortfolioUI();
+
+
+  if(
+   window.FIJI_TRADE?.walletChanged
+  ){
+
+   window.FIJI_TRADE.walletChanged(
+    null
+   );
+
+  }
+
+
+  toast(
    'Disconnected'
   );
 
+
+  return;
+
  }
 
 
- const list=
+ const available=
   await waitForWallets();
 
 
- if(!list.length){
+ if(
+  !available.length
+ ){
 
-  return toast(
-   'No Solana wallet detected. Open Fiji in your wallet browser or enable your wallet extension, then try again.'
+  toast(
+   'No Solana wallet detected. Open Fiji in your wallet browser or enable your wallet extension.'
   );
+
+  return;
 
  }
 
 
- const o=
-  list.length===1
-   ?list[0]
-   :await pick(list);
+ const selected=
+  available.length===1
+   ?available[0]
+   :await chooseWallet(
+     available
+    );
 
 
- if(!o)
+ if(
+  !selected
+ )
   return;
 
 
  try{
 
-  await afterConnect(
-   o,
-   await connectWallet(o)
+  const connected=
+   await connectProvider(
+    selected
+   );
+
+
+  await afterWalletConnected(
+   selected,
+   connected
   );
+
 
  }catch(e){
 
-  const msg=
+  const message=
    e?.message||
    String(e||'');
 
@@ -4574,11 +6046,13 @@ async function connect(){
   toast(
 
    e?.code===4001||
-   /reject|denied|cancel/i.test(msg)
+   /reject|denied|cancel/i.test(
+    message
+   )
 
     ?'Connection request rejected'
 
-    :'Wallet error: '+msg
+    :'Wallet error: '+message
 
   );
 
@@ -4595,6 +6069,20 @@ window.addEventListener(
  'load',
  async()=>{
 
+  $('mint').textContent=
+   CFG.FIJI_MINT;
+
+
+  try{
+
+   localStorage.setItem(
+    'fiji_wallet_ready',
+    '1'
+   );
+
+  }catch(e){}
+
+
   let saved=null;
 
 
@@ -4608,70 +6096,122 @@ window.addEventListener(
   }catch(e){}
 
 
-  if(!saved)
-   return;
-
-
-  const o=
-   (
-    await waitForWallets()
-   )
-   .find(
-    x=>
-     x.name===saved
-   );
-
-
-  if(!o)
+  if(
+   !saved
+  )
    return;
 
 
   try{
 
-   await afterConnect(
-    o,
-    await connectWallet(
-     o,
+   const available=
+    await waitForWallets();
+
+
+   const selected=
+    available.find(
+     x=>
+      x.name===
+      saved
+    );
+
+
+   if(
+    !selected
+   )
+    return;
+
+
+   const connected=
+    await connectProvider(
+     selected,
      {
       silent:true
      }
-    )
+    );
+
+
+   await afterWalletConnected(
+    selected,
+    connected
    );
 
-  }catch(e){}
 
- }
-);
+  }catch(e){
+
+   console.warn(
+    'Auto reconnect unavailable',
+    e
+   );
+
+  }
+
+ });
 
 
 /* =========================================================
-   WALLET ASSETS
+   PORTFOLIO UI
 ========================================================= */
+
+function resetPortfolioUI(){
+
+ $('portfolioStatus').innerHTML=`
+
+  <span class="pill">
+   Wallet not connected
+  </span>
+
+ `;
+
+
+ $('portfolioList').innerHTML=`
+
+  <div class="empty-state">
+
+   <div class="empty-icon">
+    👛
+   </div>
+
+   <p class="small">
+    Connect your wallet to see your Solana assets.
+   </p>
+
+  </div>
+
+ `;
+
+
+ setSolBalance(
+  null
+ );
+
+}
+
 
 async function loadAssets(){
 
- if(!wallet){
+ if(
+  !wallet
+ ){
 
-  resetWalletUI();
+  resetPortfolioUI();
 
   return;
 
  }
 
 
- let pk;
+ let owner;
 
 
  try{
 
-  pk=
+  owner=
    new solanaWeb3.PublicKey(
     wallet
    );
 
  }catch(e){
-
-  resetWalletUI();
 
   return toast(
    'Invalid wallet address'
@@ -4683,32 +6223,34 @@ async function loadAssets(){
  try{
 
   const [
-   sol,
-   a,
-   b
+   solResult,
+   tokenResult,
+   token22Result
   ]=
    await Promise.all([
 
-    conn.getBalance(pk),
+    conn.getBalance(
+     owner
+    ),
 
 
     conn.getParsedTokenAccountsByOwner(
-     pk,
+     owner,
      {
       programId:
        new solanaWeb3.PublicKey(
-        TOKEN
+        TOKEN_PROGRAM
        )
      }
     ),
 
 
     conn.getParsedTokenAccountsByOwner(
-     pk,
+     owner,
      {
       programId:
        new solanaWeb3.PublicKey(
-        TOKEN22
+        TOKEN_2022_PROGRAM
        )
      }
     )
@@ -4716,49 +6258,16 @@ async function loadAssets(){
   ]);
 
 
-  const rows=[
+  const sol=
+   solResult/1e9;
 
-   ...a.value,
-   ...b.value
 
-  ]
-  .map(
-   x=>
-    x.account.data.parsed.info
-  )
-  .filter(
-   i=>
-    i.tokenAmount.uiAmount>0
+  setSolBalance(
+   sol
   );
 
 
-  const f=
-   rows.find(
-    i=>
-     i.mint===CFG.FIJI_MINT
-   );
-
-
-  const solBalance=
-   sol/1e9;
-
-
-  setHeaderBalance(
-   solBalance
-  );
-
-
-  $('tradeSolBalance').textContent=
-   solBalance.toLocaleString(
-    undefined,
-    {
-     minimumFractionDigits:4,
-     maximumFractionDigits:4
-    }
-   );
-
-
-  $('wstat').innerHTML=`
+  $('portfolioStatus').innerHTML=`
 
    <span class="pill g">
     🟢 Connected
@@ -4771,89 +6280,226 @@ async function loadAssets(){
   `;
 
 
-  $('holder').innerHTML=
+  const allAccounts=[
 
-   f
+   ...tokenResult.value,
 
-    ?`
+   ...token22Result.value
 
-     <span class="pill g">
-      💧 FIJI holder ·
-      ${f.tokenAmount.uiAmount.toLocaleString()}
-      FIJI
-     </span>
-
-    `
-
-    :`
-
-     <span class="pill">
-      No FIJI yet
-     </span>
-
-    `;
+  ];
 
 
-  $('assets').innerHTML=
+  const tokens=
+   allAccounts
 
-   '<tr><th>Asset</th><th>Balance</th></tr>'+
-
-   '<tr><td>◎ SOL</td><td>'+
-   solBalance.toFixed(4)+
-   '</td></tr>'+
-
-   rows
     .map(
-     i=>`
+     account=>
+      account.account
+       .data
+       .parsed
+       .info
+    )
 
-      <tr>
+    .filter(
+     info=>
+      Number(
+       info.tokenAmount?.uiAmount||0
+      )>0
+    );
 
-       <td>
-        ${
-         i.mint===CFG.FIJI_MINT
-          ?'💧 FIJI'
-          :short(i.mint)
-        }
-       </td>
 
-       <td>
-        ${
-         i.tokenAmount.uiAmount.toLocaleString()
-        }
-       </td>
+  const fiji=
+   tokens.find(
+    token=>
+     token.mint===
+     CFG.FIJI_MINT
+   );
 
-      </tr>
+
+  $('holder').innerHTML='';
+
+
+  if(
+   document.getElementById(
+    'holder'
+   )
+  ){
+
+   $('holder').innerHTML=
+    fiji
+
+     ?`
+
+      <span class="pill g">
+       💧 FIJI holder ·
+       ${Number(
+        fiji.tokenAmount.uiAmount
+       ).toLocaleString()}
+       FIJI
+      </span>
 
      `
-    )
-    .join('');
 
+     :`
+
+      <span class="pill">
+       No FIJI yet
+      </span>
+
+     `;
+
+  }
+
+
+  /*
+   Compact portfolio list.
+  */
+
+  const rows=[];
+
+
+  rows.push(`
+
+   <div class="holding">
+
+    <div class="holding-icon">
+     ◎
+    </div>
+
+    <div class="holding-name">
+
+     <b>
+      SOL
+     </b>
+
+     <span>
+      Solana
+     </span>
+
+    </div>
+
+    <div class="holding-amount">
+     ${sol.toFixed(4)}
+    </div>
+
+   </div>
+
+  `);
+
+
+  tokens
+   .slice(0,24)
+   .forEach(
+    info=>{
+
+     const isFiji=
+      info.mint===
+      CFG.FIJI_MINT;
+
+
+     rows.push(`
+
+      <div class="holding">
+
+       <div class="holding-icon">
+
+        ${
+         isFiji
+          ?'💧'
+          :'🪙'
+        }
+
+       </div>
+
+
+       <div class="holding-name">
+
+        <b>
+
+         ${
+          isFiji
+           ?'FIJI'
+           :short(info.mint)
+         }
+
+        </b>
+
+        <span>
+         ${short(info.mint)}
+        </span>
+
+       </div>
+
+
+       <div class="holding-amount">
+
+        ${
+         Number(
+          info.tokenAmount.uiAmount
+         )
+         .toLocaleString()
+        }
+
+       </div>
+
+      </div>
+
+     `);
+
+    }
+   );
+
+
+ $('portfolioList').innerHTML=
+  rows.join('');
+
+
+ if(
+  fiji
+ ){
 
   $('rank').textContent=
-   f
-    ?'Holder 🐰'
-    :'Visitor';
+   'Holder';
+
+ }else{
+
+  $('rank').textContent=
+   'Visitor';
+
+ }
 
 
- }catch(e){
+ /*
+  Notify future Trade Pad engine.
+ */
 
-  console.error(e);
+ if(
+  window.FIJI_TRADE?.portfolioUpdated
+ ){
+
+  window.FIJI_TRADE.portfolioUpdated({
+   sol,
+   tokens
+  });
+
+ }
 
 
-  setHeaderBalance(null);
+}catch(e){
+
+ console.error(
+  'Asset loading error',
+  e
+ );
 
 
-  $('tradeSolBalance').textContent=
-   '—';
-
-
-  toast(
-   'Could not load assets: '+
-   (
-    e.message||
-    e
-   )
-  );
+ toast(
+  'Could not load wallet balances: '+
+  (
+   e.message||
+   e
+  )
+ );
 
  }
 
@@ -4864,102 +6510,152 @@ async function loadAssets(){
    EARN
 ========================================================= */
 
-async function doEarn(t){
+async function doEarn(type){
 
- if(!wallet)
-  return toast(
+ if(
+  !wallet
+ ){
+
+  toast(
    'Connect your wallet first'
   );
 
+  return;
 
- if(!db)
-  return toast(
-   'Supabase not set up yet'
+ }
+
+
+ if(
+  !db
+ ){
+
+  toast(
+   'Supabase is unavailable'
+  );
+
+  return;
+
+ }
+
+
+ try{
+
+  const {
+   data,
+   error
+  }=
+   await db.rpc(
+    'fiji_earn',
+    {
+     p_wallet:
+      wallet,
+
+     p_type:
+      type
+    }
+   );
+
+
+  if(error)
+   throw error;
+
+
+  setProfile(
+   data
   );
 
 
- const {
-  data,
-  error
- }=
-  await db.rpc(
-   'fiji_earn',
-   {
-    p_wallet:
-     wallet,
-
-    p_type:
-     t
-   }
+  toast(
+   'Points earned ⭐'
   );
 
 
- if(error)
-  return toast(
-   error.message
+ }catch(e){
+
+  toast(
+   e.message||
+   String(e)
   );
 
-
- setProfile(data);
-
-
- toast(
-  'Points earned ⭐'
- );
+ }
 
 }
 
 
-let hurtOK=false;
+/* =========================================================
+   TAP GAME
+========================================================= */
+
+let hurtLoaded=false;
 
 
-const hurtImg=
+const hurtImage=
  new Image();
 
 
-hurtImg.onload=()=>{
- hurtOK=true;
+hurtImage.onload=()=>{
+ hurtLoaded=true;
 };
 
 
-hurtImg.src=
+hurtImage.src=
  'fiji-hurt.png';
 
 
 function tap(){
 
- if(!wallet)
-  return toast(
+ if(
+  !wallet
+ ){
+
+  toast(
    'Connect your wallet first'
   );
 
+  return;
 
- const p=
+ }
+
+
+ if(
+  tapBusy
+ )
+  return;
+
+
+ tapBusy=
+  true;
+
+
+ const pad=
   $('pad');
 
 
- p.classList.remove(
+ pad.classList.remove(
   'hurt'
  );
 
 
- void p.offsetWidth;
+ void pad.offsetWidth;
 
 
- p.classList.add(
+ pad.classList.add(
   'hurt'
  );
 
 
- if(hurtOK){
+ if(
+  hurtLoaded
+ ){
 
-  p.src=
+  pad.src=
    'fiji-hurt.png';
 
 
   setTimeout(
    ()=>{
-    p.src='fiji.png';
+    pad.src=
+     'fiji.png';
    },
    250
   );
@@ -4967,20 +6663,38 @@ function tap(){
  }
 
 
+ taps++;
+
+
  $('tb').style.width=
-  (++taps*10)+'%';
+  Math.min(
+   taps*10,
+   100
+  )+
+  '%';
 
 
- if(taps>=10){
+ setTimeout(
+  ()=>{
+   tapBusy=false;
+  },
+  70
+ );
+
+
+ if(
+  taps>=10
+ ){
 
   taps=0;
 
 
   setTimeout(
    ()=>{
-    $('tb').style.width='0';
+    $('tb').style.width=
+     '0%';
    },
-   300
+   250
   );
 
 
@@ -4994,2279 +6708,15 @@ function tap(){
 
 
 /* =========================================================
-   LEADERBOARD
+   BOARD
 ========================================================= */
 
 async function loadBoard(){
 
- if(!db)
-  return;
-
-
- const {
-  data
- }=
-  await db
-   .from('fiji_profiles')
-   .select(
-    'wallet,points,streak'
-   )
-   .order(
-    'points',
-    {
-     ascending:false
-    }
-   )
-   .limit(25);
-
-
- $('lb').innerHTML=
-
-  '<tr><th>#</th><th>Wallet</th><th>Points</th><th>Streak</th></tr>'+
-
-  (data||[])
-   .map(
-    (p,i)=>`
-
-     <tr>
-
-      <td>
-       ${['🥇','🥈','🥉'][i]||i+1}
-      </td>
-
-      <td>
-       ${short(p.wallet)}
-      </td>
-
-      <td>
-       ${p.points}
-      </td>
-
-      <td>
-       🔥 ${p.streak}
-      </td>
-
-     </tr>
-
-    `
-   )
-   .join('');
-
-}
-
-
-/* =========================================================
-   MARKET DATA
-========================================================= */
-
-const DS=
- 'https://api.dexscreener.com';
-
-
-const MK={
-
- chain:'solana',
-
- tf:'h24',
-
- sort:'chg',
-
- cache:{},
-
- last:{},
-
- pairs:{},
-
- list:[],
-
- maj:null,
-
- err:'',
-
- timer:null,
-
- tick:null,
-
- at:0,
-
- busy:false
-
-};
-
-
-const OOPS=
- 'Couldn’t reach DexScreener right now. Trying again in a moment 💧';
-
-
-const LOADING=
- '<div class="sticker card mk-empty" style="grid-column:1/-1">Splashing through the pond… 💦</div>';
-
-
-const CHAINS={
-
- solana:{
-
-  name:'Solana',
-
-  emoji:'◎',
-
-  quote:'SOL',
-
-  list:[
-   'BONK',
-   'WIF',
-   'POPCAT',
-   'FARTCOIN',
-   'PNUT',
-   'MEW'
-  ]
-
- },
-
- ethereum:{
-
-  name:'Ethereum',
-
-  emoji:'⟠',
-
-  quote:'WETH',
-
-  list:[
-   'PEPE',
-   'SHIB',
-   'FLOKI',
-   'MOG',
-   'TURBO'
-  ]
-
- },
-
- bsc:{
-
-  name:'BNB Chain',
-
-  emoji:'🔶',
-
-  quote:'WBNB',
-
-  list:[
-   'FLOKI',
-   'BabyDoge',
-   'DOGE',
-   'SHIB',
-   'PEPE'
-  ]
-
- },
-
- base:{
-
-  name:'Base',
-
-  emoji:'🔵',
-
-  quote:'WETH',
-
-  list:[
-   'BRETT',
-   'DEGEN',
-   'TOSHI',
-   'KEYCAT',
-   'MIGGLES'
-  ]
-
- },
-
- hot:{
-
-  name:'Hot',
-
-  emoji:'🔥'
-
- }
-
-};
-
-
-const MAJORS=[
-
- {
-  sym:'SOL',
-  em:'◎',
-  chain:'solana',
-  q:'SOL/USDC',
-  match:['SOL']
- },
-
- {
-  sym:'ETH',
-  em:'⟠',
-  chain:'ethereum',
-  q:'WETH/USDC',
-  match:['WETH','ETH']
- },
-
- {
-  sym:'BNB',
-  em:'🔶',
-  chain:'bsc',
-  q:'WBNB/USDT',
-  match:['WBNB','BNB']
- }
-
-];
-
-
-const TFS={
-
- m5:'5m',
- h1:'1h',
- h6:'6h',
- h24:'24h'
-
-};
-
-
-const SORTS={
-
- chg:'🌊 Splashiest',
- vol:'📊 Volume',
- liq:'💧 Liquidity'
-
-};
-
-
-const num=
- x=>{
-
-  const n=
-   parseFloat(x);
-
-  return isFinite(n)
-   ?n
-   :null;
-
- };
-
-
-const liq=
- p=>
-  num(
-   p.liquidity&&
-   p.liquidity.usd
-  )||0;
-
-
-const best=
- a=>
-  a.reduce(
-   (m,p)=>
-    !m||
-    liq(p)>liq(m)
-     ?p
-     :m,
-   null
-  );
-
-
-const key=
- p=>
-  p.chainId+':'+
-  p.pairAddress;
-
-
-const safeImg=
- u=>
-  /^https:\/\//.test(
-   u||''
-  )
-   ?u
-   :'';
-
-
-const cls=
- v=>{
-
-  const n=
-   num(v);
-
-
-  return
-
-   n===null||
-   Math.abs(n)<0.05
-
-    ?'flat'
-
-    :n>0
-     ?'up'
-     :'dn';
-
- };
-
-
-const fc=
- v=>{
-
-  const n=
-   num(v);
-
-
-  return
-
-   n===null
-
-    ?'–'
-
-    :(n>0?'+':'')+
-     n.toFixed(
-      Math.abs(n)>=100
-       ?0
-       :1
-     )+
-     '%';
-
- };
-
-
-const fm=
- v=>{
-
-  const n=
-   num(v);
-
-
-  if(n===null)
-   return '–';
-
-
-  const a=
-   Math.abs(n);
-
-
-  return '$'+
-
-   (
-    a>=1e9
-     ?(n/1e9).toFixed(2)+'B'
-
-    :a>=1e6
-     ?(n/1e6).toFixed(2)+'M'
-
-    :a>=1e3
-     ?(n/1e3).toFixed(1)+'K'
-
-    :n.toFixed(0)
-   );
-
- };
-
-
-function fp(v){
-
- const n=
-  num(v);
-
-
- if(n===null)
-  return '–';
-
-
- if(n>=1000)
-  return '$'+
-   n.toLocaleString(
-    undefined,
-    {
-     maximumFractionDigits:2
-    }
-   );
-
-
- if(n>=1)
-  return '$'+
-   n.toFixed(
-    n>=10
-     ?2
-     :3
-   );
-
-
- if(n>=0.01)
-  return '$'+
-   n.toFixed(4);
-
-
- const m=
-  n.toFixed(20)
-   .match(
-    /^0\.(0+)(\d{1,4})/
-   );
-
-
  if(
-  m&&
-  m[1].length>=3
- )
-  return '$0.0<sub>'+
-   m[1].length+
-   '</sub>'+
-   m[2];
-
-
- return '$'+
-  n.toPrecision(3);
-
-}
-
-
-async function ds(path){
-
- const c=
-  MK.cache[path];
-
-
- if(
-  c&&
-  Date.now()-c.t<25000
- )
-  return c.d;
-
-
- const ac=
-  new AbortController();
-
-
- const to=
-  setTimeout(
-   ()=>ac.abort(),
-   10000
-  );
-
-
- try{
-
-  const r=
-   await fetch(
-    DS+path,
-    {
-     signal:ac.signal
-    }
-   );
-
-
-  if(!r.ok)
-   throw new Error(
-    'DexScreener '+r.status
-   );
-
-
-  const d=
-   await r.json();
-
-
-  MK.cache[path]={
-   t:Date.now(),
-   d
-  };
-
-
-  return d;
-
- }finally{
-
-  clearTimeout(to);
-
- }
-
-}
-
-
-async function findPair(q,chain,syms){
-
- const d=
-  await ds(
-   '/latest/dex/search?q='+
-   encodeURIComponent(q)
-  );
-
-
- const want=
-  syms.map(
-   s=>
-    s.toUpperCase()
-  );
-
-
- return best(
-  (d.pairs||[])
-   .filter(
-    p=>
-     p.chainId===chain&&
-     p.baseToken&&
-     want.includes(
-      String(
-       p.baseToken.symbol
-      ).toUpperCase()
-     )
-   )
- );
-
-}
-
-
-async function memePair(sym,chain){
-
- let p=null;
-
-
- try{
-
-  p=
-   await findPair(
-    sym+'/'+CHAINS[chain].quote,
-    chain,
-    [sym]
-   );
-
- }catch(e){}
-
-
- if(!p){
-
-  try{
-
-   p=
-    await findPair(
-     sym,
-     chain,
-     [sym]
-    );
-
-  }catch(e){}
-
- }
-
-
- return p&&liq(p)>=10000
-  ?p
-  :null;
-
-}
-
-
-async function loadFiji(){
-
- const d=
-  await ds(
-   '/token-pairs/v1/solana/'+
-   encodeURIComponent(
-    CFG.FIJI_MINT
-   )
-  );
-
-
- return best(
-  Array.isArray(d)
-   ?d
-   :[]
- );
-
-}
-
-
-async function loadHot(){
-
- const b=
-  await ds(
-   '/token-boosts/top/v1'
-  );
-
-
- const by={};
-
-
- (Array.isArray(b)?b:[])
-  .slice(0,40)
-  .forEach(t=>{
-
-   if(
-    /^[a-z0-9-]+$/i.test(
-     t.chainId||''
-    )&&
-    t.tokenAddress
-   ){
-
-    (
-     by[t.chainId]=
-     by[t.chainId]||[]
-    )
-    .push(
-     t.tokenAddress
-    );
-
-   }
-
-  });
-
-
- const out=[];
-
-
- await Promise.all(
-  Object.entries(by)
-   .map(
-    async([c,addrs])=>{
-
-     try{
-
-      const d=
-       await ds(
-        '/tokens/v1/'+
-        c+'/'+
-        addrs
-         .slice(0,30)
-         .map(encodeURIComponent)
-         .join(',')
-       );
-
-
-      const g={};
-
-
-      (Array.isArray(d)?d:[])
-       .forEach(p=>{
-
-        const k=
-         p.baseToken&&
-         p.baseToken.address;
-
-
-        if(
-         k&&
-         (
-          !g[k]||
-          liq(p)>liq(g[k])
-         )
-        )
-         g[k]=p;
-
-       });
-
-
-      Object.values(g)
-       .forEach(p=>{
-
-        if(
-         liq(p)>=5000
-        )
-         out.push(p);
-
-       });
-
-
-     }catch(e){}
-
-    }
-   )
- );
-
-
- return out;
-
-}
-
-
-async function loadChain(chain){
-
- if(chain==='hot')
-  return loadHot();
-
-
- const res=
-  await Promise.all(
-   CHAINS[chain].list.map(
-    s=>
-     memePair(
-      s,
-      chain
-     )
-   )
-  );
-
-
- return res.filter(Boolean);
-
-}
-
-
-function wave(p){
-
- const pc=
-  p.priceChange||{};
-
-
- const now=
-  num(p.priceUsd);
-
-
- if(!now)
-  return '';
-
-
- const v=[];
-
-
- [
-  'h24',
-  'h6',
-  'h1',
-  'm5'
- ]
- .forEach(k=>{
-
-  const c=
-   num(pc[k]);
-
-
-  if(
-   c!==null&&
-   c>-99
-  )
-   v.push(
-    now/(1+c/100)
-   );
-
- });
-
-
- if(!v.length)
-  return '';
-
-
- v.push(now);
-
-
- const lo=
-  Math.min(...v);
-
-
- const hi=
-  Math.max(...v);
-
-
- const r=
-  hi-lo||1;
-
-
- const W=120;
-
- const H=36;
-
-
- const st=
-  W/(v.length-1);
-
-
- const pt=
-  v.map(
-   (y,i)=>[
-
-    i*st,
-
-    hi===lo
-
-     ?H/2
-
-     :H-4-
-      ((y-lo)/r)*
-      (H-8)
-
-   ]
-  );
-
-
- let d=
-  'M'+
-  pt[0][0]+
-  ' '+
-  pt[0][1].toFixed(1);
-
-
- for(
-  let i=1;
-  i<pt.length;
-  i++
- ){
-
-  const a=
-   pt[i-1];
-
-  const b=
-   pt[i];
-
-
-  const mx=
-   (a[0]+b[0])/2;
-
-
-  d+=
-   ' C'+
-   mx+' '+
-   a[1].toFixed(1)+
-   ' '+
-   mx+' '+
-   b[1].toFixed(1)+
-   ' '+
-   b[0]+' '+
-   b[1].toFixed(1);
-
- }
-
-
- const col=
-  v[v.length-1]>=v[0]
-   ?'#2FCB7B'
-   :'#FF5C7A';
-
-
- return `
-
-  <svg
-   class="wv"
-   viewBox="0 0 ${W} ${H}"
-   preserveAspectRatio="none"
-   aria-hidden="true">
-
-   <path
-    d="${d} L${W} ${H} L0 ${H} Z"
-    fill="${col}"
-    opacity=".15"
-   />
-
-   <path
-    d="${d}"
-    fill="none"
-    stroke="${col}"
-    stroke-width="3"
-    stroke-linecap="round"
-    vector-effect="non-scaling-stroke"
-   />
-
-  </svg>
-
- `;
-
-}
-
-
-function chips(pc){
-
- return [
-  'm5',
-  'h1',
-  'h6',
-  'h24'
- ]
- .map(
-  t=>`
-
-   <span class="pill mk-chip ${cls(pc&&pc[t])}">
-    ${TFS[t]} ${fc(pc&&pc[t])}
-   </span>
-
-  `
- )
- .join('');
-
-}
-
-
-function card(p,tf){
-
- const c=
-  p.priceChange
-   ?p.priceChange[tf]
-   :null;
-
-
- const k=
-  cls(c);
-
-
- const img=
-  safeImg(
-   p.info&&
-   p.info.imageUrl
-  );
-
-
- const w=
-  Math.min(
-   Math.abs(
-    num(c)||0
-   ),
-   50
-  )/50*50;
-
-
- return `
-
-  <div
-   class="sticker card mk ${k}"
-   data-k="${esc(key(p))}"
-   onclick="openPair(this.dataset.k)">
-
-   <div class="mk-top">
-
-    ${
-     img
-
-      ?`<img
-         src="${esc(img)}"
-         alt=""
-         loading="lazy"
-         onerror="this.outerHTML='<span class=&quot;mk-ph&quot;>💧</span>'"
-        >`
-
-      :'<span class="mk-ph">💧</span>'
-    }
-
-
-    <div class="mk-nm">
-
-     <b>
-      ${esc(p.baseToken.symbol)}
-     </b>
-
-     <span class="small">
-      ${esc(p.baseToken.name)}
-     </span>
-
-    </div>
-
-
-    <span class="pill mk-chip ${k}">
-     ${fc(c)}
-    </span>
-
-   </div>
-
-
-   <div class="mk-price">
-    ${fp(p.priceUsd)}
-   </div>
-
-
-   ${wave(p)}
-
-
-   <div class="mk-meter">
-
-    <i
-     class="${k}"
-     style="width:${w}%">
-    </i>
-
-   </div>
-
-
-   <div class="mk-stats small">
-
-    <span>
-     Vol ${fm(p.volume&&p.volume.h24)}
-    </span>
-
-    <span>
-     Liq ${fm(liq(p))}
-    </span>
-
-   </div>
-
-  </div>
-
- `;
-
-}
-
-
-function bubble(el,up){
-
- const b=
-  document.createElement(
-   'span'
-  );
-
-
- b.className=
-  'mk-bub'+
-  (
-   up
-    ?''
-    :' dn'
-  );
-
-
- b.textContent=
-  up
-   ?'💦'
-   :'💧';
-
-
- el.appendChild(b);
-
-
- setTimeout(
-  ()=>b.remove(),
-  1500
- );
-
-}
-
-
-function flashEl(el){
-
- const p=
-  MK.pairs[
-   el.dataset.k
-  ];
-
-
- if(!p)
-  return;
-
-
- const n=
-  num(p.priceUsd);
-
-
- const o=
-  MK.last[
-   el.dataset.k
-  ];
-
-
- if(
-  o!==undefined&&
-  n!==null&&
-  n!==o
- ){
-
-  el.classList.add(
-   n>o
-    ?'fl-up'
-    :'fl-dn'
-  );
-
-
-  bubble(
-   el,
-   n>o
-  );
-
- }
-
-
- if(n!==null)
-  MK.last[
-   el.dataset.k
-  ]=n;
-
-}
-
-
-function flash(root){
-
- root
-  .querySelectorAll('[data-k]')
-  .forEach(
-   flashEl
-  );
-
-}
-
-
-function renderHero(p){
-
- const h=
-  $('mkHero');
-
-
- if(!p){
-
-  h.innerHTML=
-   '<div class="mk-empty">Fiji isn’t showing on DexScreener yet. Check back soon 💧</div>';
-
-  return;
-
- }
-
-
- const k=
-  key(p);
-
-
- MK.pairs[k]=
-  p;
-
-
- h.dataset.k=
-  k;
-
-
- const pc=
-  p.priceChange||{};
-
-
- const m=
-  cls(pc.h24);
-
-
- const t=
-  (
-   p.txns&&
-   p.txns.h24
-  )||{};
-
-
- const sayText={
-
-  up:'splashy day! 💦',
-
-  dn:'drip drip… stay with me 💧',
-
-  flat:'calm pond today 🌿'
-
- }[m];
-
-
- h.innerHTML=`
-
-  <div class="mk-hrow">
-
-   <img
-    class="mk-fj ${m}"
-    src="fiji.png"
-    alt="Fiji"
-   >
-
-
-   <div class="mk-say">
-    ${sayText}
-   </div>
-
-  </div>
-
-
-  <div class="mk-hp">
-
-   <div>
-
-    <div class="small">
-     FIJI price
-    </div>
-
-
-    <div class="mk-price big">
-     ${fp(p.priceUsd)}
-    </div>
-
-   </div>
-
-
-   <div class="mk-chips">
-    ${chips(pc)}
-   </div>
-
-  </div>
-
-
-  ${wave(p)}
-
-
-  <div class="mk-hs">
-
-   <div>
-
-    <b>
-     ${fm(p.marketCap||p.fdv)}
-    </b>
-
-    <span class="small">
-     market cap
-    </span>
-
-   </div>
-
-
-   <div>
-
-    <b>
-     ${fm(liq(p))}
-    </b>
-
-    <span class="small">
-     liquidity
-    </span>
-
-   </div>
-
-
-   <div>
-
-    <b>
-     ${fm(p.volume&&p.volume.h24)}
-    </b>
-
-    <span class="small">
-     volume 24h
-    </span>
-
-   </div>
-
-
-   <div>
-
-    <b>
-
-     ${
-      t.buys==null
-       ?'–'
-       :t.buys
-     }
-
-     /
-
-     ${
-      t.sells==null
-       ?'–'
-       :t.sells
-     }
-
-    </b>
-
-    <span class="small">
-     buys / sells 24h
-    </span>
-
-   </div>
-
-  </div>
-
-
-  <button
-   class="btn sm"
-   data-open="${esc(k)}"
-   onclick="openPair(this.dataset.open)">
-
-   See chart
-
-  </button>
-
- `;
-
-
- flashEl(h);
-
-}
-
-
-function renderMajors(a){
-
- if(!a)
-  return;
-
-
- MK.maj=
-  a;
-
-
- $('mkMajors').innerHTML=
-  a.map(
-   (p,i)=>{
-
-    const M=
-     MAJORS[i];
-
-
-    if(!p){
-
-     return `
-
-      <div class="sticker card mk-mini">
-
-       <b>
-        ${M.em} ${M.sym}
-       </b>
-
-       <div class="small">
-        unavailable
-       </div>
-
-      </div>
-
-     `;
-
-    }
-
-
-    MK.pairs[
-     key(p)
-    ]=
-     p;
-
-
-    const c=
-     p.priceChange
-      ?p.priceChange[MK.tf]
-      :null;
-
-
-    return `
-
-     <div
-      class="sticker card mk mk-mini ${cls(c)}"
-      data-k="${esc(key(p))}"
-      onclick="openPair(this.dataset.k)">
-
-      <b>
-       ${M.em} ${M.sym}
-      </b>
-
-
-      <div class="mk-price">
-       ${fp(p.priceUsd)}
-      </div>
-
-
-      <span class="pill mk-chip ${cls(c)}">
-       ${fc(c)}
-      </span>
-
-     </div>
-
-    `;
-
-   }
-  )
-  .join('');
-
-
- flash(
-  $('mkMajors')
- );
-
-}
-
-
-function sorted(list){
-
- const tf=
-  MK.tf;
-
-
- const v=
-  p=>
-
-   MK.sort==='chg'
-
-    ?(
-      num(
-       p.priceChange&&
-       p.priceChange[tf]
-      )??-1e9
-     )
-
-    :MK.sort==='vol'
-
-     ?(
-       num(
-        p.volume&&
-        p.volume.h24
-       )||0
-      )
-
-     :liq(p);
-
-
- return list
-  .slice()
-  .sort(
-   (a,b)=>
-    v(b)-v(a)
-  );
-
-}
-
-
-function renderList(){
-
- const g=
-  $('mkGrid');
-
-
- if(MK.err){
-
-  g.innerHTML=
-
-   `<div
-     class="sticker card mk-empty"
-     style="grid-column:1/-1">
-
-     ${MK.err}
-
-    </div>`;
-
-  return;
-
- }
-
-
- if(!MK.list.length){
-
-  g.innerHTML=
-
-   `<div
-     class="sticker card mk-empty"
-     style="grid-column:1/-1">
-
-     No coins to show here right now 🌿
-
-    </div>`;
-
-  return;
-
- }
-
-
- const l=
-  sorted(MK.list)
-   .slice(0,18);
-
-
- l.forEach(
-  p=>
-   MK.pairs[
-    key(p)
-   ]=
-    p
- );
-
-
- g.innerHTML=
-  l
-   .map(
-    p=>
-     card(
-      p,
-      MK.tf
-     )
-   )
-   .join('');
-
-
- flash(g);
-
-}
-
-
-function renderControls(){
-
- $('mkChains').innerHTML=
-  Object.entries(CHAINS)
-   .map(
-    ([k,v])=>`
-
-     <button
-      class="mk-p ${MK.chain===k?'on':''}"
-      onclick="setChain('${k}')">
-
-      ${v.emoji} ${v.name}
-
-     </button>
-
-    `
-   )
-   .join('');
-
-
- $('mkTf').innerHTML=
-  Object.entries(TFS)
-   .map(
-    ([k,v])=>`
-
-     <button
-      class="mk-p ${MK.tf===k?'on':''}"
-      onclick="setTf('${k}')">
-
-      ${v}
-
-     </button>
-
-    `
-   )
-   .join('');
-
-
- $('mkSort').innerHTML=
-  Object.entries(SORTS)
-   .map(
-    ([k,v])=>`
-
-     <button
-      class="mk-p ${MK.sort===k?'on':''}"
-      onclick="setSort('${k}')">
-
-      ${v}
-
-     </button>
-
-    `
-   )
-   .join('');
-
-
- $('mkNote').textContent=
-  MK.chain==='hot'
-
-   ?'Hot = coins with paid promotions on DexScreener. Extra risk, so double-check before trusting any of them.'
-
-   :'';
-
-}
-
-
-function setChain(c){
-
- if(MK.chain===c)
-  return;
-
-
- MK.chain=
-  c;
-
-
- MK.list=[];
-
- MK.err='';
-
-
- renderControls();
-
-
- refreshList(
-  true
- );
-
-}
-
-
-function setTf(t){
-
- MK.tf=
-  t;
-
-
- renderControls();
-
- renderList();
-
- renderMajors(
-  MK.maj
- );
-
-}
-
-
-function setSort(s){
-
- MK.sort=
-  s;
-
-
- renderControls();
-
- renderList();
-
-}
-
-
-async function refreshList(loading){
-
- const chain=
-  MK.chain;
-
-
- if(loading)
-  $('mkGrid').innerHTML=
-   LOADING;
-
-
- try{
-
-  const l=
-   await loadChain(
-    chain
-   );
-
-
-  if(chain!==MK.chain)
-   return;
-
-
-  MK.list=
-   l;
-
-
-  MK.err='';
-
- }catch(e){
-
-  if(chain!==MK.chain)
-   return;
-
-
-  console.error(e);
-
-
-  MK.err=
-   OOPS;
-
- }
-
-
- renderList();
-
-}
-
-
-async function refreshMarket(manual){
-
- if(MK.busy)
-  return;
-
-
- MK.busy=
-  true;
-
-
- if(manual)
-  MK.cache={};
-
-
- const [
-  f,
-  m,
-  listResult
- ]=
-  await Promise.allSettled([
-
-   loadFiji(),
-
-
-   Promise.all(
-    MAJORS.map(
-     x=>
-      findPair(
-       x.q,
-       x.chain,
-       x.match
-      )
-      .catch(
-       ()=>null
-      )
-    )
-   ),
-
-
-   refreshList(false)
-
-  ]);
-
-
- if(
-  f.status==='fulfilled'
- ){
-
-  renderHero(
-   f.value
-  );
-
- }else{
-
-  console.error(
-   f.reason
-  );
-
-
-  $('mkHero').innerHTML=
-   '<div class="mk-empty">'+
-   OOPS+
-   '</div>';
-
- }
-
-
- if(
-  m.status==='fulfilled'
- )
-  renderMajors(
-   m.value
-  );
-
-
- MK.at=
-  Date.now();
-
-
- tickLive();
-
-
- MK.busy=
-  false;
-
-}
-
-
-function tickLive(){
-
- $('mkAgo').textContent=
-
-  MK.at
-
-   ?'live · updated '+
-    Math.round(
-     (Date.now()-MK.at)/1000
-    )+
-    's ago'
-
-   :'loading…';
-
-}
-
-
-function startMarket(){
-
- renderControls();
-
-
- if(
-  !MK.list.length&&
-  !MK.err
- )
-  $('mkGrid').innerHTML=
-   LOADING;
-
-
- refreshMarket();
-
-
- clearInterval(
-  MK.timer
- );
-
-
- MK.timer=
-  setInterval(
-   ()=>{
-
-    if(!document.hidden)
-     refreshMarket();
-
-   },
-   30000
-  );
-
-
- clearInterval(
-  MK.tick
- );
-
-
- MK.tick=
-  setInterval(
-   tickLive,
-   1000
-  );
-
-}
-
-
-function stopMarket(){
-
- clearInterval(
-  MK.timer
- );
-
- clearInterval(
-  MK.tick
- );
-
-}
-
-
-/* =========================================================
-   MARKET DETAIL
-========================================================= */
-
-function closePair(){
-
- document
-  .querySelectorAll('.mk-modal')
-  .forEach(
-   m=>
-    m.remove()
-  );
-
-}
-
-
-document.addEventListener(
- 'keydown',
- e=>{
-
-  if(
-   e.key==='Escape'
-  )
-   closePair();
-
- }
-);
-
-
-function openPair(k){
-
- const p=
-  MK.pairs[k];
-
-
- if(!p)
-  return;
-
-
- closePair();
-
-
- const pc=
-  p.priceChange||{};
-
-
- const t=
-  (
-   p.txns&&
-   p.txns.h24
-  )||{};
-
-
- const img=
-  safeImg(
-   p.info&&
-   p.info.imageUrl
-  );
-
-
- const okC=
-  /^[a-z0-9-]+$/i.test(
-   p.chainId||''
-  );
-
-
- const okP=
-  /^[A-Za-z0-9]+$/.test(
-   p.pairAddress||''
-  );
-
-
- const link=
-
-  okC&&okP
-
-   ?'https://dexscreener.com/'+
-    p.chainId+'/'+
-    p.pairAddress
-
-   :'';
-
-
- const d=
-  document.createElement(
-   'div'
-  );
-
-
- d.className=
-  'mk-modal';
-
-
- d.innerHTML=`
-
-  <div
-   class="sticker card mk-sheet">
-
-   <div class="mk-top">
-
-    ${
-     img
-
-      ?`<img
-         src="${esc(img)}"
-         alt=""
-        >`
-
-      :'<span class="mk-ph">💧</span>'
-    }
-
-
-    <div class="mk-nm">
-
-     <b>
-      ${esc(p.baseToken.symbol)}
-     </b>
-
-
-     <span class="small">
-
-      ${esc(p.baseToken.name)}
-      ·
-      ${esc(p.chainId)}
-
-     </span>
-
-    </div>
-
-
-    <button class="btn sm alt mk-x">
-     ✕
-    </button>
-
-   </div>
-
-
-   <div class="mk-price big">
-    ${fp(p.priceUsd)}
-   </div>
-
-
-   <div
-    class="mk-chips"
-    style="margin:6px 0">
-
-    ${chips(pc)}
-
-   </div>
-
-
-   ${wave(p)}
-
-
-   <table>
-
-    <tr>
-
-     <td>
-      Market cap
-     </td>
-
-     <td>
-      ${fm(p.marketCap||p.fdv)}
-     </td>
-
-    </tr>
-
-
-    <tr>
-
-     <td>
-      Liquidity
-     </td>
-
-     <td>
-      ${fm(liq(p))}
-     </td>
-
-    </tr>
-
-
-    <tr>
-
-     <td>
-      Volume 24h
-     </td>
-
-     <td>
-      ${fm(p.volume&&p.volume.h24)}
-     </td>
-
-    </tr>
-
-
-    <tr>
-
-     <td>
-      Buys / sells 24h
-     </td>
-
-     <td>
-
-      ${
-       t.buys==null
-        ?'–'
-        :t.buys
-      }
-
-      /
-
-      ${
-       t.sells==null
-        ?'–'
-        :t.sells
-      }
-
-     </td>
-
-    </tr>
-
-
-    <tr>
-
-     <td>
-      Traded on
-     </td>
-
-     <td>
-      ${esc(p.dexId)}
-     </td>
-
-    </tr>
-
-   </table>
-
-
-   ${
-    link
-
-     ?`<iframe
-         class="mk-frame"
-         title="Price chart"
-         loading="lazy"
-         sandbox="allow-scripts allow-same-origin allow-popups"
-         src="${link}?embed=1&theme=light&trades=0&info=0">
-        </iframe>`
-
-     :''
-   }
-
-
-   <div class="mk-acts">
-
-    ${
-     link
-
-      ?`<a
-          class="btn sm"
-          href="${link}"
-          target="_blank"
-          rel="noopener">
-          Open on DexScreener
-         </a>`
-
-      :''
-    }
-
-
-    <button
-     class="btn sm alt mk-cp"
-     data-copy="${esc(p.baseToken.address)}">
-
-     Copy contract
-
-    </button>
-
-   </div>
-
-  </div>
-
- `;
-
-
- d.onclick=e=>{
-
-  if(
-   e.target===d
-  )
-   closePair();
-
- };
-
-
- const closeButton=
-  d.querySelector(
-   '.mk-x'
-  );
-
-
- if(closeButton)
-  closeButton.onclick=
-   closePair;
-
-
- const copyButton=
-  d.querySelector(
-   '.mk-cp'
-  );
-
-
- if(copyButton){
-
-  copyButton.onclick=
-   function(){
-
-    navigator.clipboard.writeText(
-     this.dataset.copy
-    );
-
-
-    toast(
-     'Contract copied 💧'
-    );
-
-   };
-
- }
-
-
- document.body.appendChild(d);
-
-}
-
-
-/* =========================================================
-   TRADE PAD STATE
-========================================================= */
-
-const TP={
-
- mode:'trending',
-
- chain:'solana',
-
- action:'buy',
-
- selected:null,
-
- watch:[],
-
- list:[],
-
- started:false,
-
- loading:false,
-
- watchLoading:false,
-
- timer:null
-
-};
-
-
-const TP_SEEDS={
-
- solana:[
-  'BONK',
-  'WIF',
-  'POPCAT',
-  'FARTCOIN',
-  'PNUT',
-  'MEW'
- ],
-
- ethereum:[
-  'PEPE',
-  'SHIB',
-  'FLOKI',
-  'MOG',
-  'TURBO'
- ],
-
- bsc:[
-  'FLOKI',
-  'BabyDoge',
-  'DOGE',
-  'SHIB',
-  'PEPE'
- ],
-
- base:[
-  'BRETT',
-  'DEGEN',
-  'TOSHI',
-  'KEYCAT',
-  'MIGGLES'
- ]
-
-};
-
-
-/* =========================================================
-   SUPABASE WATCHLIST
-========================================================= */
-
-function watchKey(
- chain,
- mint
-){
-
- return String(chain||'')+
-  ':'+
-  String(mint||'');
-
-}
-
-
-function tokenWatchKey(p){
-
- return watchKey(
-  p?.chainId,
-  p?.baseToken?.address
- );
-
-}
-
-
-function isWatched(p){
-
- if(!p)
-  return false;
-
-
- return TP.watch.includes(
-  tokenWatchKey(p)
- );
-
-}
-
-
-async function loadSupabaseWatchlist(){
-
- if(
-  !wallet||
   !db
- ){
-
-  TP.watch=[];
-
-  renderWatchPreview();
-
+ )
   return;
-
- }
-
-
- if(TP.watchLoading)
-  return;
-
-
- TP.watchLoading=
-  true;
 
 
  try{
@@ -7275,1617 +6725,156 @@ async function loadSupabaseWatchlist(){
    data,
    error
   }=
-   await db.rpc(
-    'fiji_get_watchlist',
-    {
-     p_wallet:
-      wallet
-    }
-   );
-
-
-  if(error)
-   throw error;
-
-
-  const rows=
-   Array.isArray(data)
-    ?data
-    :[];
-
-
-  TP.watch=
-   rows
-    .filter(
-     row=>
-      row&&
-      row.chain&&
-      row.mint
+   await db
+    .from('fiji_profiles')
+    .select(
+     'wallet,points,streak'
     )
-    .map(
-     row=>
-      watchKey(
-       row.chain,
-       row.mint
-      )
-    );
-
-
-  renderWatchPreview();
-
-
-  if(
-   TP.mode==='watchlist'
-  )
-   await loadTradeDiscovery();
-
-
- }catch(e){
-
-  console.error(
-   'Watchlist load error',
-   e
-  );
-
-
-  TP.watch=[];
-
-
-  renderWatchPreview();
-
-
-  toast(
-   'Could not load watchlist: '+
-   (
-    e.message||
-    e
-   )
-  );
-
- }finally{
-
-  TP.watchLoading=
-   false;
-
- }
-
-}
-
-
-async function toggleTradeWatch(){
-
- if(!TP.selected){
-
-  return toast(
-   'Select a token first'
-  );
-
- }
-
-
- if(!wallet){
-
-  return toast(
-   'Connect your wallet first'
-  );
-
- }
-
-
- if(!db){
-
-  return toast(
-   'Supabase is not available'
-  );
-
- }
-
-
- const p=
-  TP.selected;
-
-
- const chain=
-  p.chainId;
-
-
- const mint=
-  p.baseToken?.address;
-
-
- if(
-  !chain||
-  !mint
- ){
-
-  return toast(
-   'Token information is incomplete'
-  );
-
- }
-
-
- const k=
-  watchKey(
-   chain,
-   mint
-  );
-
-
- if(
-  TP.watchLoading
- )
-  return;
-
-
- TP.watchLoading=
-  true;
-
-
- try{
-
-  const {
-   data,
-   error
-  }=
-   await db.rpc(
-    'fiji_watch_toggle',
-    {
-     p_wallet:
-      wallet,
-
-     p_chain:
-      chain,
-
-     p_mint:
-      mint
-    }
-   );
+    .order(
+     'points',
+     {
+      ascending:false
+     }
+    )
+    .limit(25);
 
 
   if(error)
    throw error;
 
 
-  const added=
-   data===true;
+  $('lb').innerHTML=
 
+   '<tr><th>#</th><th>Wallet</th><th>Points</th><th>Streak</th></tr>'+
 
-  if(added){
+   (data||[])
+    .map(
+     (profile,index)=>`
 
-   if(!TP.watch.includes(k))
-    TP.watch.push(k);
+      <tr>
 
+       <td>
+        ${
+         ['🥇','🥈','🥉'][index]||
+         index+1
+        }
+       </td>
 
-   toast(
-    'Added to watchlist ⭐'
-   );
+       <td>
+        ${short(profile.wallet)}
+       </td>
 
-  }else{
+       <td>
+        ${profile.points}
+       </td>
 
-   TP.watch=
-    TP.watch.filter(
-     x=>x!==k
-    );
+       <td>
+        🔥 ${profile.streak}
+       </td>
 
+      </tr>
 
-   toast(
-    'Removed from watchlist'
-   );
-
-  }
-
-
-  updateTradeStar();
-
-
-  renderWatchPreview();
-
-
-  if(
-   TP.mode==='watchlist'
-  )
-   await loadTradeDiscovery();
+     `
+    )
+    .join('');
 
  }catch(e){
 
-  console.error(
-   'Watchlist toggle error',
-   e
-  );
+  $('lb').innerHTML=`
 
+   <tr>
+    <td colspan="4">
+     Could not load leaderboard.
+    </td>
+   </tr>
 
-  toast(
-   'Watchlist error: '+
-   (
-    e.message||
-    e
-   )
-  );
-
- }finally{
-
-  TP.watchLoading=
-   false;
+  `;
 
  }
 
 }
 
 
-function updateTradeStar(){
-
- const watched=
-  isWatched(
-   TP.selected
-  );
-
-
- $('tradeStar').classList.toggle(
-  'on',
-  watched
- );
-
-
- $('tradeStar').textContent=
-  watched
-   ?'★'
-   :'☆';
-
-}
-
-
 /* =========================================================
-   WATCHLIST DISCOVERY
+   TRADE PAD UI FALLBACK HOOKS
+   =========================================================
+   These functions keep the new HTML usable before the
+   dedicated tradepad.js is installed.
 ========================================================= */
 
-function parseWatchKey(k){
-
- const i=
-  String(k)
-   .indexOf(':');
-
-
- if(i<0)
-  return null;
-
-
- return{
-
-  chain:
-   k.slice(
-    0,
-    i
-   ),
-
-  mint:
-   k.slice(
-    i+1
-   )
-
- };
-
-}
-
-
-async function loadWatchedPairs(){
-
- if(!TP.watch.length)
-  return [];
-
-
- const grouped={};
-
-
- TP.watch.forEach(k=>{
-
-  const x=
-   parseWatchKey(k);
-
-
-  if(!x)
-   return;
-
-
-  if(
-   TP.chain!=='all'&&
-   TP.chain!==x.chain
-  )
-   return;
-
-
-  (
-   grouped[x.chain]=
-   grouped[x.chain]||[]
-  )
-  .push(
-   x.mint
-  );
-
- });
-
-
- const out=[];
-
-
- await Promise.all(
-
-  Object.entries(grouped)
-   .map(
-    async([chain,mints])=>{
-
-     const unique=
-      [...new Set(mints)];
-
-
-     const chunks=[];
-
-
-     for(
-      let i=0;
-      i<unique.length;
-      i+=30
-     ){
-
-      chunks.push(
-       unique.slice(
-        i,
-        i+30
-       )
-      );
-
-     }
-
-
-     await Promise.all(
-      chunks.map(
-       async chunk=>{
-
-        try{
-
-         const d=
-          await ds(
-           '/tokens/v1/'+
-           chain+'/'+
-           chunk
-            .map(
-             encodeURIComponent
-            )
-            .join(',')
-          );
-
-
-         const by={};
-
-
-         (
-          Array.isArray(d)
-           ?d
-           :[]
-         )
-         .forEach(p=>{
-
-          const addr=
-           p.baseToken?.address;
-
-
-          if(
-           !addr
-          )
-           return;
-
-
-          if(
-           !by[addr]||
-           liq(p)>liq(by[addr])
-          )
-           by[addr]=p;
-
-         });
-
-
-         Object.values(by)
-          .forEach(
-           p=>
-            out.push(p)
-          );
-
-        }catch(e){
-
-         console.warn(
-          'Watchlist token fetch error',
-          chain,
-          e
-         );
-
-        }
-
-       }
-      )
-     );
-
-    }
-   )
-
- );
-
-
- return out;
-
-}
-
-
-/* =========================================================
-   TRADE PAD START
-========================================================= */
-
-function startTradePad(){
+function tradeSetMode(mode){
 
  if(
-  !TP.started
+  window.FIJI_TRADE?.setMode
  ){
 
-  TP.started=
-   true;
-
-  loadTradeDiscovery();
-
- }
-
-
- renderWatchPreview();
-
-
- if(
-  wallet&&
-  !TP.watch.length
- )
-  loadSupabaseWatchlist();
-
-}
-
-
-function tradeChainChanged(){
-
- TP.chain=
-  $('tradeChain').value;
-
-
- const name=
-  TP.chain==='all'
-
-   ?'All Chains'
-
-   :CHAINS[TP.chain]
-
-    ?CHAINS[TP.chain].name
-
-    :'Solana';
-
-
- $('tradeSelectedChain').textContent=
-  name;
-
-
- loadTradeDiscovery();
-
-}
-
-
-function tradeSearchChanged(){
-
- clearTimeout(
-  tradeSearchChanged.timer
- );
-
-
- tradeSearchChanged.timer=
-  setTimeout(
-   ()=>{
-    loadTradeDiscovery();
-   },
-   220
+  window.FIJI_TRADE.setMode(
+   mode
   );
 
-}
+  return;
 
-
-function setTradeMode(mode){
-
- TP.mode=
-  mode;
+ }
 
 
  document
-  .querySelectorAll('.trade-tab')
+  .querySelectorAll(
+   '.discovery-tab'
+  )
   .forEach(
-   b=>{
+   button=>{
 
-    b.classList.toggle(
+    button.classList.toggle(
      'on',
-     b.dataset.mode===mode
+     button.dataset.mode===
+     mode
     );
 
    }
   );
 
 
- loadTradeDiscovery();
+ $('tradeLiveText').textContent=
+  'Trade Pad engine not connected yet';
 
 }
 
 
-function tradeChainList(){
+function tradeRefresh(force=false){
 
  if(
-  TP.chain==='all'
- )
-  return[
-   'solana',
-   'ethereum',
-   'bsc',
-   'base'
-  ];
+  window.FIJI_TRADE?.refresh
+ ){
 
-
- return[
-  TP.chain
- ];
-
-}
-
-
-async function getTradePairs(chain){
-
- const names=
-  TP_SEEDS[chain]||[];
-
-
- const results=
-  await Promise.all(
-   names.map(
-    s=>
-     memePair(
-      s,
-      chain
-     ).catch(
-      ()=>null
-     )
-   )
+  window.FIJI_TRADE.refresh(
+   force
   );
-
-
- return results.filter(
-  Boolean
- );
-
-}
-
-
-async function loadTradeDiscovery(){
-
- if(TP.loading)
-  return;
-
-
- TP.loading=
-  true;
-
-
- const box=
-  $('tradeList');
-
-
- box.innerHTML=`
-
-  <div class="sticker card mk-empty">
-   Searching the pond… 💦
-  </div>
-
- `;
-
-
- try{
-
-  let all=[];
-
-
-  if(
-   TP.mode==='watchlist'
-  ){
-
-   all=
-    await loadWatchedPairs();
-
-  }else{
-
-   const chains=
-    tradeChainList();
-
-
-   await Promise.all(
-
-    chains.map(
-     async chain=>{
-
-      const rows=
-       await getTradePairs(
-        chain
-       );
-
-
-      rows.forEach(
-       p=>
-        all.push(p)
-      );
-
-     }
-    )
-
-   );
-
-  }
-
-
-  const q=
-   String(
-    $('tradeSearch').value||''
-   )
-   .trim()
-   .toLowerCase();
-
-
-  let list=
-   all;
-
-
-  if(q){
-
-   list=
-    list.filter(
-     p=>{
-
-      const sym=
-       String(
-        p.baseToken?.symbol||''
-       )
-       .toLowerCase();
-
-
-      const name=
-       String(
-        p.baseToken?.name||''
-       )
-       .toLowerCase();
-
-
-      const addr=
-       String(
-        p.baseToken?.address||''
-       )
-       .toLowerCase();
-
-
-      return(
-
-       sym.includes(q)||
-       name.includes(q)||
-       addr.includes(q)
-
-      );
-
-     }
-    );
-
-  }
-
-
-  if(
-   TP.mode==='gainers'
-  ){
-
-   list.sort(
-    (a,b)=>
-     (
-      num(
-       b.priceChange?.h24
-      )||-999
-     )-
-     (
-      num(
-       a.priceChange?.h24
-      )||-999
-     )
-   );
-
-  }
-
-
-  else if(
-   TP.mode==='volume'
-  ){
-
-   list.sort(
-    (a,b)=>
-     (
-      num(
-       b.volume?.h24
-      )||0
-     )-
-     (
-      num(
-       a.volume?.h24
-      )||0
-     )
-   );
-
-  }
-
-
-  else if(
-   TP.mode==='new'
-  ){
-
-   list.sort(
-    (a,b)=>
-     (
-      Number(
-       b.pairCreatedAt||0
-      )
-     )-
-     (
-      Number(
-       a.pairCreatedAt||0
-      )
-     )
-   );
-
-  }
-
-
-  else if(
-   TP.mode==='watchlist'
-  ){
-
-   list.sort(
-    (a,b)=>
-     (
-      Number(
-       b.pairCreatedAt||0
-      )
-     )-
-     (
-      Number(
-       a.pairCreatedAt||0
-      )
-     )
-   );
-
-  }
-
-
-  else{
-
-   list.sort(
-    (a,b)=>
-     (
-      (
-       num(
-        b.volume?.h24
-       )||0
-      )/
-      Math.max(
-       liq(b),
-       1
-      )
-     )-
-     (
-      (
-       num(
-        a.volume?.h24
-       )||0
-      )/
-      Math.max(
-       liq(a),
-       1
-      )
-     )
-   );
-
-  }
-
-
-  /*
-   Deduplicate by chain + token address.
-  */
-
-  const seen=
-   new Set();
-
-
-  list=
-   list.filter(
-    p=>{
-
-     const k=
-      watchKey(
-       p.chainId,
-       p.baseToken?.address
-      );
-
-
-     if(seen.has(k))
-      return false;
-
-
-     seen.add(k);
-
-     return true;
-
-    }
-   );
-
-
-  TP.list=
-   list.slice(
-    0,
-    30
-   );
-
-
-  TP.list.forEach(
-   p=>{
-
-    MK.pairs[
-     key({
-      chainId:p.chainId,
-      pairAddress:p.pairAddress
-     })
-    ]=
-     p;
-
-   }
-  );
-
-
-  renderTradeList();
-
-
-  if(
-   TP.selected
-  ){
-
-   const newer=
-    TP.list.find(
-     p=>
-      tokenWatchKey(p)===
-      tokenWatchKey(
-       TP.selected
-      )
-    );
-
-
-   if(newer)
-    selectTradeToken(
-     newer
-    );
-
-  }
-
-
-  if(
-   !TP.selected&&
-   TP.list.length
-  ){
-
-   selectTradeToken(
-    TP.list[0]
-   );
-
-  }
-
-
- }catch(e){
-
-  console.error(
-   'Trade discovery',
-   e
-  );
-
-
-  box.innerHTML=`
-
-   <div class="sticker card mk-empty">
-    Could not load Trade Pad data right now.
-    Try again in a moment 💧
-   </div>
-
-  `;
-
- }finally{
-
-  TP.loading=
-   false;
-
- }
-
-}
-
-
-function renderTradeList(){
-
- const box=
-  $('tradeList');
-
-
- if(!TP.list.length){
-
-  box.innerHTML=`
-
-   <div class="sticker card watch-empty">
-
-    ${
-     TP.mode==='watchlist'
-
-      ?(
-       wallet
-        ?'Your Supabase watchlist is empty. ⭐ Add tokens from the Trade Pad.'
-        :'Connect your wallet to view your watchlist.'
-      )
-
-      :'No matching tokens found right now. Try another chain or search.'
-    }
-
-   </div>
-
-  `;
 
   return;
 
  }
 
 
- box.innerHTML=
-  TP.list
-   .map(
-    p=>
-     tradeTokenCard(p)
-   )
-   .join('');
-
-}
-
-
-function tradeTokenCard(p){
-
- const img=
-  safeImg(
-   p.info&&
-   p.info.imageUrl
-  );
-
-
- const change=
-  num(
-   p.priceChange?.h24
-  );
-
-
- const isWatched=
-  isWatched(
-   p
-  );
-
-
- return `
-
-  <div
-   class="trade-token"
-   data-trade-address="${esc(p.baseToken.address)}"
-   data-trade-chain="${esc(p.chainId)}"
-   onclick="selectTradeAddress(this.dataset.tradeChain,this.dataset.tradeAddress)">
-
-   <div class="trade-token-top">
-
-    ${
-     img
-
-      ?`<img
-          class="trade-token-icon"
-          src="${esc(img)}"
-          alt=""
-          loading="lazy"
-          onerror="this.outerHTML='<span class=&quot;trade-token-icon&quot;>💧</span>'"
-         >`
-
-      :'<span class="trade-token-icon">💧</span>'
-    }
-
-
-    <div class="trade-token-name">
-
-     <b>
-      ${esc(p.baseToken.symbol)}
-     </b>
-
-     <span>
-      ${esc(p.baseToken.name)}
-     </span>
-
-    </div>
-
-
-    <span class="trade-chain">
-
-     ${chainEmoji(p.chainId)}
-
-     ${chainName(p.chainId)}
-
-    </span>
-
-
-    <span
-     class="pill mk-chip ${cls(change)}">
-
-     ${fc(change)}
-
-    </span>
-
-
-    <span>
-     ${isWatched?'⭐':'☆'}
-    </span>
-
-   </div>
-
-
-   <div class="trade-price">
-    ${fp(p.priceUsd)}
-   </div>
-
-
-   <div class="trade-token-stats">
-
-    <div class="trade-token-stat">
-
-     <b>
-      ${fm(p.marketCap||p.fdv)}
-     </b>
-
-     <span>
-      Market cap
-     </span>
-
-    </div>
-
-
-    <div class="trade-token-stat">
-
-     <b>
-      ${fm(liq(p))}
-     </b>
-
-     <span>
-      Liquidity
-     </span>
-
-    </div>
-
-
-    <div class="trade-token-stat">
-
-     <b>
-      ${fm(p.volume?.h24)}
-     </b>
-
-     <span>
-      24h volume
-     </span>
-
-    </div>
-
-
-    <div class="trade-token-stat">
-
-     <b>
-      ${esc(p.dexId||'–')}
-     </b>
-
-     <span>
-      DEX
-     </span>
-
-    </div>
-
-   </div>
-
-  </div>
-
- `;
-
-}
-
-
-function chainName(c){
-
- const map={
-
-  solana:'Solana',
-
-  ethereum:'Ethereum',
-
-  bsc:'BSC',
-
-  base:'Base'
-
- };
-
-
- return map[c]||
-  c||
-  'Unknown';
-
-}
-
-
-function chainEmoji(c){
-
- const map={
-
-  solana:'◎',
-
-  ethereum:'⟠',
-
-  bsc:'🔶',
-
-  base:'🔵'
-
- };
-
-
- return map[c]||
-  '🌐';
-
-}
-
-
-function selectTradeAddress(
- chain,
- address
-){
-
- const p=
-  TP.list.find(
-   x=>
-    x.chainId===chain&&
-    x.baseToken?.address===address
-  );
-
-
- if(p)
-  selectTradeToken(p);
-
-}
-
-
-function selectTradeToken(p){
-
- if(!p)
-  return;
-
-
- TP.selected=
-  p;
-
-
- const img=
-  safeImg(
-   p.info&&
-   p.info.imageUrl
-  );
-
-
- $('tradeDetailIcon').src=
-  img||
-  'fiji.png';
-
-
- $('tradeDetailSymbol').textContent=
-  p.baseToken?.symbol||
-  'TOKEN';
-
-
- $('tradeDetailName').textContent=
-  (
-   p.baseToken?.name||
-   'Token'
-  )+
-  ' · '+
-  chainName(
-   p.chainId
-  );
-
-
- $('tradePrice').innerHTML=
-  fp(p.priceUsd);
-
-
- $('tradeMc').textContent=
-  fm(
-   p.marketCap||
-   p.fdv
-  );
-
-
- $('tradeLiq').textContent=
-  fm(
-   liq(p)
-  );
-
-
- $('tradeVol').textContent=
-  fm(
-   p.volume?.h24
-  );
-
-
- $('tradeContract').textContent=
-  p.baseToken?.address||
-  '–';
-
-
- $('tradeChartLabel').textContent=
-  (
-   p.baseToken?.symbol||
-   'TOKEN'
-  )+
-  ' · 24h';
-
-
- $('summaryToken').textContent=
-  p.baseToken?.symbol||
-  'TOKEN';
-
-
- $('summaryLiq').textContent=
-  fm(
-   liq(p)
-  );
-
-
- $('summaryPrice').innerHTML=
-  fp(
-   p.priceUsd
-  );
-
-
- $('tradeSelectedChain').textContent=
-  chainName(
-   p.chainId
-  );
-
-
- $('tradeUnit').textContent=
-  chainQuote(
-   p.chainId
-  );
-
-
- $('securityLiq').textContent=
-  fm(
-   liq(p)
-  );
-
-
- $('securityAge').textContent=
-  pairAge(
-   p.pairCreatedAt
-  );
-
-
- $('securityPair').textContent=
-  p.pairAddress
-   ?short(p.pairAddress)
-   :'–';
-
-
- $('securityDex').textContent=
-  p.dexId||
-  '–';
-
-
- $('securityAddress').textContent=
-  p.baseToken?.address
-   ?short(
-     p.baseToken.address
-    )
-   :'–';
-
-
- $('sniperContract').value=
-  p.baseToken?.address||
-  '';
-
-
- updateTradeStar();
-
- updateTradeChart(
-  p
+ toast(
+  'Trade Pad engine will be added next'
  );
 
 }
 
 
-function chainQuote(chain){
-
- if(chain==='solana')
-  return 'SOL';
-
+function tradeSetAction(action){
 
  if(
-  chain==='ethereum'||
-  chain==='base'
- )
-  return 'ETH';
+  window.FIJI_TRADE?.setAction
+ ){
 
-
- if(chain==='bsc')
-  return 'BNB';
-
-
- return 'UNIT';
-
-}
-
-
-function pairAge(ts){
-
- if(!ts)
-  return '–';
-
-
- const n=
-  Number(ts);
-
-
- if(!isFinite(n))
-  return '–';
-
-
- const ms=
-  n<1e12
-   ?n*1000
-   :n;
-
-
- const diff=
-  Math.max(
-   0,
-   Date.now()-ms
+  window.FIJI_TRADE.setAction(
+   action
   );
-
-
- const mins=
-  Math.floor(
-   diff/60000
-  );
-
-
- if(mins<60)
-  return mins+'m';
-
-
- const hours=
-  Math.floor(
-   mins/60
-  );
-
-
- if(hours<24)
-  return hours+'h';
-
-
- const days=
-  Math.floor(
-   hours/24
-  );
-
-
- return days+'d';
-
-}
-
-
-function updateTradeChart(p){
-
- const pc=
-  p.priceChange||{};
-
-
- const vals=[
-
-  num(pc.h24),
-  num(pc.h6),
-  num(pc.h1),
-  num(pc.m5)
-
- ]
- .filter(
-  x=>x!==null
- );
-
-
- if(!vals.length){
-
-  $('tradeChartEmpty').style.display=
-   'flex';
 
   return;
 
  }
-
-
- $('tradeChartEmpty').style.display=
-  'none';
-
-
- const h=
-  num(pc.h24)||
-  0;
-
-
- const positive=
-  h>=0;
-
-
- const path=
-
-  positive
-
-   ?'0,40 8,37 16,39 25,31 33,34 42,25 50,28 58,19 66,22 75,14 83,17 92,9 100,12'
-
-   :'0,12 8,17 16,14 25,23 33,20 42,29 50,25 58,34 66,30 75,38 83,34 92,43 100,40';
-
-
- $('tradeChartPath')
-  .setAttribute(
-   'points',
-   path
-  );
-
-}
-
-
-/* =========================================================
-   WATCHLIST PREVIEW
-========================================================= */
-
-function renderWatchPreview(){
-
- const box=
-  $('tradeWatchPreview');
-
-
- if(!TP.watch.length){
-
-  box.innerHTML=`
-
-   <div class="watch-empty">
-    No tokens in your watchlist yet.
-   </div>
-
-  `;
-
-  return;
-
- }
-
-
- const rows=
-  TP.watch
-   .slice(0,5)
-   .map(
-    watchEntry=>{
-
-     const parsed=
-      parseWatchKey(
-       watchEntry
-      );
-
-
-     if(!parsed)
-      return '';
-
-
-     const p=
-      TP.list.find(
-       x=>
-        tokenWatchKey(x)===
-        watchEntry
-      );
-
-
-     if(!p){
-
-      return `
-
-       <div
-        class="activity-row">
-
-        <span class="activity-side"></span>
-
-
-        <div class="activity-info">
-
-         <b>
-          ${short(parsed.mint)}
-         </b>
-
-         <span>
-          ${chainName(parsed.chain)}
-         </span>
-
-        </div>
-
-       </div>
-
-      `;
-
-     }
-
-
-     return `
-
-      <div
-       class="activity-row"
-       onclick="selectTradeAddress('${esc(parsed.chain)}','${esc(parsed.mint)}')"
-       style="cursor:pointer">
-
-       <span
-        class="activity-side ${cls(p.priceChange?.h24)}">
-       </span>
-
-
-       <div class="activity-info">
-
-        <b>
-         ${esc(p.baseToken.symbol)}
-        </b>
-
-        <span>
-         ${chainName(p.chainId)}
-        </span>
-
-       </div>
-
-
-       <span class="activity-amount">
-        ${fc(p.priceChange?.h24)}
-       </span>
-
-      </div>
-
-     `;
-
-    }
-   )
-   .join('');
-
-
- box.innerHTML=
-  rows;
-
-}
-
-
-/* =========================================================
-   TRADE ACTION
-========================================================= */
-
-function setTradeAction(action){
-
- TP.action=
-  action;
 
 
  $('buyTab').classList.toggle(
@@ -8911,43 +6900,38 @@ function setTradeAction(action){
   action==='sell'
  );
 
+
+ $('tradeAmountUnit').textContent=
+  action==='buy'
+   ?'SOL'
+   :'TOKEN';
+
 }
 
 
-function setTradeAmount(percent){
+function tradeSetPreset(
+ percent
+){
 
- if(!TP.selected)
-  return toast(
-   'Select a token first'
+ if(
+  window.FIJI_TRADE?.setPreset
+ ){
+
+  window.FIJI_TRADE.setPreset(
+   percent
   );
 
-
- if(percent==='100'){
-
-  /*
-   Kept as a display value for now.
-   Actual execution is intentionally disabled.
-  */
-
-  $('tradeAmount').value=
-   'MAX';
-
- }else{
-
-  $('tradeAmount').value=
-   percent;
+  return;
 
  }
 
-}
 
-
-function prepareTrade(){
-
- if(!wallet){
+ if(
+  !wallet
+ ){
 
   toast(
-   'Connect your wallet from the FIJI header first.'
+   'Connect your wallet first'
   );
 
   return;
@@ -8956,142 +6940,91 @@ function prepareTrade(){
 
 
  toast(
-  'Trade execution will be enabled in the next Trade Pad step ⚡'
+  'Quick amount will be enabled with the Trade Pad engine'
  );
 
 }
 
 
-/* =========================================================
-   SNIPER
-========================================================= */
+function tradeFlipSide(){
 
-function toggleSniper(){
+ if(
+  window.FIJI_TRADE?.flipSide
+ ){
 
- const button=
-  $('sniperButton');
+  window.FIJI_TRADE.flipSide();
 
-
- const dot=
-  $('sniperDot');
-
-
- const state=
-  $('sniperState');
-
-
- const text=
-  $('sniperText');
-
-
- const armed=
-  dot.classList.contains(
-   'armed'
-  );
-
-
- if(armed){
-
-  dot.classList.remove(
-   'armed'
-  );
-
-
-  state.textContent=
-   'OFF';
-
-
-  text.textContent=
-   'Ready to configure';
-
-
-  button.textContent=
-   '⚡ Arm Sniper';
-
-
-  toast(
-   'Sniper disarmed'
-  );
-
-
- }else{
-
-  if(!wallet){
-
-   toast(
-    'Connect your wallet from the FIJI header first.'
-   );
-
-   return;
-
-  }
-
-
-  if(
-   !$('sniperContract')
-    .value
-    .trim()
-  ){
-
-   toast(
-    'Select a token or enter a contract first.'
-   );
-
-   return;
-
-  }
-
-
-  dot.classList.add(
-   'armed'
-  );
-
-
-  state.textContent=
-   'ARMED';
-
-
-  text.textContent=
-   'Monitoring only · execution disabled';
-
-
-  button.textContent=
-   '🛑 Disarm Sniper';
-
-
-  toast(
-   'Sniper armed in monitor-only mode ⚡'
-  );
+  return;
 
  }
+
+
+ toast(
+  'Swap direction will be enabled with the Trade Pad engine'
+ );
 
 }
 
 
-/* =========================================================
-   COPY / DEX
-========================================================= */
+function tradeToggleWatch(){
 
-function copyTradeContract(){
+ if(
+  window.FIJI_TRADE?.toggleWatch
+ ){
 
- if(!TP.selected)
-  return toast(
+  window.FIJI_TRADE.toggleWatch();
+
+  return;
+
+ }
+
+
+ if(
+  !wallet
+ ){
+
+  toast(
+   'Connect your wallet first'
+  );
+
+  return;
+
+ }
+
+
+ toast(
+  'Watchlist will be connected to Supabase next'
+ );
+
+}
+
+
+function tradeCopyContract(){
+
+ const value=
+  $('tradeContract')
+   .textContent
+   .trim();
+
+
+ if(
+  !value||
+  value.startsWith(
+   'Contract'
+  )
+ ){
+
+  toast(
    'Select a token first'
   );
 
+  return;
 
- const address=
-  TP.selected.baseToken?.address;
-
-
- if(!address)
-  return toast(
-   'No contract available'
-  );
+ }
 
 
- navigator.clipboard.writeText(
-  address
+ safeCopy(
+  value
  );
 
 
@@ -9102,64 +7035,99 @@ function copyTradeContract(){
 }
 
 
-function openSelectedDex(){
+function tradeExecute(){
 
- if(!TP.selected)
-  return toast(
-   'Select a token first'
-  );
+ if(
+  window.FIJI_TRADE?.execute
+ ){
 
+  window.FIJI_TRADE.execute();
 
- const p=
-  TP.selected;
+  return;
+
+ }
 
 
  if(
-  !p.chainId||
-  !p.pairAddress
- )
-  return toast(
-   'DexScreener link unavailable'
+  !wallet
+ ){
+
+  toast(
+   'Connect your wallet first'
   );
 
+  return;
 
- const url=
-  'https://dexscreener.com/'+
-  p.chainId+'/'+
-  p.pairAddress;
+ }
 
 
- window.open(
-  url,
-  '_blank',
-  'noopener'
+ toast(
+  'Trade engine will be connected next ⚡'
+ );
+
+}
+
+
+function tradeToggleSniper(){
+
+ if(
+  window.FIJI_TRADE?.toggleSniper
+ ){
+
+  window.FIJI_TRADE.toggleSniper();
+
+  return;
+
+ }
+
+
+ toast(
+  'Advanced execution will be connected after the core Trade Pad'
  );
 
 }
 
 
 /* =========================================================
-   INITIALIZATION
+   SEARCH HOOK
 ========================================================= */
 
-setTradeAction(
- 'buy'
+$('tradeSearch')
+ .addEventListener(
+  'input',
+  ()=>{
+   if(
+    window.FIJI_TRADE?.search
+   ){
+
+    window.FIJI_TRADE.search(
+     $('tradeSearch').value
+    );
+
+   }
+  }
 );
 
 
-/*
-   Intentionally no localStorage watchlist loader.
-   The Trade Pad watchlist now belongs to Supabase.
-*/
+/* =========================================================
+   START
+========================================================= */
 
 go('home');
 
 
-$('mint').textContent=
- CFG.FIJI_MINT;
+/*
+  IMPORTANT:
+
+  Do NOT add the old tradepad.js yet.
+
+  The new dedicated tradepad.js will be added next and
+  loaded after this core script.
+
+*/
+
 
 </script>
 
 </body>
 </html>
-```
