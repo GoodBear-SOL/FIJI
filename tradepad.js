@@ -912,7 +912,28 @@ async function signAndSend(encoded){
   }
   throw new Error('This wallet cannot sign transactions through FIJI yet');
 }
-
+async function claimTradePoints(sig,mint){
+  const wallet=walletAddress();
+  if(!wallet||!sig)return;
+  for(let i=0;i<4;i++){
+    try{
+      const res=await routerPost('/claim',{wallet,signature:sig,mint});
+      if(res?.awarded){
+        if(res.profile&&CORE.setProfile)CORE.setProfile(res.profile);
+        toast('+'+res.points+' points for your trade ⭐');
+      }else if(res?.reason&&!/already/i.test(res.reason)){
+        toast(res.reason);
+      }
+      return;
+    }catch(e){
+      const m=String(e.message||e);
+      if(/not found yet/i.test(m)&&i<3){await new Promise(r=>setTimeout(r,2500));continue}
+      console.warn('Trade points claim failed',e);
+      toast(m);
+      return;
+    }
+  }
+}
 async function executeTrade(){
   if(!walletAddress())return toast('Connect your wallet first');
   if(!TP.selected)return toast('Select a token first');
@@ -949,6 +970,7 @@ async function executeTrade(){
       if(r?.value?.err)failed=true;
     }catch(e){console.warn('Confirmation lookup failed',e)}
     toast(failed?'Transaction failed on-chain':'Trade confirmed ✔');
+      if(!failed)await claimTradePoints(sig,TP.selected?.baseToken?.address);
 
     if(CORE.loadAssets)await CORE.loadAssets();
     await refreshSelectedToken();
