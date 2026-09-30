@@ -398,6 +398,7 @@ th{font-family:Fredoka}
   <div class="sticker card"><div class="em">📅</div><h3>Daily check-in</h3><p>+10 and streak bonus</p><br><button class="btn sm" onclick="doEarn('daily')">Check in</button></div>
   <div class="sticker card" style="text-align:center"><h3>🎮 Splash Tap</h3><p>Tap Fiji 10 times for +5 (5 plays/day)</p><img id="pad" src="fiji.png" alt="Tap Fiji" onclick="tap()" draggable="false"><div class="bar"><i id="tb"></i></div></div>
   <div class="sticker card"><h3>🤝 Referral link</h3><p>+50 for every friend who joins</p><input id="ref" readonly placeholder="Connect wallet first"><button class="btn sm alt" onclick="copyReferral()">Copy link</button></div>
+   <div class="sticker card"><div class="em">⚡</div><h3>Trade &amp; earn</h3><p>+300 points per successful buy or sell on the Trade Pad (min 0.01 SOL, up to 10 a day)</p></div>
  </div>
 </section>
 
@@ -574,7 +575,7 @@ const TOKEN='TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',TOKEN22='TokenzQdBNbLq
 let wallet=null,provider=null,cur=null,taps=0;
 
 /* ---------------- 2. BRIDGE FOR tradepad.js ---------------- */
-window.FIJI_CORE={CFG,$,toast,go,loadAssets,
+window.FIJI_CORE={CFG,$,toast,go,loadAssets,setProfile,
  getWallet:()=>wallet,getProvider:()=>provider,getConnection:()=>conn,getSupabase:()=>db};
 
 /* ---------------- 3. NAVIGATION ---------------- */
