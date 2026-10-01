@@ -46,6 +46,8 @@ css.textContent=`
 .fg-sheet h3{font-size:26px;margin:6px 0 8px}
 .fg-need{display:flex;justify-content:space-between;gap:10px;background:#fff;border:2.5px dashed var(--ink);border-radius:16px;padding:10px 14px;margin:14px 0;font:600 15px Fredoka}
 .fg-acts{display:grid;gap:10px;margin-top:6px}
+/* wallet picker must open ABOVE the gate popup (480) but below the toast (500) */
+.modal{z-index:490}
 `;
 document.head.appendChild(css);
 
