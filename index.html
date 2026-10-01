@@ -11,308 +11,51 @@
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
 
 <style>
-   /* Wallet asset icons */
-.asset-cell{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  min-width:0;
-}
-
-.asset-icon{
-  width:32px;
-  height:32px;
-  min-width:32px;
-  border-radius:50%;
-  object-fit:cover;
-  display:block;
-  background:var(--sb);
-  border:2px solid var(--ink);
-}
-
-.asset-icon-fallback{
-  width:32px;
-  height:32px;
-  min-width:32px;
-  border-radius:50%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:var(--sb);
-  border:2px solid var(--ink);
-  font-size:17px;
-}
-
-.asset-info{
-  display:flex;
-  flex-direction:column;
-  min-width:0;
-}
-
-.asset-name{
-  font-weight:600;
-  line-height:1.15;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-
-.asset-symbol{
-  font-size:11px;
-  opacity:.6;
-  line-height:1.2;
-}
-
-.asset-balance{
-  font-weight:600;
-  white-space:nowrap;
-}
-   /* =========================================
-   FIJI PORTFOLIO
-========================================= */
-
-.portfolio-card{
-  overflow:hidden;
-}
-
-.portfolio-head{
-  display:flex;
-  justify-content:space-between;
-  align-items:flex-start;
-  gap:15px;
-}
-
-.portfolio-label{
-  font-size:12px;
-  font-weight:600;
-  opacity:.62;
-  text-transform:uppercase;
-  letter-spacing:.08em;
-  margin-bottom:4px;
-}
-
-.portfolio-value{
-  font-size:32px;
-  line-height:1.05;
-  font-weight:700;
-  letter-spacing:-.02em;
-}
-
-.portfolio-status{
-  margin-top:6px;
-  font-size:12px;
-  opacity:.58;
-}
-
-.portfolio-refresh{
-  flex:none;
-}
-
-.portfolio-day{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  margin-top:17px;
-  padding:10px 12px;
-  border-radius:14px;
-  background:rgba(255,255,255,.45);
-  border:1px solid rgba(0,0,0,.07);
-  width:max-content;
-  max-width:100%;
-}
-
-.day-label{
-  font-size:12px;
-  opacity:.58;
-  font-weight:600;
-}
-
-.portfolio-change{
-  font-size:14px;
-  font-weight:700;
-}
-
-.portfolio-change-usd{
-  font-size:12px;
-  opacity:.65;
-}
-
-.portfolio-change.up{
-  color:#179447;
-}
-
-.portfolio-change.down{
-  color:#d44b4b;
-}
-
-.portfolio-divider{
-  height:1px;
-  background:rgba(0,0,0,.08);
-  margin:18px 0 14px;
-}
-
-.portfolio-assets-title{
-  font-size:14px;
-  font-weight:700;
-  margin-bottom:8px;
-}
-
-.portfolio-table-wrap{
-  width:100%;
-  overflow-x:auto;
-  -webkit-overflow-scrolling:touch;
-}
-
-.portfolio-table{
-  width:100%;
-  border-collapse:collapse;
-}
-
-.portfolio-table th{
-  font-size:10px;
-  text-transform:uppercase;
-  letter-spacing:.06em;
-  opacity:.48;
-  font-weight:700;
-  padding:7px 5px;
-  text-align:right;
-}
-
-.portfolio-table th:first-child{
-  text-align:left;
-}
-
-.portfolio-table td{
-  padding:11px 5px;
-  border-top:1px solid rgba(0,0,0,.055);
-  text-align:right;
-  vertical-align:middle;
-  white-space:nowrap;
-}
-
-.portfolio-table td:first-child{
-  text-align:left;
-}
-
-.asset-cell{
-  display:flex;
-  align-items:center;
-  gap:9px;
-  min-width:135px;
-}
-
-.asset-icon{
-  width:34px;
-  height:34px;
-  min-width:34px;
-  border-radius:50%;
-  object-fit:cover;
-  display:block;
-  background:rgba(255,255,255,.6);
-  border:1px solid rgba(0,0,0,.12);
-}
-
-.asset-icon-fallback{
-  width:34px;
-  height:34px;
-  min-width:34px;
-  border-radius:50%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:rgba(255,255,255,.6);
-  border:1px solid rgba(0,0,0,.12);
-  font-size:17px;
-}
-
-.asset-info{
-  display:flex;
-  flex-direction:column;
-  min-width:0;
-  max-width:125px;
-}
-
-.asset-name{
-  font-size:13px;
-  font-weight:700;
-  line-height:1.15;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-
-.asset-symbol{
-  font-size:10px;
-  opacity:.52;
-  margin-top:2px;
-}
-
-.asset-balance{
-  font-size:12px;
-  font-weight:600;
-}
-
-.asset-value{
-  font-size:12px;
-  font-weight:700;
-}
-
-.asset-change{
-  font-size:12px;
-  font-weight:700;
-}
-
-.asset-change.up{
-  color:#179447;
-}
-
-.asset-change.down{
-  color:#d44b4b;
-}
-
-.asset-change.flat{
-  opacity:.5;
-}
-
-.portfolio-empty{
-  text-align:center!important;
-  padding:24px 10px!important;
-  opacity:.5;
-  font-size:12px;
-}
-
-.wallet-status{
-  margin-top:12px;
-  font-size:12px;
-  opacity:.6;
-}
-
-
-/* Mobile */
+/* ===================================================================
+   0. PORTFOLIO (wallet assets)
+=================================================================== */
+.portfolio-card{overflow:hidden}
+.portfolio-head{display:flex;justify-content:space-between;align-items:flex-start;gap:15px}
+.portfolio-label{font-size:12px;font-weight:600;opacity:.62;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.portfolio-value{font-size:32px;line-height:1.05;font-weight:700;letter-spacing:-.02em}
+.portfolio-status{margin-top:6px;font-size:12px;opacity:.58}
+.portfolio-refresh{flex:none}
+.portfolio-day{display:flex;align-items:center;gap:8px;margin-top:17px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.45);border:1px solid rgba(0,0,0,.07);width:max-content;max-width:100%}
+.day-label{font-size:12px;opacity:.58;font-weight:600}
+.portfolio-change{font-size:14px;font-weight:700}
+.portfolio-change-usd{font-size:12px;opacity:.65}
+.portfolio-change.up{color:#179447}
+.portfolio-change.down{color:#d44b4b}
+.portfolio-divider{height:1px;background:rgba(0,0,0,.08);margin:18px 0 14px}
+.portfolio-assets-title{font-size:14px;font-weight:700;margin-bottom:8px}
+.portfolio-table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.portfolio-table{width:100%;border-collapse:collapse}
+.portfolio-table th{font-size:10px;text-transform:uppercase;letter-spacing:.06em;opacity:.48;font-weight:700;padding:7px 5px;text-align:right}
+.portfolio-table th:first-child{text-align:left}
+.portfolio-table td{padding:11px 5px;border-top:1px solid rgba(0,0,0,.055);text-align:right;vertical-align:middle;white-space:nowrap;word-break:normal}
+.portfolio-table td:first-child{text-align:left}
+.asset-cell{display:flex;align-items:center;gap:9px;min-width:135px}
+.asset-icon{width:34px;height:34px;min-width:34px;border-radius:50%;object-fit:cover;display:block;background:rgba(255,255,255,.6);border:1px solid rgba(0,0,0,.12)}
+.asset-icon-fallback{width:34px;height:34px;min-width:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.6);border:1px solid rgba(0,0,0,.12);font-size:17px}
+.asset-info{display:flex;flex-direction:column;min-width:0;max-width:125px}
+.asset-name{font-size:13px;font-weight:700;line-height:1.15;overflow:hidden;text-overflow:ellipsis}
+.asset-symbol{font-size:10px;opacity:.52;margin-top:2px}
+.asset-balance{font-size:12px;font-weight:600}
+.asset-value{font-size:12px;font-weight:700}
+.asset-change{font-size:12px;font-weight:700}
+.asset-change.up{color:#179447}
+.asset-change.down{color:#d44b4b}
+.asset-change.flat{opacity:.5}
+.portfolio-empty{text-align:center!important;padding:24px 10px!important;opacity:.5;font-size:12px}
+.wallet-status{margin-top:12px;font-size:12px;opacity:.6}
 @media(max-width:600px){
-
-  .portfolio-head{
-    align-items:center;
-  }
-
-  .portfolio-value{
-    font-size:27px;
-  }
-
-  .portfolio-refresh{
-    font-size:11px;
-    padding:7px 10px;
-  }
-
-  .portfolio-table{
-    min-width:500px;
-  }
-
-  .portfolio-day{
-    margin-top:13px;
-  }
-
+ .portfolio-head{align-items:center}
+ .portfolio-value{font-size:27px}
+ .portfolio-refresh{font-size:11px;padding:7px 10px}
+ .portfolio-table{min-width:500px}
+ .portfolio-day{margin-top:13px}
 }
-   
+
 /* ===================================================================
    1. BASE: variables, reset, typography, layout
 =================================================================== */
@@ -679,90 +422,42 @@ th{font-family:Fredoka}
  <div class="grid" id="mkGrid"></div>
  <p class="small" style="margin-top:14px">Market data from DexScreener, refreshed about every 30 seconds. For fun and information only, not financial advice. Meme coins can lose value fast, and look-alike tokens exist, so always check the contract address.</p>
 
-<div class="tag">my wallet</div>
+ <div class="tag">my wallet</div>
+ <h2>Everything in your little bunny burrow.</h2>
 
-<h2>Everything in your little bunny burrow.</h2>
-
-<div class="sticker card portfolio-card">
-
+ <div class="sticker card portfolio-card">
   <div class="portfolio-head">
-
-    <div>
-      <div class="portfolio-label">Portfolio value</div>
-
-      <div id="portfolioValue" class="portfolio-value">
-        —
-      </div>
-
-      <div id="portfolioStatus" class="portfolio-status">
-        Connect your wallet to view your portfolio.
-      </div>
-    </div>
-
-    <button
-      class="btn sm portfolio-refresh"
-      onclick="loadAssets()"
-      title="Refresh portfolio"
-    >
-      ↻ Refresh
-    </button>
-
+   <div>
+    <div class="portfolio-label">Portfolio value</div>
+    <div id="portfolioValue" class="portfolio-value">—</div>
+    <div id="portfolioStatus" class="portfolio-status">Connect your wallet to view your portfolio.</div>
+   </div>
+   <button class="btn sm portfolio-refresh" onclick="loadAssets()" title="Refresh portfolio">↻ Refresh</button>
   </div>
-
 
   <div id="portfolioDay" class="portfolio-day">
-    <span class="day-label">Today</span>
-
-    <span id="portfolioChange" class="portfolio-change">
-      —
-    </span>
-
-    <span id="portfolioChangeUsd" class="portfolio-change-usd">
-      —
-    </span>
+   <span class="day-label">Today</span>
+   <span id="portfolioChange" class="portfolio-change">—</span>
+   <span id="portfolioChangeUsd" class="portfolio-change-usd">—</span>
   </div>
 
-
-  <div id="wstat" class="wallet-status">
-    Connect a Solana wallet to see your assets and whether you hold FIJI.
-  </div>
-
-
+  <div id="wstat" class="wallet-status">Connect a Solana wallet to see your assets and whether you hold FIJI.</div>
   <div id="holder" style="margin:12px 0"></div>
-
-
   <div class="portfolio-divider"></div>
-
-
-  <div class="portfolio-assets-title">
-    Your assets
-  </div>
-
+  <div class="portfolio-assets-title">Your assets</div>
 
   <div class="portfolio-table-wrap">
-
-    <table id="assets" class="portfolio-table">
-      <thead>
-        <tr>
-          <th>Asset</th>
-          <th>Balance</th>
-          <th>Value</th>
-          <th>24h</th>
-        </tr>
-      </thead>
-
-      <tbody id="assetRows">
-        <tr>
-          <td colspan="4" class="portfolio-empty">
-            Connect your wallet to see your assets.
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
+   <table id="assets" class="portfolio-table">
+    <thead>
+     <tr><th>Asset</th><th>Balance</th><th>Value</th><th>24h</th></tr>
+    </thead>
+    <tbody id="assetRows">
+     <tr><td colspan="4" class="portfolio-empty">Connect your wallet to see your assets.</td></tr>
+    </tbody>
+   </table>
   </div>
-
-</div>
+ </div>
+</section><!-- FIX: Market section is now closed, so Earn / Trade / Board are no longer hidden inside it -->
 
 <!-- ===================================================================
      EARN
@@ -775,7 +470,7 @@ th{font-family:Fredoka}
   <div class="sticker card"><div class="em">📅</div><h3>Daily check-in</h3><p>+10 and streak bonus</p><br><button class="btn sm" onclick="doEarn('daily')">Check in</button></div>
   <div class="sticker card" style="text-align:center"><h3>🎮 Splash Tap</h3><p>Tap Fiji 10 times for +5 (5 plays/day)</p><img id="pad" src="fiji.png" alt="Tap Fiji" onclick="tap()" draggable="false"><div class="bar"><i id="tb"></i></div></div>
   <div class="sticker card"><h3>🤝 Referral link</h3><p>+50 for every friend who joins</p><input id="ref" readonly placeholder="Connect wallet first"><button class="btn sm alt" onclick="copyReferral()">Copy link</button></div>
-   <div class="sticker card"><div class="em">⚡</div><h3>Trade &amp; earn</h3><p>+50 points per successful buy or sell on the Trade Pad (min 0.01 SOL, up to 10 a day)</p></div>
+  <div class="sticker card"><div class="em">⚡</div><h3>Trade &amp; earn</h3><p>+50 points per successful buy or sell on the Trade Pad (min 0.01 SOL, up to 10 a day)</p></div>
  </div>
 </section>
 
@@ -1026,11 +721,21 @@ function waitForWallets(ms=3000){
 }
 
 /* ---------------- 6. CONNECT / DISCONNECT ---------------- */
+function resetPortfolioUI(){
+ $('holder').innerHTML='';
+ $('portfolioValue').textContent='—';
+ $('portfolioStatus').textContent='Connect your wallet to view your portfolio.';
+ $('portfolioChange').textContent='—';
+ $('portfolioChange').className='portfolio-change';
+ $('portfolioChangeUsd').textContent='—';
+ /* FIX: only reset the table body. Clearing #assets used to delete the whole table. */
+ $('assetRows').innerHTML='<tr><td colspan="4" class="portfolio-empty">Connect your wallet to see your assets.</td></tr>';
+}
 function clearWallet(){
  wallet=null;provider=null;cur=null;
  $('cbtn').textContent='Connect wallet';
  $('wstat').textContent='Connect a Solana wallet (Jupiter, Phantom, Solflare, Backpack) to see your assets and whether you hold FIJI.';
- $('holder').innerHTML='';$('assets').innerHTML='';
+ resetPortfolioUI();
  window.FIJI_TRADE?.portfolioUpdated?.({sol:0,tokens:[]});
  window.FIJI_TRADE?.walletChanged?.(null);
 }
@@ -1118,1153 +823,209 @@ window.addEventListener('load',async()=>{
  try{await afterConnect(o,await connectWallet(o,{silent:true}))}catch(e){}
 });
 
-/* ---------------- 7. BALANCES ---------------- */
+/* ---------------- 7. PORTFOLIO ---------------- */
+function fijiMoney(v){
+ if(!Number.isFinite(v))return '—';
+ if(v===0)return '$0.00';
+ if(Math.abs(v)<0.01)return '$'+v.toFixed(4);
+ return '$'+v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fijiPercent(v){
+ if(!Number.isFinite(v))return '—';
+ return (v>0?'+':'')+v.toFixed(2)+'%';
+}
+function fijiSignedMoney(v){
+ if(!Number.isFinite(v))return '—';
+ return (v>0?'+':v<0?'−':'')+fijiMoney(Math.abs(v));
+}
+function fijiChangeClass(v){
+ if(!Number.isFinite(v)||v===0)return 'flat';
+ return v>0?'up':'down';
+}
+
+/* Token metadata from Helius DAS */
 async function getFijiWalletAssets(ownerAddress){
-  try{
-    const response = await fetch(CFG.RPC,{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json'
-      },
-      body:JSON.stringify({
-        jsonrpc:'2.0',
-        id:'fiji-wallet-assets',
-        method:'getAssetsByOwner',
-        params:{
-          ownerAddress:ownerAddress,
-          page:1,
-          limit:100,
-          displayOptions:{
-            showFungible:true,
-            showNativeBalance:false,
-            showZeroBalance:false
-          }
-        }
-      })
-    });
-
-    const data=await response.json();
-
-    if(data.error){
-      console.error('Helius asset error:',data.error);
-      return [];
-    }
-
-    return (data.result?.items||[])
-      .filter(asset =>
-        asset.interface==='FungibleToken' ||
-        asset.interface==='FungibleAsset'
-      );
-
-  }catch(e){
-    console.error('Could not load token metadata:',e);
-    return [];
-  }
+ try{
+  const response=await fetch(CFG.RPC,{
+   method:'POST',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({
+    jsonrpc:'2.0',id:'fiji-wallet-assets',method:'getAssetsByOwner',
+    params:{ownerAddress,page:1,limit:100,displayOptions:{showFungible:true,showZeroBalance:false}}
+   })
+  });
+  const data=await response.json();
+  if(data.error){console.error('Helius asset error:',data.error);return []}
+  return data.result?.items||[];
+ }catch(error){
+  console.error('Helius wallet asset request failed:',error);
+  return [];
+ }
 }
-
-
-function getAssetImage(asset){
-  const mint=asset?.id||'';
-
-  /* Always use your local Fiji image */
-  if(mint===CFG.FIJI_MINT){
-    return 'fiji.png';
-  }
-
-  return safeImg(
-    asset?.content?.links?.image ||
-    asset?.content?.files?.[0]?.uri ||
-    ''
-  );
-}
-
-
-function getAssetName(asset){
-  return (
-    asset?.content?.metadata?.name ||
-    asset?.token_info?.symbol ||
-    short(asset?.id||'Unknown')
-  );
-}
-
-
-function getAssetSymbol(asset){
-  return asset?.content?.metadata?.symbol ||
-         asset?.token_info?.symbol ||
-         '';
-}
-
-
-function getAssetBalance(asset){
-  const balance=asset?.token_info?.balance ?? 0;
-  const decimals=asset?.token_info?.decimals ?? 0;
-
-  return balance / Math.pow(10,decimals);
-}
-
-
-function assetImageHTML(asset){
-  const img=getAssetImage(asset);
-
-  if(!img){
-    return `<span class="asset-icon-fallback">💧</span>`;
-  }
-
-  return `
-    <img
-      class="asset-icon"
-      src="${esc(img)}"
-      alt=""
-      loading="lazy"
-      onerror="this.outerHTML='<span class=&quot;asset-icon-fallback&quot;>💧</span>'"
-    >
-  `;
-}
-/* =========================================
-   FIJI PORTFOLIO SYSTEM
-========================================= */
-
-function fijiMoney(value){
-
-  if(!Number.isFinite(value)){
-    return '—';
-  }
-
-  if(value === 0){
-    return '$0.00';
-  }
-
-  if(Math.abs(value) < 0.01){
-    return '$'+value.toFixed(4);
-  }
-
-  return '$'+value.toLocaleString(
-    undefined,
-    {
-      minimumFractionDigits:2,
-      maximumFractionDigits:2
-    }
-  );
-}
-
-
-function fijiPrice(value){
-
-  if(!Number.isFinite(value) || value <= 0){
-    return null;
-  }
-
-  if(value < 0.000001){
-    return '$'+value.toExponential(2);
-  }
-
-  if(value < 0.01){
-    return '$'+value.toFixed(6);
-  }
-
-  return '$'+value.toFixed(4);
-}
-
-
-function fijiPercent(value){
-
-  if(!Number.isFinite(value)){
-    return '—';
-  }
-
-  const sign=value>0?'+':'';
-
-  return sign+value.toFixed(2)+'%';
-}
-
-
-function fijiSignedMoney(value){
-
-  if(!Number.isFinite(value)){
-    return '—';
-  }
-
-  const sign=value>0?'+':value<0?'−':'';
-
-  return sign+fijiMoney(Math.abs(value));
-}
-
-
-function fijiChangeClass(value){
-
-  if(!Number.isFinite(value) || value===0){
-    return 'flat';
-  }
-
-  return value>0?'up':'down';
-}
-
-
-/*
-  Get token metadata from Helius DAS.
-*/
-async function getFijiWalletAssets(ownerAddress){
-
-  try{
-
-    const response=await fetch(
-      CFG.RPC,
-      {
-        method:'POST',
-
-        headers:{
-          'Content-Type':'application/json'
-        },
-
-        body:JSON.stringify({
-
-          jsonrpc:'2.0',
-
-          id:'fiji-wallet-assets',
-
-          method:'getAssetsByOwner',
-
-          params:{
-            ownerAddress:ownerAddress,
-
-            page:1,
-
-            limit:100,
-
-            displayOptions:{
-              showFungible:true,
-              showZeroBalance:false
-            }
-          }
-
-        })
-      }
-    );
-
-
-    const data=await response.json();
-
-
-    if(data.error){
-
-      console.error(
-        'Helius asset error:',
-        data.error
-      );
-
-      return [];
-    }
-
-
-    return data.result?.items || [];
-
-
-  }catch(error){
-
-    console.error(
-      'Helius wallet asset request failed:',
-      error
-    );
-
-    return [];
-  }
-}
-
-
-/*
-  Get image from Helius metadata.
-*/
 function getFijiAssetImage(asset){
-
-  const mint=asset?.id || '';
-
-
-  /*
-    Always use your own Fiji artwork.
-  */
-  if(mint===CFG.FIJI_MINT){
-
-    return 'fiji.png';
-
-  }
-
-
-  return safeImg(
-
-    asset?.content?.links?.image ||
-
-    asset?.content?.files?.find(
-      f=>safeImg(f?.uri)
-    )?.uri ||
-
-    ''
-
-  );
+ if(!asset)return '';
+ if(asset.id===CFG.FIJI_MINT)return 'fiji.png';
+ return safeImg(asset.content?.links?.image||asset.content?.files?.find(f=>safeImg(f?.uri))?.uri||'');
 }
-
-
-/*
-  Token name.
-*/
 function getFijiAssetName(asset){
-
-  return (
-
-    asset?.content?.metadata?.name ||
-
-    asset?.token_info?.symbol ||
-
-    short(asset?.id || 'Unknown')
-
-  );
-
+ return asset?.content?.metadata?.name||asset?.token_info?.symbol||short(asset?.id||'Unknown');
 }
-
-
-/*
-  Token symbol.
-*/
 function getFijiAssetSymbol(asset){
-
-  return (
-
-    asset?.content?.metadata?.symbol ||
-
-    asset?.token_info?.symbol ||
-
-    ''
-
-  );
-
+ return asset?.content?.metadata?.symbol||asset?.token_info?.symbol||'';
 }
 
-
-/*
-  Render token logo.
-*/
-function fijiAssetIcon(asset){
-
-  const image=getFijiAssetImage(asset);
-
-
-  if(!image){
-
-    return `
-      <span class="asset-icon-fallback">
-        💧
-      </span>
-    `;
-
-  }
-
-
-  return `
-    <img
-      class="asset-icon"
-      src="${esc(image)}"
-      alt=""
-      loading="lazy"
-      onerror="this.outerHTML='<span class=&quot;asset-icon-fallback&quot;>💧</span>'"
-    >
-  `;
-
-}
-
-
-/*
-  Pull current market information from DexScreener.
-
-  We already use DexScreener in your Trade tab,
-  so this keeps the portfolio consistent with it.
-*/
+/* Price, 24h change and the ORIGINAL token icon from DexScreener (the same source as the Market tab) */
 async function getFijiMarketData(mints){
-
-  const output={};
-
-
-  const requests=mints.map(
-    async mint=>{
-
-      try{
-
-        const response=await fetch(
-          'https://api.dexscreener.com/latest/dex/tokens/' +
-          encodeURIComponent(mint)
-        );
-
-
-        const data=await response.json();
-
-
-        const pairs=(data.pairs || [])
-          .filter(
-            p=>p &&
-              p.chainId==='solana' &&
-              Number(p.priceUsd)>0
-          );
-
-
-        if(!pairs.length){
-
-          output[mint]={
-            price:0,
-            change24h:0,
-            image:''
-          };
-
-          return;
-
-        }
-
-
-        /*
-          Prefer the highest-liquidity Solana pair.
-        */
-        pairs.sort(
-          (a,b)=>
-            Number(
-              b.liquidity?.usd || 0
-            ) -
-            Number(
-              a.liquidity?.usd || 0
-            )
-        );
-
-
-        const pair=pairs[0];
-
-
-        output[mint]={
-
-          price:Number(
-            pair.priceUsd || 0
-          ),
-
-          change24h:Number(
-            pair.priceChange?.h24 || 0
-          ),
-
-          image:safeImg(
-            pair.info?.imageUrl || ''
-          )
-
-        };
-
-
-      }catch(error){
-
-        console.warn(
-          'Market data failed:',
-          mint,
-          error
-        );
-
-
-        output[mint]={
-
-          price:0,
-
-          change24h:0,
-
-          image:''
-
-        };
-
-      }
-
-    }
-  );
-
-
-  await Promise.all(requests);
-
-
-  return output;
-
+ const output={};
+ await Promise.all(mints.map(async mint=>{
+  try{
+   const response=await fetch('https://api.dexscreener.com/latest/dex/tokens/'+encodeURIComponent(mint));
+   const data=await response.json();
+   const pairs=(data.pairs||[]).filter(p=>p&&p.chainId==='solana'&&Number(p.priceUsd)>0);
+   if(!pairs.length){output[mint]={price:0,change24h:0,image:''};return}
+   pairs.sort((a,b)=>Number(b.liquidity?.usd||0)-Number(a.liquidity?.usd||0));
+   const pair=pairs[0];
+   /* use the first pair that has an icon, so tokens keep their icon even if the top pair has none */
+   const withImg=pairs.find(p=>safeImg(p.info?.imageUrl));
+   output[mint]={
+    price:Number(pair.priceUsd||0),
+    change24h:Number(pair.priceChange?.h24||0),
+    image:safeImg(pair.info?.imageUrl||withImg?.info?.imageUrl||'')
+   };
+  }catch(error){
+   console.warn('Market data failed:',mint,error);
+   output[mint]={price:0,change24h:0,image:''};
+  }
+ }));
+ return output;
 }
 
+function assetIconHTML(h){
+ const fb=h.mint==='SOL'?'◎':'💧';
+ if(h.image){
+  return `<img class="asset-icon" src="${esc(h.image)}" alt="" loading="lazy" onerror="this.outerHTML='<span class=&quot;asset-icon-fallback&quot;>${fb}</span>'">`;
+ }
+ return `<span class="asset-icon-fallback">${fb}</span>`;
+}
 
-/*
-  Main portfolio loader.
-*/
 async function loadAssets(){
+ if(!wallet){resetPortfolioUI();return}
 
-  if(!wallet){
+ let pk;
+ try{pk=new solanaWeb3.PublicKey(wallet)}catch(e){return toast('Invalid wallet address')}
 
-    $('portfolioStatus').textContent=
-      'Connect your wallet to view your portfolio.';
+ try{
+  const [sol,spl,token22,heliusAssets]=await Promise.all([
+   conn.getBalance(pk),
+   conn.getParsedTokenAccountsByOwner(pk,{programId:new solanaWeb3.PublicKey(TOKEN)}),
+   conn.getParsedTokenAccountsByOwner(pk,{programId:new solanaWeb3.PublicKey(TOKEN22)}),
+   getFijiWalletAssets(wallet)
+  ]);
 
-    $('portfolioValue').textContent='—';
+  const rows=[...spl.value,...token22.value]
+   .map(x=>x.account.data.parsed.info)
+   .filter(i=>Number(i.tokenAmount.uiAmount||0)>0);
 
-    $('portfolioChange').textContent='—';
+  const f=rows.find(i=>i.mint===CFG.FIJI_MINT);
 
-    $('portfolioChangeUsd').textContent='—';
+  $('wstat').innerHTML=`Connected as <b>${short(wallet)}</b>`;
+  $('portfolioStatus').textContent=f?'🐰 FIJI holder · Portfolio connected':'Portfolio connected';
+  $('holder').innerHTML=f
+   ?`<span class="pill g">🐰 FIJI holder · ${Number(f.tokenAmount.uiAmount||0).toLocaleString()} FIJI</span>`
+   :`<span class="pill">No FIJI yet</span>`;
 
-    $('assetRows').innerHTML=`
+  const metadataByMint={};
+  for(const asset of heliusAssets){if(asset?.id)metadataByMint[asset.id]=asset}
 
-      <tr>
-        <td
-          colspan="4"
-          class="portfolio-empty"
-        >
-          Connect your wallet to see your assets.
-        </td>
-      </tr>
+  const market=await getFijiMarketData(rows.map(r=>r.mint));
 
-    `;
-
-    return;
-
-  }
-
-
-  let pk;
-
-
+  /* SOL price, 24h change and icon from the wrapped-SOL market */
+  let solPrice=0,solChange=0,solImage='';
   try{
+   const solResponse=await fetch('https://api.dexscreener.com/latest/dex/tokens/So11111111111111111111111111111111111111112');
+   const solData=await solResponse.json();
+   const solPairs=(solData.pairs||[]).filter(p=>p.chainId==='solana'&&Number(p.priceUsd)>0);
+   solPairs.sort((a,b)=>Number(b.liquidity?.usd||0)-Number(a.liquidity?.usd||0));
+   if(solPairs.length){
+    solPrice=Number(solPairs[0].priceUsd||0);
+    solChange=Number(solPairs[0].priceChange?.h24||0);
+    solImage=safeImg(solPairs.find(p=>safeImg(p.info?.imageUrl))?.info?.imageUrl||'');
+   }
+  }catch(error){console.warn('SOL market data failed',error)}
 
-    pk=new solanaWeb3.PublicKey(wallet);
+  const holdings=[];
+  const solAmount=Number(sol)/1e9;
+  holdings.push({mint:'SOL',name:'Solana',symbol:'SOL',amount:solAmount,price:solPrice,change24h:solChange,image:solImage,value:solAmount*solPrice});
 
-  }catch(e){
-
-    return toast(
-      'Invalid wallet address'
-    );
-
+  for(const token of rows){
+   const mint=token.mint;
+   const amount=Number(token.tokenAmount.uiAmount||0);
+   const asset=metadataByMint[mint];
+   const m=market[mint]||{};
+   const price=Number(m.price||0);
+   const isFiji=mint===CFG.FIJI_MINT;
+   holdings.push({
+    mint,
+    name:asset?getFijiAssetName(asset):isFiji?'FIJI':short(mint),
+    symbol:asset?getFijiAssetSymbol(asset):isFiji?'FIJI':'',
+    amount,
+    price,
+    change24h:Number(m.change24h||0),
+    /* original market icon first, then wallet metadata icon */
+    image:isFiji?'fiji.png':(m.image||getFijiAssetImage(asset)),
+    value:amount*price
+   });
   }
 
-
-  try{
-
-    /*
-      Get:
-
-      1. SOL balance
-      2. SPL tokens
-      3. Token-2022 tokens
-      4. Helius metadata
-    */
-
-    const [
-      sol,
-      spl,
-      token22,
-      heliusAssets
-    ]=await Promise.all([
-
-      conn.getBalance(pk),
-
-      conn.getParsedTokenAccountsByOwner(
-
-        pk,
-
-        {
-          programId:
-            new solanaWeb3.PublicKey(TOKEN)
-        }
-
-      ),
-
-      conn.getParsedTokenAccountsByOwner(
-
-        pk,
-
-        {
-          programId:
-            new solanaWeb3.PublicKey(TOKEN22)
-        }
-
-      ),
-
-      getFijiWalletAssets(wallet)
-
-    ]);
-
-
-    /*
-      Existing wallet token balances.
-    */
-
-    const rows=[
-
-      ...spl.value,
-
-      ...token22.value
-
-    ]
-
-    .map(
-      x=>x.account.data.parsed.info
-    )
-
-    .filter(
-      i=>Number(i.tokenAmount.uiAmount || 0)>0
-    );
-
-
-    /*
-      Find FIJI.
-    */
-
-    const f=rows.find(
-      i=>i.mint===CFG.FIJI_MINT
-    );
-
-
-    /*
-      Wallet status.
-    */
-
-    $('wstat').innerHTML=
-      `Connected as <b>${short(wallet)}</b>`;
-
-
-    $('portfolioStatus').textContent=
-      f
-      ? '🐰 FIJI holder · Portfolio connected'
-      : 'Portfolio connected';
-
-
-    $('holder').innerHTML=
-
-      f
-
-      ? `
-        <span class="pill g">
-          🐰 FIJI holder ·
-          ${Number(
-            f.tokenAmount.uiAmount || 0
-          ).toLocaleString()}
-          FIJI
-        </span>
-      `
-
-      : `
-        <span class="pill">
-          No FIJI yet
-        </span>
-      `;
-
-
-    /*
-      Metadata lookup.
-    */
-
-    const metadataByMint={};
-
-
-    for(const asset of heliusAssets){
-
-      if(asset?.id){
-
-        metadataByMint[
-          asset.id
-        ]=asset;
-
-      }
-
-    }
-
-
-    /*
-      Get market data for tokens.
-    */
-
-    const tokenMints=rows.map(
-      r=>r.mint
-    );
-
-
-    const market=await getFijiMarketData(
-      tokenMints
-    );
-
-
-    /*
-      SOL market data.
-
-      We get SOL through DexScreener's
-      wrapped SOL market.
-    */
-
-    let solPrice=0;
-
-    let solChange=0;
-
-
-    try{
-
-      const solResponse=await fetch(
-        'https://api.dexscreener.com/latest/dex/tokens/So11111111111111111111111111111111111111112'
-      );
-
-
-      const solData=
-        await solResponse.json();
-
-
-      const solPairs=(solData.pairs || [])
-        .filter(
-          p=>
-            p.chainId==='solana' &&
-            Number(p.priceUsd)>0
-        );
-
-
-      solPairs.sort(
-        (a,b)=>
-          Number(
-            b.liquidity?.usd || 0
-          ) -
-          Number(
-            a.liquidity?.usd || 0
-          )
-      );
-
-
-      if(solPairs.length){
-
-        solPrice=Number(
-          solPairs[0].priceUsd || 0
-        );
-
-        solChange=Number(
-          solPairs[0].priceChange?.h24 || 0
-        );
-
-      }
-
-    }catch(error){
-
-      console.warn(
-        'SOL market data failed',
-        error
-      );
-
-    }
-
-
-    /*
-      Build portfolio holdings.
-    */
-
-    const holdings=[];
-
-
-    const solAmount=
-      Number(sol)/1e9;
-
-
-    holdings.push({
-
-      mint:'SOL',
-
-      name:'Solana',
-
-      symbol:'SOL',
-
-      amount:solAmount,
-
-      price:solPrice,
-
-      change24h:solChange,
-
-      image:'',
-
-      value:solAmount*solPrice
-
-    });
-
-
-    /*
-      Add tokens.
-    */
-
-    for(const token of rows){
-
-      const mint=token.mint;
-
-      const amount=
-        Number(
-          token.tokenAmount.uiAmount || 0
-        );
-
-
-      const asset=
-        metadataByMint[mint];
-
-
-      const m=
-        market[mint] || {};
-
-
-      const price=
-        Number(m.price || 0);
-
-
-      const change24h=
-        Number(m.change24h || 0);
-
-
-      holdings.push({
-
-        mint:mint,
-
-        name:
-          asset
-          ? getFijiAssetName(asset)
-          : mint===CFG.FIJI_MINT
-            ? 'FIJI'
-            : short(mint),
-
-        symbol:
-          asset
-          ? getFijiAssetSymbol(asset)
-          : mint===CFG.FIJI_MINT
-            ? 'FIJI'
-            : '',
-
-        amount:amount,
-
-        price:price,
-
-        change24h:change24h,
-
-        image:
-          mint===CFG.FIJI_MINT
-          ? 'fiji.png'
-          : getFijiAssetImage(asset),
-
-        value:amount*price
-
-      });
-
-    }
-
-
-    /*
-      Total current portfolio value.
-    */
-
-    const totalValue=
-      holdings.reduce(
-        (sum,h)=>
-          sum+
-          Number(h.value || 0),
-        0
-      );
-
-
-    /*
-      Approximate previous 24h portfolio value.
-
-      If current value is V and the asset
-      changed by X%, then:
-
-      previous = V / (1 + X/100)
-    */
-
-    let previousValue=0;
-
-
-    for(const h of holdings){
-
-      const current=
-        Number(h.value || 0);
-
-
-      const change=
-        Number(h.change24h || 0);
-
-
-      if(
-        current<=0
-      ){
-
-        continue;
-
-      }
-
-
-      if(
-        change>-99.9 &&
-        Number.isFinite(change)
-      ){
-
-        previousValue +=
-          current /
-          (1 + change/100);
-
-      }
-
-    }
-
-
-    /*
-      Calculate portfolio daily change.
-    */
-
-    let portfolioChange=0;
-
-
-    if(
-      previousValue>0 &&
-      totalValue>=0
-    ){
-
-      portfolioChange=
-        (
-          (totalValue-previousValue) /
-          previousValue
-        )*100;
-
-    }
-
-
-    const portfolioChangeUsd=
-      totalValue-previousValue;
-
-
-    /*
-      Update portfolio header.
-    */
-
-    $('portfolioValue').textContent=
-      fijiMoney(totalValue);
-
-
-    const changeEl=
-      $('portfolioChange');
-
-
-    changeEl.className=
-      'portfolio-change '+
-      fijiChangeClass(
-        portfolioChange
-      );
-
-
-    changeEl.textContent=
-      fijiPercent(
-        portfolioChange
-      );
-
-
-    $('portfolioChangeUsd').textContent=
-      fijiSignedMoney(
-        portfolioChangeUsd
-      );
-
-
-    /*
-      Render rows.
-    */
-
-    let html='';
-
-
-    for(const h of holdings){
-
-      /*
-        Don't show empty/unknown tokens
-        unless they actually have a balance.
-      */
-
-      if(
-        !h.amount ||
-        h.amount<=0
-      ){
-
-        continue;
-
-      }
-
-
-      let icon='';
-
-
-      if(h.image){
-
-        icon=`
-
-          <img
-            class="asset-icon"
-            src="${esc(h.image)}"
-            alt=""
-            loading="lazy"
-            onerror="this.outerHTML='<span class=&quot;asset-icon-fallback&quot;>💧</span>'"
-          >
-
-        `;
-
-      }else if(h.mint==='SOL'){
-
-        icon=`
-
-          <span class="asset-icon-fallback">
-            ◎
-          </span>
-
-        `;
-
-      }else{
-
-        icon=`
-
-          <span class="asset-icon-fallback">
-            💧
-          </span>
-
-        `;
-
-      }
-
-
-      const changeClass=
-        fijiChangeClass(
-          h.change24h
-        );
-
-
-      html+=`
-
-        <tr>
-
-          <td>
-
-            <div class="asset-cell">
-
-              ${icon}
-
-              <div class="asset-info">
-
-                <span class="asset-name">
-                  ${esc(h.name)}
-                </span>
-
-                ${
-                  h.symbol
-
-                  ? `
-                    <span class="asset-symbol">
-                      ${esc(h.symbol)}
-                    </span>
-                  `
-
-                  : ''
-                }
-
-              </div>
-
-            </div>
-
-          </td>
-
-
-          <td class="asset-balance">
-
-            ${
-              h.amount.toLocaleString(
-                undefined,
-                {
-                  maximumFractionDigits:6
-                }
-              )
-            }
-
-          </td>
-
-
-          <td class="asset-value">
-
-            ${
-              h.value>0
-              ? fijiMoney(h.value)
-              : '—'
-            }
-
-          </td>
-
-
-          <td>
-
-            <span
-              class="asset-change ${changeClass}"
-            >
-
-              ${
-                Number.isFinite(h.change24h)
-                ? fijiPercent(h.change24h)
-                : '—'
-              }
-
-            </span>
-
-          </td>
-
-        </tr>
-
-      `;
-
-    }
-
-
-    if(!html){
-
-      html=`
-
-        <tr>
-
-          <td
-            colspan="4"
-            class="portfolio-empty"
-          >
-            No supported assets found.
-
-          </td>
-
-        </tr>
-
-      `;
-
-    }
-
-
-    $('assetRows').innerHTML=
-      html;
-
-
-    /*
-      Keep TradePad working.
-    */
-
-    window.FIJI_TRADE?.portfolioUpdated?.({
-
-      sol:solAmount,
-
-      tokens:rows
-
-    });
-
-
-  }catch(error){
-
-    console.error(
-      'Portfolio error:',
-      error
-    );
-
-
-    toast(
-      'Could not load portfolio: '+
-      (
-        error.message ||
-        error
-      )
-    );
-
+  const totalValue=holdings.reduce((sum,h)=>sum+Number(h.value||0),0);
+
+  /* previous 24h value: previous = current / (1 + change/100) */
+  let previousValue=0;
+  for(const h of holdings){
+   const current=Number(h.value||0),change=Number(h.change24h||0);
+   if(current<=0)continue;
+   if(change>-99.9&&Number.isFinite(change))previousValue+=current/(1+change/100);
   }
 
+  let portfolioChange=0;
+  if(previousValue>0&&totalValue>=0)portfolioChange=((totalValue-previousValue)/previousValue)*100;
+  const portfolioChangeUsd=totalValue-previousValue;
+
+  $('portfolioValue').textContent=fijiMoney(totalValue);
+  const changeEl=$('portfolioChange');
+  changeEl.className='portfolio-change '+fijiChangeClass(portfolioChange);
+  changeEl.textContent=fijiPercent(portfolioChange);
+  $('portfolioChangeUsd').textContent=fijiSignedMoney(portfolioChangeUsd);
+
+  let html='';
+  for(const h of holdings){
+   if(!h.amount||h.amount<=0)continue;
+   html+=`
+    <tr>
+     <td>
+      <div class="asset-cell">
+       ${assetIconHTML(h)}
+       <div class="asset-info">
+        <span class="asset-name">${esc(h.name)}</span>
+        ${h.symbol?`<span class="asset-symbol">${esc(h.symbol)}</span>`:''}
+       </div>
+      </div>
+     </td>
+     <td class="asset-balance">${h.amount.toLocaleString(undefined,{maximumFractionDigits:6})}</td>
+     <td class="asset-value">${h.value>0?fijiMoney(h.value):'—'}</td>
+     <td><span class="asset-change ${fijiChangeClass(h.change24h)}">${Number.isFinite(h.change24h)?fijiPercent(h.change24h):'—'}</span></td>
+    </tr>`;
+  }
+  if(!html)html='<tr><td colspan="4" class="portfolio-empty">No supported assets found.</td></tr>';
+  $('assetRows').innerHTML=html;
+
+  /* keep Trade Pad working */
+  window.FIJI_TRADE?.portfolioUpdated?.({sol:solAmount,tokens:rows});
+
+ }catch(error){
+  console.error('Portfolio error:',error);
+  toast('Could not load portfolio: '+(error.message||error));
+ }
 }
 
 /* ---------------- 8. EARN + BOARD ---------------- */
