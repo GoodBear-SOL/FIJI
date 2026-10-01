@@ -42,8 +42,8 @@ const TPCFG={
   PUMPPORTAL_KEY:'',          // optional; live feeds work without it
   FEE_BPS:25,                 // display only. The router enforces the real fee.
   SOL_RESERVE:0.005,          // SOL kept back for network fees when buying with MAX
-  SOL_MIN_SELL:0.003,         // Jupiter sells can need ~0.002 SOL temporary rent
-  SOL_MIN_PUMP_SELL:0.002,    // Pump sells need fees + possible account rent
+  SOL_MIN_SELL:0.0005,         // Jupiter sells can need ~0.0005 SOL temporary rent
+  SOL_MIN_PUMP_SELL:0.0003,    // Pump sells need fees + possible account rent
   AUTO_SLIPPAGE_PUMP_BPS:2000,// 20% (router caps Pump slippage at 30%)
   AUTO_SLIPPAGE_DEX_BPS:500,  // 5%
   QUICK_BUY_SOL:0.10,
