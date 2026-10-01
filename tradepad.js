@@ -4227,7 +4227,7 @@ function getSlippageBps(){
   if(
     v==='auto'
   )
-    return100;
+    return 100;
 
 
   const pct=
