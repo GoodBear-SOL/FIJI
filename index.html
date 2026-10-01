@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#FFF3C4">
 <meta name="description" content="Fiji: a fuzzy little friend. Discover, check and trade Solana tokens.">
-<title>Fiji · Trade Pad</title>
+<title>Fiji · Labs</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
@@ -324,9 +324,9 @@ th{font-family:Fredoka}
 <section class="pg on" id="home">
  <div class="hero">
   <div>
-   <span class="eyebrow">💧 discover · check · trade</span>
-   <h1>A fuzzy blue friend <span>for the Solana pond.</span></h1>
-   <p>Fiji is a community meme coin with a little hub: watch the market, discover new tokens, trade from one Trade Pad, check in daily, play games and invite friends.</p>
+   <span class="eyebrow">💧 check-in · discover · trade · refer</span>
+   <h1>A fuzzy bunny friend <span>with a little something extra.</span></h1>
+   <p>Meet FIJI, a pure meme with a little home of its own.🐰💙 FIJI gives the community a place to play, aim like a sniper, invite fellow bunnies, and earn points while exploring new tokens and their risk data along the way. No complicated promises, no pretending to be something we're not—just FIJI, the community, and a little fun along the way. Hop in🐰</p>
    <div class="btns">
     <button class="btn" onclick="go('trade')">Open Trade Pad</button>
     <button class="btn alt" onclick="go('wallet')">See the market</button>
@@ -366,7 +366,7 @@ th{font-family:Fredoka}
      MARKET (nav label "Market", page id "wallet")
 =================================================================== -->
 <section class="pg" id="wallet">
- <div class="tag">fiji market</div>
+ <div class="tag">Fiji market</div>
  <h2>Splash into the market.</h2>
  <div class="mk-live small"><span class="live"><i></i><span id="mkAgo">loading…</span></span><button class="btn sm alt" onclick="refreshMarket(true)">Refresh</button></div>
  <div class="sticker card mk-hero" id="mkHero"><div class="mk-empty">Fetching Fiji… 💧</div></div>
@@ -377,10 +377,10 @@ th{font-family:Fredoka}
  <div class="grid" id="mkGrid"></div>
  <p class="small" style="margin-top:14px">Market data from DexScreener, refreshed about every 30 seconds. For fun and information only, not financial advice. Meme coins can lose value fast, and look-alike tokens exist, so always check the contract address.</p>
 
- <div class="tag">my wallet</div>
- <h2>Your little corner of the pond.</h2>
+ <div class="tag">My wallet</div>
+ <h2>Your Bunny Bag</h2>
  <div class="sticker card">
-  <p id="wstat">Connect a Solana wallet (Jupiter, Phantom, Solflare, Backpack) to see your assets and whether you hold FIJI.</p>
+  <p id="wstat">Connect a Solana wallet to see your assets and whether you hold FIJI.</p>
   <div id="holder" style="margin:12px 0"></div>
   <table id="assets"></table><br>
   <button class="btn sm" onclick="loadAssets()">Refresh</button>
@@ -391,8 +391,8 @@ th{font-family:Fredoka}
      EARN
 =================================================================== -->
 <section class="pg" id="earn">
- <div class="tag">earn points</div>
- <h2>Splash around, collect points.</h2>
+ <div class="tag">Earn points</div>
+ <h2>Play around, collect points🐰</h2>
  <div class="stats sticker card"><div><b id="spts">0</b>points</div><div><b id="streak">0</b>day streak</div><div><b id="rank">–</b>status</div></div><br>
  <div class="grid">
   <div class="sticker card"><div class="em">📅</div><h3>Daily check-in</h3><p>+10 and streak bonus</p><br><button class="btn sm" onclick="doEarn('daily')">Check in</button></div>
@@ -409,10 +409,10 @@ th{font-family:Fredoka}
  <div class="trade-head">
   <div>
    <div class="tag" style="margin-top:0">solana trade pad</div>
-   <h1>Find it. Check it. Trade it.</h1>
-   <p class="small">Live discovery for New, Trending, Bonding and Migrated Solana tokens.</p>
+   <h1>Spot it. Check it. Hop in.🐰</h1>
+   <p class="small">Stay on the hop with live New, Trending, Bonding, and Migrated Solana tokens — fresh discoveries, updated in real time. 🐰</p>
   </div>
-  <div class="twallet"><span>◎</span><b id="tradeSolBalance">—</b><span class="small">SOL</span></div>
+  <div class="twallet"><span>🟣</span><b id="tradeSolBalance">—</b><span class="small">SOL</span></div>
  </div>
 
  <div class="sticker disc"><div class="disc-row">
@@ -466,7 +466,7 @@ th{font-family:Fredoka}
   <!-- RIGHT: swap + token check -->
   <aside>
    <div class="sticker swap-card">
-    <div class="swap-head"><h3>Swap</h3><span class="balance-chip" id="swapWalletBalance">◎ — SOL</span></div>
+    <div class="swap-head"><h3>Swap</h3><span class="balance-chip" id="swapWalletBalance">🟣—SOL</span></div>
     <div class="swap-tabs">
      <button class="swap-tab on buy" id="buyTab" onclick="tradeSetAction('buy')">BUY</button>
      <button class="swap-tab" id="sellTab" onclick="tradeSetAction('sell')">SELL</button>
@@ -475,7 +475,7 @@ th{font-family:Fredoka}
     <div class="swap-box">
      <div class="swap-box-top"><span class="swap-label">You pay</span><span class="swap-label" id="tradePayBalance">Balance: —</span></div>
      <div class="swap-input-row">
-      <div class="swap-asset"><span class="swap-dot">◎</span><span id="tradePayAsset">SOL</span></div>
+      <div class="swap-asset"><span class="swap-dot">🟣</span><span id="tradePayAsset">SOL</span></div>
       <input id="tradeAmount" type="number" min="0" step="any" placeholder="0.00" inputmode="decimal">
       <span class="unit" id="tradeAmountUnit">SOL</span>
      </div>
@@ -540,13 +540,13 @@ th{font-family:Fredoka}
 =================================================================== -->
 <section class="pg" id="board">
  <div class="tag">leaderboard</div>
- <h2>The top of the pond.</h2>
+ <h2>The FIJI Hall of Hops🐰</h2>
  <div class="sticker card"><table id="lb"></table></div>
 </section>
 
 </main>
 
-<footer class="small">Fiji is a community character for entertainment. Not financial advice. Crypto assets are risky. © 2026 Fiji.</footer>
+<footer class="small">Fiji is a community character for entertainment. Not financial advice. Crypto assets are risky. © 2026 Fiji_labs.</footer>
 <div id="toast"></div>
 
 <!-- ===================================================================
