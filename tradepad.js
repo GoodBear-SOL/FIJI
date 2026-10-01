@@ -976,23 +976,102 @@ async function executeTrade(){
     if(UI)UI.pending(info,'Trade sent','Waiting for the network to confirm…',sig);
     else toast('Transaction sent ✔ '+short(sig));
 
-    let failed=false,unknown=false;
+    /* Reliable transaction status check */
+    let failed=false,confirmed=false,unknown=false;
+
     try{
       const conn=CORE.getConnection();
-      const r=await conn.confirmTransaction(sig,'confirmed');
-      if(r?.value?.err)failed=true;
-    }catch(e){unknown=true;console.warn('Confirmation lookup failed',e)}
+
+      // Give the RPC some time to see the submitted transaction.
+      // We check the signature directly instead of relying only on
+      // confirmTransaction(signature), which can throw even when the
+      // transaction was submitted successfully.
+      const maxChecks=30;
+      const delayMs=1000;
+
+      for(let i=0;i<maxChecks;i++){
+        const statusRes=await conn.getSignatureStatuses(
+          [sig],
+          {searchTransactionHistory:true}
+        );
+
+        const status=statusRes?.value?.[0];
+
+        if(status){
+          if(status.err){
+            failed=true;
+            break;
+          }
+
+          if(
+            status.confirmationStatus==='confirmed' ||
+            status.confirmationStatus==='finalized'
+          ){
+            confirmed=true;
+            break;
+          }
+        }
+
+        await new Promise(resolve=>setTimeout(resolve,delayMs));
+      }
+
+      // If the RPC never found the signature, don't falsely call it
+      // successful. Keep it as unknown so the user can verify it.
+      if(!failed && !confirmed){
+        unknown=true;
+      }
+
+    }catch(e){
+      unknown=true;
+      console.warn('Transaction status lookup failed:',e);
+    }
 
     if(failed){
-      if(UI)UI.result({ok:false,info,sig,title:'Trade failed on-chain',text:'The network rejected this trade. No tokens were swapped. Try again with higher slippage.'});
-      else toast('Transaction failed on-chain');
+
+      if(UI){
+        UI.result({
+          ok:false,
+          info,
+          sig,
+          title:'Trade failed on-chain',
+          text:'The network rejected this trade. No tokens were swapped. Try again with higher slippage.'
+        });
+      }else{
+        toast('Transaction failed on-chain');
+      }
+
+    }else if(confirmed){
+
+      if(UI){
+        UI.result({
+          ok:true,
+          info,
+          sig,
+          title:buy?'Buy successful':'Sell successful',
+          text:'Your trade is confirmed on Solana.'
+        });
+      }else{
+        toast('Trade confirmed ✔');
+      }
+
+      await claimTradePoints(
+        sig,
+        TP.selected?.baseToken?.address
+      );
+
     }else if(unknown){
-      if(UI)UI.result({ok:null,info,sig,title:'Still confirming',text:'We could not confirm it yet. Check Solscan to see if it went through.'});
-      else toast('Sent, but could not confirm yet');
-    }else{
-      if(UI)UI.result({ok:true,info,sig,title:buy?'Buy successful':'Sell successful',text:'Your trade is confirmed on Solana.'});
-      else toast('Trade confirmed ✔');
-      await claimTradePoints(sig,TP.selected?.baseToken?.address);
+
+      if(UI){
+        UI.result({
+          ok:null,
+          info,
+          sig,
+          title:'Transaction not confirmed',
+          text:'The transaction was submitted, but the network has not reported it yet. Check Solscan using the transaction signature before trying again.'
+        });
+      }else{
+        toast('Transaction submitted, but confirmation is unavailable yet');
+      }
     }
 
     if(CORE.loadAssets)await CORE.loadAssets();
