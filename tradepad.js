@@ -1,207 +1,389 @@
 /* ============================================================
-   FIJI TRADE PAD v5
-   Full Solana Trade + Assets + Earn + Board integration
+   FIJI TRADE PAD v3
+   Solana-only mobile-first discovery + watchlist + trade router
+   ============================================================
 
-   Load AFTER the core script in index.html:
+   FILE:
+     tradepad.js
 
-     <script src="tradepad.js"></script>
+   LOAD AFTER index.html's main <script>.
 
-   Requires window.FIJI_CORE:
-     CFG
-     $
-     toast
-     loadAssets
-     getWallet
-     getProvider
-     getConnection
-     getSupabase
-     setProfile
+   CURRENT FEATURES:
+     • 🆕 New
+     • 🔥 Trending
+     • 📈 Bonding
+     • 🎓 Migrated
+     • ⭐ Supabase Watchlist
+     • Live PumpPortal new-token / migration feed
+     • DexScreener enrichment
+     • Search
+     • Token details
+     • Quick Buy UI
+     • Portfolio-aware SOL / token amounts
+     • Security information hooks
+     • Trade-router integration hook
+     • Mobile-first rendering
 
-   Supports:
-     - DexScreener discovery
-     - PumpPortal live feed
-     - Jupiter routes
-     - Pump.fun routes
-     - Buy / Sell
-     - Wallet Standard
-     - Injected wallets
-     - Watchlist
-     - Asset balances
-     - Gain / loss display
-     - Earn points
-     - Board / leaderboard
-============================================================ */
+   IMPORTANT:
+     Actual signing/execution is routed through:
+       TPCFG.TRADE_ROUTER_URL
+
+   Do NOT put private keys or seed phrases here.
+   ============================================================ */
 
 (function(){
+
 'use strict';
 
+
 /* ============================================================
-   1. CONFIG
+   CONFIG
 ============================================================ */
 
 const TPCFG={
-  TRADE_ROUTER_URL:
-    'https://tmceqqciccnnlxjiobgc.supabase.co/functions/v1/trade-router',
 
+  /*
+    Leave blank until we create the Supabase Edge Function.
+
+    Example later:
+
+    https://YOUR_PROJECT.supabase.co/functions/v1/trade-router
+  */
+  TRADE_ROUTER_URL:'https://tmceqqciccnnlxjiobgc.supabase.co/functions/v1/trade-router',
+
+  /*
+    Optional PumpPortal API key.
+
+    New-token and migration streams are the useful realtime feeds.
+    Keep this configurable rather than hardcoding a production key
+    into the repository.
+  */
   PUMPPORTAL_KEY:'',
 
+  /*
+    FIJI platform fee.
+
+    25 bps = 0.25%
+
+    IMPORTANT:
+    This is a DISPLAY / requested fee setting only.
+    The backend must enforce the actual fee.
+  */
   FEE_BPS:25,
+
+  /*
+    Used only as a safety reminder when calculating MAX.
+    We leave some SOL for network costs.
+  */
   SOL_RESERVE:0.005,
-  QUICK_BUY_SOL:0.10,
 
+  /*
+    Discovery refresh.
+  */
   REFRESH_MS:15000,
-  MAX_FEED:30,
-  MAX_LIVE:80,
-  DS_BATCH:30,
-  TIMEOUT_MS:10000,
-  ENRICH_EVERY_MS:4000,
 
-  CONFIRM_TIMEOUT_MS:60000,
-  CONFIRM_INTERVAL_MS:1000,
-  SEND_RETRIES:3
+  /*
+    How many tokens to keep in each feed.
+  */
+  MAX_FEED:30,
+
+  /*
+    How many items to keep in local live-event memory.
+  */
+  MAX_LIVE_EVENTS:80,
+
+  /*
+    Max addresses requested in one DexScreener token request.
+  */
+  DS_BATCH:30,
+
+  /*
+    API timeout.
+  */
+  TIMEOUT_MS:10000
+
 };
 
-const CORE=window.FIJI_CORE||{};
-const CFG=CORE.CFG||{};
-const $=CORE.$||(id=>document.getElementById(id));
-const toast=CORE.toast||(m=>console.log('[FIJI]',m));
 
-const DS='https://api.dexscreener.com';
-const PUMP_WS='wss://pumpportal.fun/api/data';
+/* ============================================================
+   CORE REFERENCES
+============================================================ */
+
+const CORE=
+  window.FIJI_CORE||
+  {};
+
+const CFG=
+  CORE.CFG||
+  window.CFG||
+  {};
+
+const $=
+  CORE.$||
+  (id=>document.getElementById(id));
+
+const toast=
+  CORE.toast||
+  (m=>{
+    console.log('[FIJI]',m);
+  });
+
+const DS=
+  'https://api.dexscreener.com';
+
+const PUMP_WS_BASE=
+  'wss://pumpportal.fun/api/data';
+
+
+/* ============================================================
+   SOLANA CONSTANTS
+============================================================ */
 
 const SOL_MINT=
   'So11111111111111111111111111111111111111112';
 
-const PUMP_START_TOKENS=1073000000;
-const PUMP_GRAD_TOKENS=793100000;
+const FIJI_MINT=
+  CFG.FIJI_MINT||
+  '98kfF7rmsg1QDUEoCqNE7g7M1FdrTt92TEp2CLzypump';
+
 
 /* ============================================================
-   2. STATE
+   TRADE PAD STATE
 ============================================================ */
 
 const TP={
-  started:false,
 
-  mode:'new',
-  action:'buy',
+ started:false,
 
-  selected:null,
+ mode:'new',
 
-  feed:[],
-  base:[],
+ action:'buy',
 
-  liveNew:[],
-  liveMigrated:[],
+ selected:null,
 
-  cache:new Map(),
-  watch:new Set(),
+ feed:[],
 
-  portfolio:{
-    sol:0,
-    tokens:[]
-  },
+ liveNew:[],
 
-  loading:false,
-  watchLoading:false,
+ liveMigrated:[],
 
-  refreshTimer:null,
-  ageTimer:null,
-  enrichTimer:null,
+ cache:new Map(),
 
-  enrichQ:[],
+ watch:new Set(),
 
-  ws:null,
-  wsTimer:null,
-  wsOnline:false,
+ portfolio:{
+   sol:0,
+   tokens:[]
+ },
 
-  search:'',
-  updatedAt:0,
-  error:'',
+ loading:false,
 
-  lastSignature:'',
-  lastTradeStatus:''
+ watchLoading:false,
+
+ refreshTimer:null,
+
+ ageTimer:null,
+
+ ws:null,
+
+ wsReconnectTimer:null,
+
+ wsOnline:false,
+
+ search:'',
+
+ updatedAt:0,
+
+ error:'',
+
+ sniper:false
+
 };
 
-let previewSeq=0;
-let previewTimer=null;
-let searchTimer=null;
-let renderQueued=false;
 
 /* ============================================================
-   3. HELPERS
+   SMALL HELPERS
 ============================================================ */
 
-const num=v=>{
-  const n=Number(v);
-  return Number.isFinite(n)?n:null;
-};
+function num(v){
 
-const clamp=(n,a,b)=>
-  Math.max(a,Math.min(b,n));
+  const n=
+    Number(v);
 
-const esc=v=>
-  String(v==null?'':v).replace(
+  return Number.isFinite(n)
+    ?n
+    :null;
+
+}
+
+
+function escapeHtml(v){
+
+  return String(
+    v==null
+      ?''
+      :v
+  )
+  .replace(
     /[&<>"']/g,
     c=>({
+
       '&':'&amp;',
       '<':'&lt;',
       '>':'&gt;',
       '"':'&quot;',
       "'":'&#39;'
+
     }[c])
   );
 
-const short=v=>{
-  const s=String(v||'');
-  return s.length<=12?s:s.slice(5,10)+'…'+s.slice(-5);
-};
-
-const safeImage=v=>
-  /^https?:\/\//i.test(String(v||''))?
-  String(v):
-  '';
-
-const feePercent=()=>TPCFG.FEE_BPS/100;
-
-function setText(id,text){
-  const el=$(id);
-  if(el)el.textContent=text;
 }
 
-function setHtml(id,html){
-  const el=$(id);
-  if(el)el.innerHTML=html;
+
+function short(v){
+
+  const s=
+    String(v||'');
+
+  if(
+    s.length<=12
+  )
+    return s;
+
+  return(
+    s.slice(0,5)+
+    '…'+
+    s.slice(-5)
+  );
+
 }
+
+
+function clamp(
+  n,
+  min,
+  max
+){
+
+  return Math.max(
+    min,
+    Math.min(
+      max,
+      n
+    )
+  );
+
+}
+
+
+function sleep(ms){
+
+  return new Promise(
+    resolve=>
+      setTimeout(
+        resolve,
+        ms
+      )
+  );
+
+}
+
+
+function feePercent(){
+
+  return TPCFG.FEE_BPS/100;
+
+}
+
 
 function formatPercent(v){
-  const n=num(v);
-  if(n===null)return '—';
 
-  return (
+  const n=
+    num(v);
+
+  if(
+    n===null
+  )
+    return '—';
+
+  return(
     n>0?'+':''
   )+
-  n.toFixed(Math.abs(n)>=100?0:1)+'%';
+  n.toFixed(
+    Math.abs(n)>=100
+      ?0
+      :1
+  )+
+  '%';
+
 }
+
 
 function formatUsd(v){
-  const n=num(v);
 
-  if(n===null)return '—';
+  const n=
+    num(v);
 
-  const a=Math.abs(n);
+  if(
+    n===null
+  )
+    return '—';
 
-  if(a>=1e9)return '$'+(n/1e9).toFixed(2)+'B';
-  if(a>=1e6)return '$'+(n/1e6).toFixed(2)+'M';
-  if(a>=1e3)return '$'+(n/1e3).toFixed(1)+'K';
-  if(a>=1)return '$'+n.toFixed(n>=10?2:3);
-  if(a>=0.01)return '$'+n.toFixed(4);
+  const a=
+    Math.abs(n);
 
-  return '$'+n.toPrecision(3);
+  if(
+    a>=1e9
+  )
+    return '$'+
+      (n/1e9).toFixed(2)+
+      'B';
+
+  if(
+    a>=1e6
+  )
+    return '$'+
+      (n/1e6).toFixed(2)+
+      'M';
+
+  if(
+    a>=1e3
+  )
+    return '$'+
+      (n/1e3).toFixed(1)+
+      'K';
+
+  if(
+    a>=1
+  )
+    return '$'+
+      n.toFixed(
+        n>=10
+          ?2
+          :3
+      );
+
+  if(
+    a>=0.01
+  )
+    return '$'+
+      n.toFixed(4);
+
+  return '$'+
+    n.toPrecision(3);
+
 }
 
+
 function formatSol(v){
-  const n=num(v);
-  if(n===null)return '—';
+
+  const n=
+    num(v);
+
+  if(
+    n===null
+  )
+    return '—';
 
   return n.toLocaleString(
     undefined,
@@ -210,159 +392,320 @@ function formatSol(v){
       maximumFractionDigits:4
     }
   );
+
 }
 
+
 function formatNumber(v){
-  const n=num(v);
-  if(n===null)return '—';
+
+  const n=
+    num(v);
+
+  if(
+    n===null
+  )
+    return '—';
 
   return n.toLocaleString(
     undefined,
-    {maximumFractionDigits:6}
-  );
-}
-
-function formatAge(ts){
-  const n=num(ts);
-
-  if(n===null)return '—';
-
-  const diff=
-    Date.now()-(n<1e12?n*1000:n);
-
-  if(diff<60000)
-    return Math.max(1,Math.floor(diff/1000))+'s';
-
-  if(diff<3600000)
-    return Math.floor(diff/60000)+'m';
-
-  if(diff<86400000)
-    return Math.floor(diff/3600000)+'h';
-
-  return Math.floor(diff/86400000)+'d';
-}
-
-function changeClass(v){
-  const n=num(v);
-
-  if(n===null||Math.abs(n)<0.05)
-    return 'flat';
-
-  return n>0?'up':'dn';
-}
-
-const liquidity=p=>
-  num(p?.liquidity?.usd)||0;
-
-const volume24=p=>
-  num(p?.volume?.h24)||0;
-
-const volume1h=p=>
-  num(p?.volume?.h1)||0;
-
-const tx24=p=>
-  (num(p?.txns?.h24?.buys)||0)+
-  (num(p?.txns?.h24?.sells)||0);
-
-const tokenKey=p=>
-  (!p?.chainId||!p?.baseToken?.address)
-    ?''
-    :p.chainId+':'+p.baseToken.address;
-
-function tokenKeyParts(key){
-  const s=String(key||'');
-  const i=s.indexOf(':');
-
-  if(i<0)return null;
-
-  return {
-    chain:s.slice(0,i),
-    mint:s.slice(i+1)
-  };
-}
-
-const walletAddress=()=>
-  CORE.getWallet?
-  CORE.getWallet():
-  window.wallet||null;
-
-const isPumpCurve=p=>
-  Boolean(
-    p&&(
-      (p.bonding&&!p.migrated)||
-      p.dexId==='pumpfun'||
-      p.dexId==='pump'
-    )
-  );
-
-/* ============================================================
-   4. NETWORK
-============================================================ */
-
-async function fetchJson(url,opt={}){
-  const {
-    timeout,
-    ...init
-  }=opt;
-
-  const ac=new AbortController();
-
-  const timer=setTimeout(
-    ()=>ac.abort(),
-    timeout||TPCFG.TIMEOUT_MS
-  );
-
-  try{
-    const r=await fetch(
-      url,
-      {
-        ...init,
-        signal:ac.signal
-      }
-    );
-
-    if(!r.ok){
-      let message='HTTP '+r.status;
-
-      try{
-        const j=await r.json();
-        message=
-          j.error||
-          j.message||
-          message;
-      }catch(e){}
-
-      throw new Error(message);
+    {
+      maximumFractionDigits:4
     }
+  );
 
-    return await r.json();
-
-  }catch(e){
-
-    if(e?.name==='AbortError')
-      throw new Error('Request timed out');
-
-    throw e;
-
-  }finally{
-    clearTimeout(timer);
-  }
 }
 
-async function ds(path,cacheMs=10000){
 
-  const c=TP.cache.get(path);
+function safeImage(v){
+
+  return(
+    /^https?:\/\//i.test(
+      String(v||'')
+    )
+  )
+    ?String(v)
+    :'';
+
+}
+
+
+function liquidity(p){
+
+  return num(
+    p?.liquidity?.usd
+  )||0;
+
+}
+
+
+function volume24(p){
+
+  return num(
+    p?.volume?.h24
+  )||0;
+
+}
+
+
+function volume1h(p){
+
+  return num(
+    p?.volume?.h1
+  )||0;
+
+}
+
+
+function transactions24(p){
+
+  const t=
+    p?.txns?.h24||
+    {};
+
+  return(
+    num(t.buys)||0
+  )+
+  (
+    num(t.sells)||0
+  );
+
+}
+
+
+function ageMs(
+  timestamp
+){
+
+  const n=
+    num(timestamp);
 
   if(
-    c&&
-    Date.now()-c.time<cacheMs
+    n===null
   )
-    return c.data;
+    return null;
+
+  const ms=
+    n<
+    1000000000000
+      ?n*1000
+      :n;
+
+  return(
+    Date.now()-ms
+  );
+
+}
+
+
+function formatAge(
+  timestamp
+){
+
+  const diff=
+    ageMs(timestamp);
+
+  if(
+    diff===null
+  )
+    return '—';
+
+  if(
+    diff<60000
+  )
+    return Math.max(
+      1,
+      Math.floor(
+        diff/1000
+      )
+    )+
+    's';
+
+
+  if(
+    diff<3600000
+  )
+    return Math.floor(
+      diff/60000
+    )+
+    'm';
+
+
+  if(
+    diff<86400000
+  )
+    return Math.floor(
+      diff/3600000
+    )+
+    'h';
+
+
+  return Math.floor(
+    diff/86400000
+  )+
+  'd';
+
+}
+
+
+function changeClass(v){
+
+  const n=
+    num(v);
+
+  if(
+    n===null
+  )
+    return 'flat';
+
+  if(
+    Math.abs(n)<0.05
+  )
+    return 'flat';
+
+  return n>0
+    ?'up'
+    :'dn';
+
+}
+
+
+function tokenKey(
+  p
+){
+
+  if(
+    !p?.chainId||
+    !p?.baseToken?.address
+  )
+    return '';
+
+  return(
+    p.chainId+
+    ':'+
+    p.baseToken.address
+  );
+
+}
+
+
+function tokenKeyParts(
+  key
+){
+
+  const s=
+    String(key||'');
+
+  const i=
+    s.indexOf(':');
+
+  if(
+    i<0
+  )
+    return null;
+
+  return{
+
+    chain:s.slice(0,i),
+
+    mint:s.slice(i+1)
+
+  };
+
+}
+
+
+function isSolanaPair(
+  p
+){
+
+  return(
+    p?.chainId===
+    'solana'
+  );
+
+}
+
+
+/* ============================================================
+   NETWORK
+============================================================ */
+
+async function fetchJson(
+  url,
+  options={}
+){
+
+  const controller=
+    new AbortController();
+
+  const timer=
+    setTimeout(
+      ()=>controller.abort(),
+      TPCFG.TIMEOUT_MS
+    );
+
+  try{
+
+    const response=
+      await fetch(
+        url,
+        {
+          ...options,
+          signal:
+            controller.signal
+        }
+      );
+
+    if(
+      !response.ok
+    ){
+
+      throw new Error(
+        'HTTP '+
+        response.status
+      );
+
+    }
+
+    return await response.json();
+
+  }finally{
+
+    clearTimeout(timer);
+
+  }
+
+}
+
+
+async function ds(
+  path,
+  cacheMs=10000
+){
+
+  const cached=
+    TP.cache.get(
+      path
+    );
+
+  if(
+    cached&&
+    Date.now()-
+    cached.time<
+    cacheMs
+  ){
+
+    return cached.data;
+
+  }
+
 
   const data=
     await fetchJson(
-      DS+path
+      DS+
+      path
     );
+
 
   TP.cache.set(
     path,
@@ -372,65 +715,34 @@ async function ds(path,cacheMs=10000){
     }
   );
 
+
   return data;
+
 }
 
-function routerUrl(path){
-
-  return TPCFG.TRADE_ROUTER_URL?
-    TPCFG.TRADE_ROUTER_URL.replace(/\/$/,'')+path:
-    '';
-}
-
-async function routerPost(path,body){
-
-  const url=routerUrl(path);
-
-  if(!url)
-    throw new Error(
-      'Trade router is not configured'
-    );
-
-  const headers={
-    'Content-Type':'application/json'
-  };
-
-  if(CFG.SUPABASE_KEY){
-
-    headers.apikey=
-      CFG.SUPABASE_KEY;
-
-    headers.Authorization=
-      'Bearer '+CFG.SUPABASE_KEY;
-  }
-
-  return fetchJson(
-    url,
-    {
-      method:'POST',
-      headers,
-      body:JSON.stringify(body),
-      timeout:15000
-    }
-  );
-}
 
 /* ============================================================
-   5. DEXSCREENER
+   DEXSCREENER ENRICHMENT
 ============================================================ */
 
-async function fetchTokenPairs(mints){
+async function fetchTokenPairs(
+  mints
+){
 
-  const unique=[
-    ...new Set(
-      (mints||[]).filter(Boolean)
-    )
-  ];
+  const unique=
+    [...new Set(
+      mints.filter(Boolean)
+    )];
 
-  if(!unique.length)
-    return [];
+
+  if(
+    !unique.length
+  )
+    return[];
+
 
   const all=[];
+
 
   for(
     let i=0;
@@ -444,54 +756,108 @@ async function fetchTokenPairs(mints){
         i+TPCFG.DS_BATCH
       );
 
+
     try{
 
       const data=
         await ds(
           '/tokens/v1/solana/'+
-          chunk.map(encodeURIComponent).join(','),
+          chunk
+            .map(
+              encodeURIComponent
+            )
+            .join(','),
           7000
         );
 
-      if(Array.isArray(data)){
 
-        data.forEach(p=>{
-          if(p?.chainId==='solana')
-            all.push(p);
-        });
+      if(
+        Array.isArray(data)
+      ){
+
+        data.forEach(
+          p=>{
+
+            if(
+              p?.chainId===
+              'solana'
+            )
+              all.push(
+                p
+              );
+
+          }
+        );
 
       }
 
     }catch(e){
+
       console.warn(
         'Token enrichment failed',
         e
       );
+
     }
+
   }
 
-  const best=new Map();
 
-  all.forEach(p=>{
+  /*
+    Keep the best liquidity pair for each mint.
+  */
 
-    const mint=
-      p?.baseToken?.address;
+  const best=
+    new Map();
 
-    if(!mint)return;
 
-    const cur=best.get(mint);
+  all.forEach(
+    p=>{
 
-    if(
-      !cur||
-      liquidity(p)>liquidity(cur)
-    )
-      best.set(mint,p);
-  });
+      const mint=
+        p?.baseToken?.address;
 
-  return [...best.values()];
+      if(
+        !mint
+      )
+        return;
+
+
+      const current=
+        best.get(
+          mint
+        );
+
+
+      if(
+        !current||
+        liquidity(p)>
+        liquidity(current)
+      ){
+
+        best.set(
+          mint,
+          p
+        );
+
+      }
+
+    }
+  );
+
+
+  return[
+    ...best.values()
+  ];
+
 }
 
-async function buildProfileFeed(){
+
+/* ============================================================
+   LATEST DEXSCREENER PROFILES
+============================================================ */
+
+async function fetchLatestProfiles(){
 
   const data=
     await ds(
@@ -499,30 +865,54 @@ async function buildProfileFeed(){
       8000
     );
 
-  const profiles=
-    Array.isArray(data)?
-    data:
-    data&&typeof data==='object'?
-    [data]:
-    [];
 
-  const sol=
+  if(
+    Array.isArray(data)
+  )
+    return data;
+
+
+  if(
+    data&&
+    typeof data==='object'
+  )
+    return[data];
+
+
+  return[];
+
+}
+
+
+async function buildProfileFeed(){
+
+  const profiles=
+    await fetchLatestProfiles();
+
+
+  const solProfiles=
     profiles
       .filter(
         p=>
-          p?.chainId==='solana'&&
+          p?.chainId===
+          'solana'&&
           p?.tokenAddress
       )
-      .slice(0,40);
+      .slice(
+        0,
+        40
+      );
+
 
   const pairs=
     await fetchTokenPairs(
-      sol.map(
+      solProfiles.map(
         p=>p.tokenAddress
       )
     );
 
-  const map=
+
+  const pairMap=
     new Map(
       pairs.map(
         p=>[
@@ -532,46 +922,85 @@ async function buildProfileFeed(){
       )
     );
 
-  return sol.map(profile=>{
 
-    const pair=
-      map.get(
-        profile.tokenAddress
-      );
+  return solProfiles.map(
+    profile=>{
 
-    if(pair)
-      return {
-        ...pair,
-        discoveryType:'new',
-        profile
+      const pair=
+        pairMap.get(
+          profile.tokenAddress
+        );
+
+
+      if(
+        pair
+      ){
+
+        return{
+          ...pair,
+          discoveryType:'new',
+          profile
+        };
+
+      }
+
+
+      /*
+        Token profile without a pair yet.
+        We retain it as a lightweight discovery
+        item until market data becomes available.
+      */
+
+      return{
+
+        chainId:'solana',
+
+        pairAddress:'',
+
+        dexId:'launch',
+
+        baseToken:{
+
+          address:
+            profile.tokenAddress,
+
+          symbol:
+            'NEW',
+
+          name:
+            profile.tokenAddress
+
+        },
+
+        info:{
+          imageUrl:
+            profile.icon||''
+        },
+
+        pairCreatedAt:
+          Date.now(),
+
+        priceChange:{},
+
+        volume:{},
+
+        liquidity:{},
+
+        profile,
+
+        discoveryType:'new'
+
       };
 
-    return {
-      chainId:'solana',
-      pairAddress:'',
-      dexId:'launch',
+    }
+  );
 
-      baseToken:{
-        address:profile.tokenAddress,
-        symbol:'NEW',
-        name:profile.tokenAddress
-      },
-
-      info:{
-        imageUrl:
-          profile.icon||''
-      },
-
-      pairCreatedAt:Date.now(),
-      priceChange:{},
-      volume:{},
-      liquidity:{},
-
-      profile,
-      discoveryType:'new'
-    };
-  });
 }
+
+
+/* ============================================================
+   BOOST / TRENDING FEED
+============================================================ */
 
 async function fetchTrending(){
 
@@ -581,24 +1010,34 @@ async function fetchTrending(){
       7000
     );
 
+
   const rows=
-    Array.isArray(data)?
-    data:
-    [];
+    Array.isArray(data)
+      ?data
+      :[];
+
 
   const sol=
     rows
       .filter(
         x=>
-          x?.chainId==='solana'&&
+          x?.chainId===
+          'solana'&&
           x?.tokenAddress
       )
-      .slice(0,45);
+      .slice(
+        0,
+        45
+      );
+
 
   const pairs=
     await fetchTokenPairs(
-      sol.map(x=>x.tokenAddress)
+      sol.map(
+        x=>x.tokenAddress
+      )
     );
+
 
   const boostMap=
     new Map(
@@ -610,89 +1049,150 @@ async function fetchTrending(){
       )
     );
 
-  const score=p=>
-    volume1h(p)+
-    tx24(p)*25+
-    Math.abs(
-      num(p.priceChange?.h1)||0
-    )*1000;
 
   return pairs
     .map(
       p=>({
+
         ...p,
-        discoveryType:'trending',
+
+        discoveryType:
+          'trending',
+
         boost:
           boostMap.get(
             p.baseToken.address
           )||null
+
       })
     )
     .sort(
-      (a,b)=>score(b)-score(a)
+      (a,b)=>{
+
+        /*
+          Current activity signal:
+            volume + tx count + price movement.
+
+          This is a discovery sort, not a safety
+          or investment score.
+        */
+
+        const scoreA=
+          volume1h(a)+
+          transactions24(a)*25+
+          Math.abs(
+            num(
+              a.priceChange?.h1
+            )||0
+          )*1000;
+
+
+        const scoreB=
+          volume1h(b)+
+          transactions24(b)*25+
+          Math.abs(
+            num(
+              b.priceChange?.h1
+            )||0
+          )*1000;
+
+
+        return scoreB-scoreA;
+
+      }
     )
     .slice(
       0,
       TPCFG.MAX_FEED
     );
+
 }
 
-function mergeByMint(rows){
-
-  const map=new Map();
-
-  rows.forEach(p=>{
-
-    const k=
-      p?.baseToken?.address;
-
-    if(!k)return;
-
-    const cur=map.get(k);
-
-    if(
-      !cur||
-      liquidity(p)>liquidity(cur)
-    )
-      map.set(k,p);
-  });
-
-  return [...map.values()];
-}
 
 /* ============================================================
-   6. PUMP LIVE FEED
+   LIVE PUMPPORTAL DATA
 ============================================================ */
 
-function normalizeNewEvent(e){
+function pumpWsUrl(){
 
-  if(!e?.mint)return null;
+  if(
+    TPCFG.PUMPPORTAL_KEY
+  ){
 
-  return {
+    return(
+      PUMP_WS_BASE+
+      '?api-key='+
+      encodeURIComponent(
+        TPCFG.PUMPPORTAL_KEY
+      )
+    );
+
+  }
+
+
+  return PUMP_WS_BASE;
+
+}
+
+
+function normalizeNewEvent(
+  event
+){
+
+  if(
+    !event||
+    !event.mint
+  )
+    return null;
+
+
+  return{
+
     chainId:'solana',
-    pairAddress:'',
-    dexId:'pump',
+
+    pairAddress:
+      '',
+
+    dexId:
+      'pump',
 
     baseToken:{
-      address:e.mint,
-      symbol:e.symbol||'NEW',
-      name:e.name||e.mint
+
+      address:
+        event.mint,
+
+      symbol:
+        event.symbol||
+        'NEW',
+
+      name:
+        event.name||
+        event.mint
+
     },
 
     info:{
-      imageUrl:''
+
+      imageUrl:
+        event.uri&&
+        /^https?:\/\//.test(
+          event.uri
+        )
+          ?event.uri
+          :'',
+
     },
 
-    metadataUri:
-      /^https?:\/\//i.test(e.uri||'')?
-      e.uri:
-      '',
-
     priceUsd:null,
-    marketCap:null,
+
+    marketCap:
+      null,
+
     fdv:null,
 
-    liquidity:{usd:0},
+    liquidity:{
+      usd:0
+    },
 
     volume:{
       h24:0,
@@ -708,50 +1208,96 @@ function normalizeNewEvent(e){
     txns:{
       h24:{
         buys:
-          e.txType==='create'?1:0,
+          event.txType===
+          'create'
+            ?1
+            :0,
+
         sells:0
       }
     },
 
-    pairCreatedAt:Date.now(),
+    pairCreatedAt:
+      Date.now(),
 
-    discoveryType:'new',
+    discoveryType:
+      'new',
+
     bonding:true,
 
     bondingCurveKey:
-      e.bondingCurveKey||'',
+      event.bondingCurveKey||
+      '',
 
     vSolInBondingCurve:
-      num(e.vSolInBondingCurve),
+      num(
+        event.vSolInBondingCurve
+      ),
 
     vTokensInBondingCurve:
-      num(e.vTokensInBondingCurve),
+      num(
+        event.vTokensInBondingCurve
+      ),
 
     marketCapSol:
-      num(e.marketCapSol),
+      num(
+        event.marketCapSol
+      ),
 
     initialBuy:
-      num(e.initialBuy),
+      num(
+        event.initialBuy
+      ),
 
-    signature:e.signature||'',
-    creator:e.traderPublicKey||''
+    signature:
+      event.signature||
+      '',
+
+    creator:
+      event.traderPublicKey||
+      ''
+
   };
+
 }
 
-function normalizeMigration(e){
 
-  if(!e?.mint)return null;
+function normalizeMigration(
+  event
+){
 
-  return {
+  if(
+    !event||
+    !event.mint
+  )
+    return null;
+
+
+  return{
+
     chainId:'solana',
 
-    pairAddress:e.pool||'',
-    dexId:e.pool||'migration',
+    pairAddress:
+      event.pool||
+      '',
+
+    dexId:
+      event.pool||
+      'migration',
 
     baseToken:{
-      address:e.mint,
-      symbol:e.symbol||'MIGRATED',
-      name:e.name||e.mint
+
+      address:
+        event.mint,
+
+      symbol:
+        event.symbol||
+        'MIGRATED',
+
+      name:
+        event.name||
+        event.mint
+
     },
 
     info:{
@@ -759,15 +1305,21 @@ function normalizeMigration(e){
     },
 
     pairCreatedAt:
-      e.timestamp?
-      Number(e.timestamp)*1000:
-      Date.now(),
+      event.timestamp
+        ?Number(
+          event.timestamp
+        )*1000
+        :Date.now(),
 
     priceUsd:null,
+
     marketCap:null,
+
     fdv:null,
 
-    liquidity:{usd:0},
+    liquidity:{
+      usd:0
+    },
 
     volume:{
       h24:0,
@@ -787,85 +1339,48 @@ function normalizeMigration(e){
       }
     },
 
-    discoveryType:'migrated',
+    discoveryType:
+      'migrated',
+
     migrated:true,
 
     migrationSignature:
-      e.signature||'',
+      event.signature||
+      '',
 
     migrationPool:
-      e.pool||''
-  };
-}
+      event.pool||
+      ''
 
-function applyPair(item,pair){
-
-  if(!pair)return;
-
-  const keep={
-    discoveryType:item.discoveryType,
-    bonding:item.bonding,
-    migrated:item.migrated,
-
-    bondingCurveKey:
-      item.bondingCurveKey,
-
-    vSolInBondingCurve:
-      item.vSolInBondingCurve,
-
-    vTokensInBondingCurve:
-      item.vTokensInBondingCurve,
-
-    marketCapSol:
-      item.marketCapSol,
-
-    initialBuy:item.initialBuy,
-
-    migrationSignature:
-      item.migrationSignature,
-
-    migrationPool:item.migrationPool,
-
-    metadataUri:item.metadataUri,
-
-    creator:item.creator
   };
 
-  const oldImage=
-    item.info?.imageUrl||'';
-
-  Object.assign(
-    item,
-    pair,
-    keep
-  );
-
-  if(
-    !item.info?.imageUrl&&
-    oldImage
-  ){
-
-    item.info={
-      ...(item.info||{}),
-      imageUrl:oldImage
-    };
-  }
 }
 
-async function enrichLiveEvents(events){
+
+async function enrichLiveEvents(
+  events
+){
 
   const mints=
     events
       .map(
-        e=>e?.baseToken?.address
+        e=>
+          e?.baseToken?.address
       )
       .filter(Boolean);
 
-  if(!mints.length)
+
+  if(
+    !mints.length
+  )
     return events;
 
+
   const pairs=
-    await fetchTokenPairs(mints);
+    await fetchTokenPairs(
+      mints
+    );
+
 
   const map=
     new Map(
@@ -877,903 +1392,1103 @@ async function enrichLiveEvents(events){
       )
     );
 
-  events.forEach(
-    e=>
-      applyPair(
-        e,
+
+  return events.map(
+    e=>{
+
+      const mint=
+        e?.baseToken?.address;
+
+      const p=
         map.get(
-          e?.baseToken?.address
-        )
+          mint
+        );
+
+
+      if(
+        !p
       )
-  );
+        return e;
 
-  return events;
-}
 
-async function loadPumpImage(item){
+      return{
 
-  if(
-    item.info?.imageUrl||
-    !item.metadataUri
-  )
-    return;
+        ...p,
 
-  try{
+        discoveryType:
+          e.discoveryType,
 
-    const meta=
-      await fetchJson(
-        item.metadataUri,
-        {timeout:6000}
-      );
+        bonding:
+          e.bonding||
+          false,
 
-    const img=
-      safeImage(meta?.image);
+        migrated:
+          e.migrated||
+          false,
 
-    if(img){
+        bondingCurveKey:
+          e.bondingCurveKey||
 
-      item.info={
-        ...(item.info||{}),
-        imageUrl:img
+          undefined,
+
+        vSolInBondingCurve:
+          e.vSolInBondingCurve,
+
+        vTokensInBondingCurve:
+          e.vTokensInBondingCurve,
+
+        marketCapSol:
+          e.marketCapSol,
+
+        initialBuy:
+          e.initialBuy,
+
+        migrationSignature:
+          e.migrationSignature,
+
+        migrationPool:
+          e.migrationPool
+
       };
 
-      scheduleRender();
-    }
-
-  }catch(e){}
-}
-
-function queueEnrich(item){
-
-  TP.enrichQ.push(item);
-
-  if(TP.enrichTimer)
-    return;
-
-  TP.enrichTimer=
-    setTimeout(
-      async()=>{
-        TP.enrichTimer=null;
-
-        const batch=
-          TP.enrichQ.splice(
-            0,
-            TPCFG.DS_BATCH
-          );
-
-        if(!batch.length)
-          return;
-
-        try{
-          await enrichLiveEvents(batch);
-        }catch(e){}
-
-        batch
-          .slice(0,10)
-          .forEach(loadPumpImage);
-
-        scheduleRender();
-
-        if(TP.enrichQ.length)
-          queueEnrich(
-            TP.enrichQ.shift()
-          );
-
-      },
-      TPCFG.ENRICH_EVERY_MS
-    );
-}
-
-function scheduleRender(){
-
-  if(renderQueued)
-    return;
-
-  renderQueued=true;
-
-  requestAnimationFrame(
-    ()=>{
-      renderQueued=false;
-      renderFeed();
     }
   );
+
 }
 
-function pushLive(item){
 
-  if(TP.search)
-    return;
-
-  if(
-    TP.mode==='new'||
-    (
-      TP.mode==='bonding'&&
-      item.bonding
-    )
-  ){
-
-    TP.feed=
-      mergeByMint(
-        [item,...TP.feed]
-      )
-      .sort(
-        (a,b)=>
-          Number(
-            b.pairCreatedAt||0
-          )-
-          Number(
-            a.pairCreatedAt||0
-          )
-      )
-      .slice(
-        0,
-        TPCFG.MAX_FEED
-      );
-
-    TP.base=TP.feed;
-
-    scheduleRender();
-
-  }else if(
-    TP.mode==='migrated'&&
-    item.migrated
-  ){
-
-    TP.feed=
-      mergeByMint(
-        [item,...TP.feed]
-      )
-      .slice(
-        0,
-        TPCFG.MAX_FEED
-      );
-
-    TP.base=TP.feed;
-
-    scheduleRender();
-  }
-}
-
-function pumpWsUrl(){
-
-  return TPCFG.PUMPPORTAL_KEY?
-    PUMP_WS+
-    '?api-key='+
-    encodeURIComponent(
-      TPCFG.PUMPPORTAL_KEY
-    ):
-    PUMP_WS;
-}
+/* ============================================================
+   WEBSOCKET
+============================================================ */
 
 function closePumpSocket(){
 
-  clearTimeout(TP.wsTimer);
-  TP.wsTimer=null;
+  clearTimeout(
+    TP.wsReconnectTimer
+  );
 
-  if(TP.ws){
+
+  TP.wsReconnectTimer=
+    null;
+
+
+  if(
+    TP.ws
+  ){
+
     try{
+
       TP.ws.close();
+
     }catch(e){}
+
   }
 
-  TP.ws=null;
-  TP.wsOnline=false;
+
+  TP.ws=
+    null;
+
+  TP.wsOnline=
+    false;
+
 }
+
 
 function schedulePumpReconnect(){
 
-  clearTimeout(TP.wsTimer);
+  clearTimeout(
+    TP.wsReconnectTimer
+  );
 
-  if(!TP.started)
+
+  if(
+    !TP.started
+  )
     return;
 
-  TP.wsTimer=
+
+  TP.wsReconnectTimer=
     setTimeout(
       openPumpSocket,
       3500
     );
+
 }
+
 
 function openPumpSocket(){
 
   if(
-    !TP.started||
+    !TP.started
+  )
+    return;
+
+
+  if(
     TP.ws
   )
     return;
 
+
   let socket;
 
+
   try{
+
     socket=
       new WebSocket(
         pumpWsUrl()
       );
-  }catch(e){
-    schedulePumpReconnect();
-    return;
-  }
-
-  TP.ws=socket;
-
-  socket.onopen=()=>{
-
-    TP.wsOnline=true;
-
-    try{
-
-      socket.send(
-        JSON.stringify({
-          method:'subscribeNewToken'
-        })
-      );
-
-      socket.send(
-        JSON.stringify({
-          method:'subscribeMigration'
-        })
-      );
-
-    }catch(e){}
-
-    updateLiveStatus();
-  };
-
-  socket.onmessage=ev=>{
-
-    let d;
-
-    try{
-      d=JSON.parse(ev.data);
-    }catch(e){
-      return;
-    }
-
-    if(!d?.mint)
-      return;
-
-    const type=
-      String(
-        d.txType||
-        d.type||
-        ''
-      ).toLowerCase();
-
-    if(type==='create'){
-
-      const item=
-        normalizeNewEvent(d);
-
-      if(!item)return;
-
-      TP.liveNew.unshift(item);
-
-      TP.liveNew=
-        TP.liveNew.slice(
-          0,
-          TPCFG.MAX_LIVE
-        );
-
-      pushLive(item);
-      queueEnrich(item);
-
-    }else if(
-      type.includes('migrat')
-    ){
-
-      const item=
-        normalizeMigration(d);
-
-      if(!item)return;
-
-      TP.liveMigrated.unshift(item);
-
-      TP.liveMigrated=
-        TP.liveMigrated.slice(
-          0,
-          TPCFG.MAX_LIVE
-        );
-
-      pushLive(item);
-      queueEnrich(item);
-    }
-  };
-
-  socket.onerror=()=>{
-    TP.wsOnline=false;
-    updateLiveStatus();
-
-    try{
-      socket.close();
-    }catch(e){}
-  };
-
-  socket.onclose=()=>{
-
-    if(TP.ws===socket)
-      TP.ws=null;
-
-    TP.wsOnline=false;
-
-    updateLiveStatus();
-    schedulePumpReconnect();
-  };
-}
-
-/* ============================================================
-   7. WATCHLIST
-============================================================ */
-
-async function loadWatchlist(){
-
-  const wallet=walletAddress();
-
-  const db=
-    CORE.getSupabase?
-    CORE.getSupabase():
-    null;
-
-  if(!wallet||!db){
-    TP.watch.clear();
-    return;
-  }
-
-  if(TP.watchLoading)
-    return;
-
-  TP.watchLoading=true;
-
-  try{
-
-    const {data,error}=
-      await db.rpc(
-        'fiji_get_watchlist',
-        {p_wallet:wallet}
-      );
-
-    if(error)
-      throw error;
-
-    TP.watch.clear();
-
-    (
-      Array.isArray(data)?
-      data:
-      []
-    ).forEach(r=>{
-
-      if(r?.chain&&r?.mint)
-        TP.watch.add(
-          r.chain+':'+r.mint
-        );
-    });
 
   }catch(e){
 
     console.warn(
-      'Watchlist load failed',
+      'Pump websocket unavailable',
       e
     );
 
-  }finally{
-    TP.watchLoading=false;
+    schedulePumpReconnect();
+
+    return;
+
   }
+
+
+  TP.ws=
+    socket;
+
+
+  socket.onopen=
+    ()=>{
+
+      TP.wsOnline=
+        true;
+
+
+      /*
+        New token events and migration events are
+        the two primary realtime discovery streams.
+      */
+
+      try{
+
+        socket.send(
+          JSON.stringify({
+            method:
+              'subscribeNewToken'
+          })
+        );
+
+
+        socket.send(
+          JSON.stringify({
+            method:
+              'subscribeMigration'
+          })
+        );
+
+      }catch(e){
+
+        console.warn(
+          'Pump subscription failed',
+          e
+        );
+
+      }
+
+
+      updateLiveStatus();
+
+    };
+
+
+  socket.onmessage=
+    async event=>{
+
+      try{
+
+        const data=
+          JSON.parse(
+            event.data
+          );
+
+
+        if(
+          data.txType===
+          'create'&&
+          data.mint
+        ){
+
+          const item=
+            normalizeNewEvent(
+              data
+            );
+
+
+          if(
+            item
+          ){
+
+            TP.liveNew.unshift(
+              item
+            );
+
+
+            TP.liveNew=
+              TP.liveNew.slice(
+                0,
+                TPCFG.MAX_LIVE_EVENTS
+              );
+
+
+            /*
+              Enrich asynchronously.
+            */
+
+            enrichLiveEvents(
+              [item]
+            )
+            .then(
+              rows=>{
+
+                if(
+                  rows[0]
+                ){
+
+                  Object.assign(
+                    item,
+                    rows[0]
+                  );
+
+                }
+
+
+                if(
+                  TP.mode==='new'||
+                  TP.mode==='bonding'
+                ){
+
+                  renderFeed();
+
+                }
+
+              }
+            );
+
+
+            if(
+              TP.mode==='new'||
+              TP.mode==='bonding'
+            ){
+
+              renderFeed();
+
+            }
+
+          }
+
+        }
+
+
+        /*
+          PumpPortal migration event.
+        */
+
+        if(
+          String(
+            data.txType||
+            data.type||
+            ''
+          ).toLowerCase()
+          .includes(
+            'migrat'
+          ) &&
+          data.mint
+        ){
+
+          const item=
+            normalizeMigration(
+              data
+            );
+
+
+          if(
+            item
+          ){
+
+            TP.liveMigrated.unshift(
+              item
+            );
+
+
+            TP.liveMigrated=
+              TP.liveMigrated.slice(
+                0,
+                TPCFG.MAX_LIVE_EVENTS
+              );
+
+
+            const enriched=
+              await enrichLiveEvents(
+                [item]
+              );
+
+
+            if(
+              enriched[0]
+            ){
+
+              Object.assign(
+                item,
+                enriched[0]
+              );
+
+            }
+
+
+            if(
+              TP.mode==='migrated'
+            ){
+
+              renderFeed();
+
+            }
+
+          }
+
+        }
+
+      }catch(e){
+
+        console.warn(
+          'Pump event error',
+          e
+        );
+
+      }
+
+    };
+
+
+  socket.onerror=
+    ()=>{
+      TP.wsOnline=
+        false;
+
+      updateLiveStatus();
+
+
+      try{
+        socket.close();
+      }catch(e){}
+
+    };
+
+
+  socket.onclose=
+    ()=>{
+
+      if(
+        TP.ws===
+        socket
+      ){
+
+        TP.ws=
+          null;
+
+      }
+
+
+      TP.wsOnline=
+        false;
+
+
+      updateLiveStatus();
+
+
+      schedulePumpReconnect();
+
+    };
+
 }
 
-async function toggleWatch(p){
 
-  const wallet=walletAddress();
+/* ============================================================
+   WATCHLIST
+============================================================ */
 
-  if(!wallet)
-    return toast(
-      'Connect your wallet first'
-    );
+async function loadWatchlist(){
 
-  if(!p)
-    return toast(
-      'Select a token first'
-    );
+  if(
+    !walletAddress()
+  ){
+
+    TP.watch.clear();
+
+    return;
+
+  }
+
+
+  if(
+    !CORE.getSupabase
+  ){
+
+    TP.watch.clear();
+
+    return;
+
+  }
+
 
   const db=
-    CORE.getSupabase?
-    CORE.getSupabase():
-    null;
+    CORE.getSupabase();
 
-  if(!db)
-    return toast(
-      'Supabase is unavailable'
-    );
 
-  const chain=
-    p.chainId||'solana';
+  if(
+    !db
+  ){
 
-  const mint=
-    p.baseToken?.address;
+    TP.watch.clear();
 
-  if(!mint)
-    return toast(
-      'Token address unavailable'
-    );
+    return;
+
+  }
+
+
+  if(
+    TP.watchLoading
+  )
+    return;
+
+
+  TP.watchLoading=
+    true;
+
 
   try{
 
-    const {data,error}=
+    const {
+      data,
+      error
+    }=
       await db.rpc(
-        'fiji_watch_toggle',
+        'fiji_get_watchlist',
         {
-          p_wallet:wallet,
-          p_chain:chain,
-          p_mint:mint
+          p_wallet:
+            walletAddress()
         }
       );
 
-    if(error)
+
+    if(
+      error
+    )
       throw error;
 
-    const key=
-      chain+':'+mint;
 
-    if(data===true){
+    TP.watch.clear();
 
-      TP.watch.add(key);
 
-      toast(
-        'Added to watchlist ⭐'
-      );
+    (
+      Array.isArray(data)
+        ?data
+        :[]
+    )
+    .forEach(
+      row=>{
 
-    }else{
+        if(
+          row?.chain&&
+          row?.mint
+        ){
 
-      TP.watch.delete(key);
+          TP.watch.add(
+            row.chain+
+            ':'+
+            row.mint
+          );
 
-      toast(
-        'Removed from watchlist'
-      );
-    }
+        }
 
-    updateTradeStar();
-    renderFeed();
+      }
+    );
 
-    if(TP.mode==='watchlist')
-      await refresh(false);
 
   }catch(e){
 
-    console.error(
-      'Watchlist toggle error',
+    console.warn(
+      'Supabase watchlist load failed',
       e
     );
 
-    toast(
-      'Watchlist error: '+
-      (e.message||e)
-    );
+
+  }finally{
+
+    TP.watchLoading=
+      false;
+
   }
+
 }
+
 
 /* ============================================================
-   8. PORTFOLIO / ASSETS
+   WALLET ADDRESS
 ============================================================ */
 
-const decCache=
-  new Map([
-    [SOL_MINT,9]
-  ]);
+function walletAddress(){
 
-function portfolioToken(mint){
+  if(
+    CORE.getWallet
+  ){
 
-  return (
-    TP.portfolio.tokens||[]
-  ).find(
-    t=>t?.mint===mint
+    return CORE.getWallet();
+
+  }
+
+
+  return(
+    window.wallet||
+    null
   );
+
 }
 
-function portfolioTokenAmount(mint){
 
-  const t=
-    portfolioToken(mint);
+/* ============================================================
+   PORTFOLIO
+============================================================ */
 
-  return (
-    num(
-      t?.tokenAmount?.uiAmount
-    )||0
+function portfolioToken(
+  mint
+){
+
+  return(
+    TP.portfolio.tokens||
+    []
+  )
+  .find(
+    token=>
+      token?.mint===
+      mint
   );
+
 }
 
-function updatePortfolioFromCore(payload){
 
-  if(!payload)
+function portfolioTokenAmount(
+  mint
+){
+
+  const token=
+    portfolioToken(
+      mint
+    );
+
+
+  return num(
+    token?.tokenAmount?.uiAmount||
+    token?.amount||
+    0
+  )||0;
+
+}
+
+
+function updatePortfolioFromCore(
+  payload
+){
+
+  if(
+    !payload
+  )
     return;
 
-  if(num(payload.sol)!==null)
+
+  if(
+    num(payload.sol)!==
+    null
+  ){
+
     TP.portfolio.sol=
       num(payload.sol)||0;
 
-  if(Array.isArray(payload.tokens)){
+  }
+
+
+  if(
+    Array.isArray(
+      payload.tokens
+    )
+  ){
 
     TP.portfolio.tokens=
       payload.tokens;
 
-    payload.tokens.forEach(t=>{
-
-      const d=
-        num(
-          t?.tokenAmount?.decimals
-        );
-
-      if(
-        t?.mint&&
-        d!==null
-      )
-        decCache.set(
-          t.mint,
-          d
-        );
-    });
   }
 
-  renderAssetSummary();
+
   updateTradeBalances();
+
 }
 
-function renderAssetSummary(){
-
-  const tokens=
-    TP.portfolio.tokens||[];
-
-  const sol=
-    TP.portfolio.sol||0;
-
-  setText(
-    'portfolioSolTotal',
-    formatSol(sol)+' SOL'
-  );
-
-  setText(
-    'headerSolBalance',
-    formatSol(sol)
-  );
-
-  setText(
-    'swapWalletBalance',
-    '◎ '+formatSol(sol)+' SOL'
-  );
-
-  const list=
-    $('tradeAssetList');
-
-  if(!list)
-    return;
-
-  if(!tokens.length){
-
-    list.innerHTML=
-      '<div class="empty-state">'+
-      '<div class="empty-icon">🐰</div>'+
-      '<h3>No tokens yet</h3>'+
-      '<p class="small">Your wallet assets will appear here.</p>'+
-      '</div>';
-
-    return;
-  }
-
-  list.innerHTML=
-    tokens
-      .filter(
-        t=>
-          num(
-            t?.tokenAmount?.uiAmount
-          )>0
-      )
-      .map(t=>{
-
-        const mint=t.mint;
-
-        const amount=
-          num(
-            t?.tokenAmount?.uiAmount
-          )||0;
-
-        const value=
-          num(
-            t?.usdValue||
-            t?.value||
-            0
-          )||0;
-
-        const change=
-          num(
-            t?.change24h||
-            t?.priceChange24h||
-            0
-          );
-
-        const image=
-          safeImage(
-            t?.logoURI||
-            t?.logo||
-            t?.image
-          );
-
-        return `
-          <div class="trade-asset-row">
-            ${
-              image
-              ?
-              `<img
-                class="token-icon"
-                src="${esc(image)}"
-                alt=""
-                loading="lazy"
-                onerror="this.outerHTML='<span class=&quot;token-icon&quot;>🪙</span>'"
-              >`
-              :
-              `<span class="token-icon">🪙</span>`
-            }
-
-            <div class="trade-asset-info">
-              <b>${esc(t?.symbol||'TOKEN')}</b>
-              <span>${formatNumber(amount)}</span>
-            </div>
-
-            <div class="trade-asset-value">
-              <b>${formatUsd(value)}</b>
-              <span class="${changeClass(change)}">
-                ${
-                  change===null
-                  ?'—'
-                  :formatPercent(change)
-                }
-              </span>
-            </div>
-          </div>
-        `;
-      })
-      .join('');
-}
-
-async function getDecimals(mint){
-
-  if(decCache.has(mint))
-    return decCache.get(mint);
-
-  try{
-
-    const conn=
-      CORE.getConnection?
-      CORE.getConnection():
-      null;
-
-    if(
-      conn&&
-      window.solanaWeb3
-    ){
-
-      const info=
-        await conn.getParsedAccountInfo(
-          new solanaWeb3.PublicKey(
-            mint
-          )
-        );
-
-      const d=
-        info?.value?.data?.parsed?.info?.decimals;
-
-      if(Number.isInteger(d)){
-
-        decCache.set(
-          mint,
-          d
-        );
-
-        return d;
-      }
-    }
-
-  }catch(e){}
-
-  return 6;
-}
 
 function updateTradeBalances(){
 
   const sol=
     TP.portfolio.sol||0;
 
-  setText(
-    'tradeSolBalance',
-    formatSol(sol)
-  );
 
-  setText(
-    'portfolioSolTotal',
-    formatSol(sol)+' SOL'
-  );
+  if(
+    $('tradeSolBalance')
+  ){
 
-  setText(
-    'swapWalletBalance',
-    '◎ '+formatSol(sol)+' SOL'
-  );
+    $('tradeSolBalance').textContent=
+      formatSol(
+        sol
+      );
 
-  setText(
-    'headerSolBalance',
-    formatSol(sol)
-  );
-
-  if(TP.action==='buy'){
-
-    setText(
-      'tradePayBalance',
-      'Balance: '+
-      formatSol(sol)+
-      ' SOL'
-    );
-
-  }else{
-
-    setText(
-      'tradePayBalance',
-      'Balance: '+
-      formatNumber(
-        portfolioTokenAmount(
-          TP.selected?.baseToken?.address
-        )
-      )
-    );
   }
+
+
+  if(
+    $('portfolioSolTotal')
+  ){
+
+    $('portfolioSolTotal').textContent=
+      formatSol(
+        sol
+      )+
+      ' SOL';
+
+  }
+
+
+  if(
+    $('swapWalletBalance')
+  ){
+
+    $('swapWalletBalance').textContent=
+      '◎ '+
+      formatSol(
+        sol
+      )+
+      ' SOL';
+
+  }
+
+
+  const payBalance=
+    $('tradePayBalance');
+
+
+  if(
+    payBalance
+  ){
+
+    if(
+      TP.action==='buy'
+    ){
+
+      payBalance.textContent=
+        'Balance: '+
+        formatSol(sol)+
+        ' SOL';
+
+    }else{
+
+      const mint=
+        TP.selected
+          ?.baseToken
+          ?.address;
+
+
+      payBalance.textContent=
+        'Balance: '+
+        formatNumber(
+          portfolioTokenAmount(
+            mint
+          )
+        );
+
+    }
+
+  }
+
 }
 
+
 /* ============================================================
-   9. FEED
+   DISCOVERY BUILDERS
 ============================================================ */
+
+function mergeByMint(
+  rows
+){
+
+  const map=
+    new Map();
+
+
+  rows.forEach(
+    p=>{
+
+      const key=
+        p?.baseToken?.address;
+
+
+      if(
+        !key
+      )
+        return;
+
+
+      const current=
+        map.get(
+          key
+        );
+
+
+      if(
+        !current||
+        liquidity(p)>
+        liquidity(current)
+      ){
+
+        map.set(
+          key,
+          p
+        );
+
+      }
+
+    }
+  );
+
+
+  return[
+    ...map.values()
+  ];
+
+}
+
 
 async function getFeed(){
 
-  if(TP.mode==='new'){
+  /*
+    NEW
+  */
+
+  if(
+    TP.mode==='new'
+  ){
+
+    const live=
+      TP.liveNew.slice();
+
 
     let fallback=[];
 
+
     try{
+
       fallback=
         await buildProfileFeed();
-    }catch(e){}
+
+    }catch(e){
+
+      console.warn(
+        'New fallback failed',
+        e
+      );
+
+    }
+
 
     return mergeByMint(
       [
-        ...TP.liveNew,
+        ...live,
         ...fallback
       ]
     )
     .sort(
       (a,b)=>
-        Number(b.pairCreatedAt||0)-
-        Number(a.pairCreatedAt||0)
+        Number(
+          b.pairCreatedAt||0
+        )-
+        Number(
+          a.pairCreatedAt||0
+        )
     )
     .slice(
       0,
       TPCFG.MAX_FEED
     );
+
   }
 
-  if(TP.mode==='bonding'){
+
+  /*
+    BONDING
+  */
+
+  if(
+    TP.mode==='bonding'
+  ){
 
     const bonding=
       TP.liveNew.filter(
-        i=>
-          i.bonding!==false&&
-          !i.migrated
+        item=>
+          item.bonding!==false
       );
 
-    await enrichLiveEvents(
-      bonding.slice(
-        0,
-        TPCFG.DS_BATCH
-      )
-    );
 
-    return mergeByMint(bonding)
-      .sort(
-        (a,b)=>{
-          const am=
-            num(a.marketCapSol);
+    /*
+      Enrich recent live bonding tokens.
+    */
 
-          const bm=
-            num(b.marketCapSol);
-
-          if(
-            am!==null&&
-            bm!==null
-          )
-            return bm-am;
-
-          return (
-            Number(
-              b.pairCreatedAt||0
-            )-
-            Number(
-              a.pairCreatedAt||0
-            )
-          );
-        }
-      )
-      .slice(
-        0,
-        TPCFG.MAX_FEED
+    const enriched=
+      await enrichLiveEvents(
+        bonding
       );
-  }
 
-  if(TP.mode==='migrated'){
-
-    await enrichLiveEvents(
-      TP.liveMigrated.slice(
-        0,
-        TPCFG.DS_BATCH
-      )
-    );
 
     return mergeByMint(
-      TP.liveMigrated
+      enriched
     )
     .sort(
-      (a,b)=>
-        Number(b.pairCreatedAt||0)-
-        Number(a.pairCreatedAt||0)
+      (a,b)=>{
+
+        const am=
+          num(
+            a.marketCapSol
+          );
+
+
+        const bm=
+          num(
+            b.marketCapSol
+          );
+
+
+        if(
+          am!==null&&
+          bm!==null
+        )
+          return am-bm;
+
+
+        return(
+          Number(
+            b.pairCreatedAt||0
+          )-
+          Number(
+            a.pairCreatedAt||0
+          )
+        );
+
+      }
     )
     .slice(
       0,
       TPCFG.MAX_FEED
     );
+
   }
 
-  if(TP.mode==='watchlist'){
 
-    if(!walletAddress())
-      return [];
+  /*
+    MIGRATED
+  */
+
+  if(
+    TP.mode==='migrated'
+  ){
+
+    const enriched=
+      await enrichLiveEvents(
+        TP.liveMigrated
+      );
+
+
+    return mergeByMint(
+      enriched
+    )
+    .sort(
+      (a,b)=>
+        Number(
+          b.pairCreatedAt||0
+        )-
+        Number(
+          a.pairCreatedAt||0
+        )
+    )
+    .slice(
+      0,
+      TPCFG.MAX_FEED
+    );
+
+  }
+
+
+  /*
+    WATCHLIST
+  */
+
+  if(
+    TP.mode==='watchlist'
+  ){
+
+    if(
+      !walletAddress()
+    )
+      return[];
+
 
     await loadWatchlist();
 
+
     const wanted=
       [...TP.watch]
-        .map(tokenKeyParts)
-        .filter(Boolean)
-        .filter(
-          x=>x.chain==='solana'
-        )
-        .map(
-          x=>x.mint
-        );
+      .map(
+        tokenKeyParts
+      )
+      .filter(Boolean)
+      .map(
+        x=>x.mint
+      );
+
 
     const pairs=
       await fetchTokenPairs(
         wanted
       );
 
+
+    const chainAllowed=
+      pairs.filter(
+        p=>
+          p.chainId===
+          'solana'
+      );
+
+
     return mergeByMint(
-      pairs.map(
-        p=>({
-          ...p,
-          discoveryType:'watchlist'
-        })
-      )
+      chainAllowed
+        .map(
+          p=>({
+
+            ...p,
+
+            discoveryType:
+              'watchlist'
+
+          })
+        )
     )
     .slice(
       0,
       TPCFG.MAX_FEED
     );
+
   }
 
+
+  /*
+    TRENDING
+  */
+
   return fetchTrending();
+
 }
 
+
 /* ============================================================
-   10. RENDERING
+   RENDER LIVE STATUS
 ============================================================ */
 
-function bondingProgress(p){
+function updateLiveStatus(){
+
+  const text=
+    $('tradeLiveText');
+
+
+  const updated=
+    $('tradeUpdated');
+
+
+  if(
+    text
+  ){
+
+    if(
+      TP.wsOnline
+    ){
+
+      text.textContent=
+        'Live Solana feed connected';
+
+    }else if(
+      TPCFG.PUMPPORTAL_KEY
+    ){
+
+      text.textContent=
+        'Reconnecting to live feed…';
+
+    }else{
+
+      text.textContent=
+        'Live discovery · Pump feed optional';
+
+    }
+
+  }
+
+
+  if(
+    updated&&
+    TP.updatedAt
+  ){
+
+    updated.textContent=
+      'Updated '+
+      formatAge(
+        TP.updatedAt
+      )+
+      ' ago';
+
+  }
+
+}
+
+
+/* ============================================================
+   FEED TOKEN CARD
+============================================================ */
+
+function bondingProgress(
+  p
+){
+
+  /*
+    Pump bonding curve reserves are useful for
+    displaying a rough progress value when the
+    event supplies the virtual reserves.
+
+    This is intentionally a UI estimate, not a
+    guarantee of graduation timing.
+  */
 
   const v=
     num(
       p?.vTokensInBondingCurve
     );
+
+
+  const initial=
+    1000000000;
+
 
   if(
     v===null||
@@ -1781,547 +2496,806 @@ function bondingProgress(p){
   )
     return null;
 
-  return clamp(
-    (
-      (PUMP_START_TOKENS-v)/
-      (PUMP_START_TOKENS-PUMP_GRAD_TOKENS)
-    )*100,
-    0,
-    100
-  );
+
+  /*
+    As virtual token reserves fall, curve progress
+    increases.
+
+    This is only used when Pump-style virtual reserves
+    are available.
+  */
+
+  const progress=
+    clamp(
+      (
+        1-
+        v/initial
+      )*
+      100,
+      0,
+      100
+    );
+
+
+  return progress;
+
 }
 
-function discoveryBadge(p){
 
-  if(p.discoveryType==='migrated')
-    return '<span class="token-badge">🎓 Migrated</span>';
+function discoveryBadge(
+  p
+){
+
+  if(
+    p.discoveryType==='migrated'
+  ){
+
+    return`
+      <span class="token-badge">
+       🎓 Migrated
+      </span>
+    `;
+
+  }
+
 
   if(
     p.discoveryType==='bonding'||
     p.bonding
-  )
-    return '<span class="token-badge">📈 Bonding</span>';
+  ){
 
-  if(p.discoveryType==='trending')
-    return '<span class="token-badge">🔥 Trending</span>';
+    return`
+      <span class="token-badge">
+       📈 Bonding
+      </span>
+    `;
 
-  if(p.discoveryType==='watchlist')
-    return '<span class="token-badge">⭐ Saved</span>';
+  }
 
-  return '<span class="token-badge">🆕 New</span>';
+
+  if(
+    p.discoveryType==='trending'
+  ){
+
+    return`
+      <span class="token-badge">
+       🔥 Trending
+      </span>
+    `;
+
+  }
+
+
+  if(
+    p.discoveryType==='watchlist'
+  ){
+
+    return`
+      <span class="token-badge">
+       ⭐ Saved
+      </span>
+    `;
+
+  }
+
+
+  return`
+    <span class="token-badge">
+     🆕 New
+    </span>
+  `;
+
 }
 
-function modeLabel(m){
 
-  return {
-    new:'New',
-    trending:'Trending',
-    bonding:'Bonding',
-    migrated:'Migrated',
-    watchlist:'Watchlist'
-  }[m]||'tokens';
-}
-
-function tradeTokenCard(p){
+function tradeTokenCard(
+  p
+){
 
   const mint=
     p?.baseToken?.address;
 
+
   const key=
-    tokenKey(p);
+    tokenKey(
+      p
+    );
+
 
   const image=
     safeImage(
       p?.info?.imageUrl
     );
 
+
   const price=
-    num(p?.priceUsd);
+    num(
+      p?.priceUsd
+    );
+
 
   const change=
-    num(p?.priceChange?.h1);
+    num(
+      p?.priceChange?.h1
+    );
+
 
   const watched=
-    TP.watch.has(key);
+    TP.watch.has(
+      key
+    );
+
 
   const progress=
-    bondingProgress(p);
+    bondingProgress(
+      p
+    );
 
-  const showBond=
-    (
-      p.bonding||
-      p.discoveryType==='bonding'
-    )&&
-    progress!==null;
 
-  return `
-    <article
-      class="token-card"
-      data-token-key="${esc(key)}"
-      onclick="tradeSelectByKey(this.dataset.tokenKey)"
-    >
+  const quickAmount=
+    TP.action==='buy'
+      ?'0.10 SOL'
+      :'SELL';
 
-      <div class="token-main">
 
-        ${
-          image
-          ?
-          `<img
-            class="token-icon"
-            src="${esc(image)}"
-            alt=""
-            loading="lazy"
-            onerror="this.outerHTML='<span class=&quot;token-icon&quot;>🪙</span>'"
-          >`
-          :
-          '<span class="token-icon">🪙</span>'
-        }
+  return`
 
-        <div class="token-name">
-          <b>${esc(p?.baseToken?.symbol||'TOKEN')}</b>
-          <span>${esc(p?.baseToken?.name||short(mint))}</span>
-        </div>
+   <article
+    class="token-card"
+    data-token-key="${escapeHtml(key)}"
+    onclick="tradeSelectByKey(this.dataset.tokenKey)">
 
-        ${discoveryBadge(p)}
+    <div class="token-main">
 
-        ${
-          watched
-          ?
-          '<span class="token-badge">⭐</span>'
-          :
-          ''
-        }
 
-      </div>
+     ${
+       image
 
-      <div class="token-price">
-        ${
-          price!==null
-          ?
-          formatUsd(price)
-          :
-          'Live price loading…'
-        }
-      </div>
+       ?`
 
-      <div class="token-meta">
-
-        <div class="meta-item">
-          <b>${formatUsd(p?.marketCap||p?.fdv)}</b>
-          <span>Market cap</span>
-        </div>
-
-        <div class="meta-item">
-          <b>${formatUsd(liquidity(p))}</b>
-          <span>Liquidity</span>
-        </div>
-
-        <div class="meta-item">
-          <b>${formatUsd(volume24(p))}</b>
-          <span>24h volume</span>
-        </div>
-
-        <div class="meta-item">
-          <b>${formatAge(p?.pairCreatedAt)}</b>
-          <span>Age</span>
-        </div>
-
-      </div>
-
-      ${
-        showBond
-        ?
-        `
-        <div style="
-          margin-top:8px;
-          background:#F7FAFF;
-          border:2px dashed #CFD9EA;
-          border-radius:12px;
-          padding:7px 8px
-        ">
-
-          <div style="
-            display:flex;
-            justify-content:space-between;
-            gap:8px
-          ">
-            <span>Bonding progress</span>
-            <b>${progress.toFixed(0)}%</b>
-          </div>
-
-          <div style="
-            height:8px;
-            border:2px solid #12305C;
-            border-radius:999px;
-            background:#fff;
-            overflow:hidden;
-            margin-top:4px
-          ">
-
-            <div style="
-              width:${progress}%;
-              height:100%;
-              background:#3FB6C9
-            "></div>
-
-          </div>
-        </div>
-        `
-        :
-        ''
-      }
-
-      <div class="token-bottom">
-
-        <div style="
-          display:flex;
-          gap:5px;
-          align-items:center;
-          flex-wrap:wrap
-        ">
-
-          <span class="
-            mini-pill
-            change
-            ${changeClass(change)}
-          ">
-            1h ${
-              change===null?
-              '—':
-              formatPercent(change)
-            }
-          </span>
-
-          <span class="mini-pill">
-            ${esc(p?.dexId||'Solana')}
-          </span>
-
-        </div>
-
-        <button
-          class="quick-buy"
-          type="button"
-          data-buy-key="${esc(key)}"
-          onclick="
-            event.stopPropagation();
-            tradeQuickBuy(this.dataset.buyKey)
-          "
+        <img
+         class="token-icon"
+         src="${escapeHtml(image)}"
+         alt=""
+         loading="lazy"
+         onerror="this.outerHTML='<span class=&quot;token-icon&quot;>🪙</span>'"
         >
-          ⚡ ${
-            TP.action==='buy'
-            ?
-            'Buy '+TPCFG.QUICK_BUY_SOL.toFixed(2)+' SOL'
-            :
-            'Sell'
-          }
-        </button>
 
-      </div>
+       `
 
-    </article>
-  `;
-}
+       :`
 
-function emptyBox(
-  icon,
-  title,
-  text,
-  retry
-){
+        <span class="token-icon">
+         🪙
+        </span>
 
-  return `
-    <div class="empty-state">
+       `
+     }
 
-      <div class="empty-icon">
-        ${icon}
-      </div>
 
-      <h3>${title}</h3>
+     <div class="token-name">
 
-      <p class="small">
-        ${text}
-      </p>
+      <b>
+       ${escapeHtml(
+        p?.baseToken?.symbol||
+        'TOKEN'
+       )}
+      </b>
 
-      ${
-        retry
-        ?
-        `
-        <br>
-        <button
-          class="btn sm"
-          onclick="tradeRefresh(true)"
-        >
-          Try again
-        </button>
-        `
-        :
-        ''
-      }
+      <span>
+       ${escapeHtml(
+        p?.baseToken?.name||
+        short(mint)
+       )}
+      </span>
+
+     </div>
+
+
+     ${discoveryBadge(p)}
+
+
+     ${
+       watched
+
+       ?`
+
+        <span
+         class="token-badge">
+         ⭐
+        </span>
+
+       `
+
+       :''
+     }
 
     </div>
+
+
+    <div class="token-price">
+
+     ${
+       price!==null
+        ?formatUsd(price)
+        :'Live price loading…'
+     }
+
+    </div>
+
+
+    <div class="token-meta">
+
+
+     <div class="meta-item">
+
+      <b>
+       ${
+        formatUsd(
+         p?.marketCap||
+         p?.fdv
+        )
+       }
+      </b>
+
+      <span>
+       Market cap
+      </span>
+
+     </div>
+
+
+     <div class="meta-item">
+
+      <b>
+       ${formatUsd(
+        liquidity(p)
+       )}
+      </b>
+
+      <span>
+       Liquidity
+      </span>
+
+     </div>
+
+
+     <div class="meta-item">
+
+      <b>
+       ${formatUsd(
+        volume24(p)
+       )}
+      </b>
+
+      <span>
+       24h volume
+      </span>
+
+     </div>
+
+
+     <div class="meta-item">
+
+      <b>
+       ${formatAge(
+        p?.pairCreatedAt
+       )}
+      </b>
+
+      <span>
+       Age
+      </span>
+
+     </div>
+
+
+    </div>
+
+
+    ${
+      (
+        p.bonding||
+        p.discoveryType==='bonding'
+      )
+
+      &&progress!==null
+
+      ?`
+
+       <div
+        style="
+         margin-top:8px;
+         background:#F7FAFF;
+         border:2px dashed #CFD9EA;
+         border-radius:12px;
+         padding:7px 8px">
+
+        <div
+         style="
+          display:flex;
+          justify-content:space-between;
+          gap:8px;
+          font:600 12px Fredoka">
+
+         <span>
+          Bonding progress
+         </span>
+
+         <b>
+          ${progress.toFixed(0)}%
+         </b>
+
+        </div>
+
+
+        <div
+         style="
+          height:8px;
+          border:2px solid #12305C;
+          border-radius:999px;
+          background:#fff;
+          overflow:hidden;
+          margin-top:4px">
+
+         <div
+          style="
+           width:${progress}%;
+           height:100%;
+           background:#3FB6C9">
+
+         </div>
+
+        </div>
+
+       </div>
+
+      `
+
+      :''
+    }
+
+
+    <div class="token-bottom">
+
+
+     <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
+
+
+      <span
+       class="mini-pill change ${
+        changeClass(change)
+       }">
+
+       1h
+       ${
+        change===null
+         ?'—'
+         :formatPercent(change)
+       }
+
+      </span>
+
+
+      <span class="mini-pill">
+
+       ${escapeHtml(
+        p?.dexId||
+        'Solana'
+       )}
+
+      </span>
+
+
+      ${
+       p?.pairCreatedAt
+
+       ?`
+
+        <span class="mini-pill">
+         ${formatAge(
+          p.pairCreatedAt
+         )}
+        </span>
+
+       `
+
+       :''
+      }
+
+     </div>
+
+
+     <button
+      class="quick-buy"
+      type="button"
+      data-buy-key="${escapeHtml(key)}"
+      onclick="event.stopPropagation();tradeQuickBuy(this.dataset.buyKey)">
+
+      ⚡
+      ${
+       TP.action==='buy'
+        ?'Buy 0.10 SOL'
+        :'Sell'
+      }
+
+     </button>
+
+    </div>
+
+
+   </article>
+
   `;
+
 }
+
+
+/* ============================================================
+   FEED RENDER
+============================================================ */
 
 function renderFeed(){
 
-  const box=$('tradeList');
+  const box=
+    $('tradeList');
 
-  if(!box)return;
+
+  if(
+    !box
+  )
+    return;
+
 
   if(
     TP.loading&&
     !TP.feed.length
   ){
 
-    box.innerHTML=
-      emptyBox(
-        '🌊',
-        'Finding live Solana tokens…',
-        'Looking for current '+
-        esc(modeLabel(TP.mode))+
-        ' activity.'
-      );
+    box.innerHTML=`
+
+      <div class="empty-state">
+
+       <div class="empty-icon">
+        🌊
+       </div>
+
+       <h3>
+        Finding live Solana tokens…
+       </h3>
+
+       <p class="small">
+        Looking for current ${escapeHtml(
+          modeLabel(TP.mode)
+        )} activity.
+       </p>
+
+      </div>
+
+    `;
 
     return;
+
   }
+
 
   if(
     TP.error&&
     !TP.feed.length
   ){
 
-    box.innerHTML=
-      emptyBox(
-        '💧',
-        'Trade Pad needs another splash',
-        esc(TP.error),
-        true
-      );
+    box.innerHTML=`
+
+      <div class="empty-state">
+
+       <div class="empty-icon">
+        💧
+       </div>
+
+       <h3>
+        Trade Pad needs another splash
+       </h3>
+
+       <p class="small">
+        ${escapeHtml(
+          TP.error
+        )}
+       </p>
+
+       <br>
+
+       <button
+        class="btn sm"
+        onclick="tradeRefresh(true)">
+
+        Try again
+
+       </button>
+
+      </div>
+
+    `;
 
     return;
+
   }
 
-  if(!TP.feed.length){
 
-    let msg=
+  if(
+    !TP.feed.length
+  ){
+
+    let message=
       'No tokens found in this feed right now.';
 
-    if(TP.search)
-      msg='No tokens match your search.';
 
-    else if(
+    if(
       TP.mode==='watchlist'
-    )
-      msg=
-        walletAddress()?
-        'Your watchlist has no currently visible Solana pairs.':
-        'Connect your wallet to view your watchlist.';
+    ){
 
-    else if(
+      message=
+        walletAddress()
+          ?'Your watchlist has no currently visible Solana pairs.'
+          :'Connect your wallet to view your watchlist.';
+
+    }
+
+
+    if(
       TP.mode==='bonding'
-    )
-      msg=
+    ){
+
+      message=
         'Bonding tokens will appear here from the live launch feed.';
 
-    else if(
+    }
+
+
+    if(
       TP.mode==='migrated'
-    )
-      msg=
+    ){
+
+      message=
         'Fresh migrations will appear here from the live migration feed.';
 
-    box.innerHTML=
-      emptyBox(
-        TP.mode==='watchlist'?'⭐':'🌿',
-        TP.mode==='watchlist'?
-          'Watchlist':
-          'Nothing here yet',
-        msg
-      );
+    }
+
+
+    box.innerHTML=`
+
+      <div class="empty-state">
+
+       <div class="empty-icon">
+        ${
+          TP.mode==='watchlist'
+           ?'⭐'
+           :'🌿'
+        }
+       </div>
+
+       <h3>
+        ${
+          TP.mode==='watchlist'
+            ?'Watchlist'
+            :'Nothing here yet'
+        }
+       </h3>
+
+       <p class="small">
+        ${message}
+       </p>
+
+      </div>
+
+    `;
 
     return;
+
   }
+
 
   box.innerHTML=
     TP.feed
-      .map(tradeTokenCard)
+      .map(
+        tradeTokenCard
+      )
       .join('');
+
+
 }
 
-function updateLiveStatus(){
-
-  if(TP.wsOnline){
-
-    setText(
-      'tradeLiveText',
-      'Live Solana feed connected'
-    );
-
-  }else{
-
-    setText(
-      'tradeLiveText',
-      'Live discovery · connecting to Pump feed…'
-    );
-  }
-
-  if(TP.updatedAt){
-
-    setText(
-      'tradeUpdated',
-      'Updated '+
-      formatAge(TP.updatedAt)+
-      ' ago'
-    );
-  }
-}
 
 /* ============================================================
-   11. SELECTED TOKEN
+   MODE LABEL
 ============================================================ */
 
-function findByKey(key){
+function modeLabel(
+  mode
+){
 
-  return (
-    TP.feed.find(
-      p=>tokenKey(p)===key
-    )||
-    TP.base.find(
-      p=>tokenKey(p)===key
-    )||
-    TP.liveNew.find(
-      p=>tokenKey(p)===key
-    )||
-    TP.liveMigrated.find(
-      p=>tokenKey(p)===key
-    )||
-    null
+  const labels={
+
+    new:'New',
+
+    trending:'Trending',
+
+    bonding:'Bonding',
+
+    migrated:'Migrated',
+
+    watchlist:'Watchlist'
+
+  };
+
+
+  return(
+    labels[mode]||
+    'tokens'
   );
+
 }
 
-function updateChart(p){
 
-  const h24=
-    num(p.priceChange?.h24);
+/* ============================================================
+   SELECTED TOKEN
+============================================================ */
 
-  const empty=
-    $('tradeChartEmpty');
+function findByKey(
+  key
+){
 
-  if(h24===null){
+  return(
+    TP.feed.find(
+      p=>
+        tokenKey(p)===
+        key
+    )
+  )||
+  TP.liveNew.find(
+    p=>
+      tokenKey(p)===
+      key
+  )||
+  TP.liveMigrated.find(
+    p=>
+      tokenKey(p)===
+      key
+  )||
+  null;
 
-    if(empty)
-      empty.style.display='flex';
-
-    return;
-  }
-
-  if(empty)
-    empty.style.display='none';
-
-  const up=
-    '0,40 8,37 16,39 25,31 33,34 42,25 50,28 58,19 66,22 75,14 83,17 92,9 100,12';
-
-  const dn=
-    '0,12 8,17 16,14 25,23 33,20 42,29 50,25 58,34 66,30 75,38 83,34 92,43 100,40';
-
-  const line=
-    $('tradeChartPath');
-
-  if(line)
-    line.setAttribute(
-      'points',
-      h24>=0?up:dn
-    );
 }
+
 
 function updateSelectedUI(){
 
-  const p=TP.selected;
+  const p=
+    TP.selected;
 
-  if(!p){
 
-    [
-      'tradePrice',
-      'tradeMc',
-      'tradeLiq',
-      'tradeVol',
-      'summaryToken',
-      'summaryLiq',
-      'summaryImpact',
-      'summaryRoute',
-      'summaryNetworkFee',
-      'securityAddress',
-      'securityAge',
-      'securityLiq',
-      'securityDex'
-    ].forEach(
-      id=>setText(id,'—')
-    );
+  if(
+    !p
+  ){
 
-    setText(
-      'tradeDetailSymbol',
-      'Select a token'
-    );
+    $('tradeDetailSymbol').textContent=
+      'Select a token';
 
-    setText(
-      'tradeDetailName',
-      'Choose a token from the live feed.'
-    );
 
-    setText(
-      'tradeReceiveAsset',
-      'TOKEN'
-    );
+    $('tradeDetailName').textContent=
+      'Choose a token from the live feed.';
 
-    const r=
-      $('tradeReceiveAmount');
 
-    if(r)r.value='';
+    $('tradePrice').textContent=
+      '—';
 
-    setText(
-      'tradeContract',
-      'Contract address will appear here'
-    );
 
-    setText(
-      'securityStatus',
-      'Not checked'
-    );
+    $('tradeMc').textContent=
+      '—';
 
-    updateTradeActionUI();
+
+    $('tradeLiq').textContent=
+      '—';
+
+
+    $('tradeVol').textContent=
+      '—';
+
+
+    $('summaryToken').textContent=
+      '—';
+
+
+    $('summaryLiq').textContent=
+      '—';
+
+
+    $('summaryImpact').textContent=
+      '—';
+
+
+    $('summaryRoute').textContent=
+      '—';
+
+
+    $('summaryNetworkFee').textContent=
+      '—';
+
+
+    $('tradeReceiveAsset').textContent=
+      'TOKEN';
+
+
+    $('tradeReceiveAmount').value=
+      '';
+
+
+    $('tradeContract').textContent=
+      'Contract address will appear here';
+
+
+    $('securityAddress').textContent=
+      '—';
+
+
+    $('securityAge').textContent=
+      '—';
+
+
+    $('securityLiq').textContent=
+      '—';
+
+
+    $('securityDex').textContent=
+      '—';
+
+
+    $('securityStatus').textContent=
+      'Not checked';
+
+
+    $('tradeChartLabel').textContent=
+      '24h';
+
+
+    $('tradeChartEmpty').style.display=
+      'flex';
+
+
+    $('tradeExecuteButton').textContent=
+      'Select a token';
+
+
     updateTradeBalances();
 
     return;
+
   }
+
 
   const mint=
     p.baseToken?.address||'';
 
+
   const symbol=
-    p.baseToken?.symbol||'TOKEN';
+    p.baseToken?.symbol||
+    'TOKEN';
 
-  const icon=
-    $('tradeDetailIcon');
 
-  if(icon){
+  const image=
+    safeImage(
+      p.info?.imageUrl
+    );
 
-    icon.src=
-      safeImage(
-        p.info?.imageUrl
-      )||
-      'fiji.png';
 
-    icon.onerror=()=>{
-      icon.src='fiji.png';
-    };
-  }
+  $('tradeDetailIcon').src=
+    image||
+    'fiji.png';
 
-  setText(
-    'tradeDetailSymbol',
-    symbol
-  );
 
-  setText(
-    'tradeDetailName',
+  $('tradeDetailSymbol').textContent=
+    symbol;
+
+
+  $('tradeDetailName').textContent=
     (
       p.baseToken?.name||
       'Token'
@@ -2330,374 +3304,918 @@ function updateSelectedUI(){
     (
       p.dexId||
       'market'
-    )
-  );
+    );
 
-  setText(
-    'tradePrice',
-    p.priceUsd!=null?
-      formatUsd(p.priceUsd):
-      '—'
-  );
 
-  setText(
-    'tradeMc',
+  $('tradePrice').innerHTML=
+    p.priceUsd!=null
+      ?formatUsd(
+        p.priceUsd
+      )
+      :'—';
+
+
+  $('tradeMc').textContent=
     formatUsd(
-      p.marketCap||p.fdv
-    )
-  );
+      p.marketCap||
+      p.fdv
+    );
 
-  setText(
-    'tradeLiq',
+
+  $('tradeLiq').textContent=
     formatUsd(
       liquidity(p)
-    )
-  );
+    );
 
-  setText(
-    'tradeVol',
+
+  $('tradeVol').textContent=
     formatUsd(
       volume24(p)
-    )
-  );
+    );
 
-  setText(
-    'summaryToken',
-    symbol
-  );
 
-  setText(
-    'summaryLiq',
+  $('summaryToken').textContent=
+    symbol;
+
+
+  $('summaryLiq').textContent=
     formatUsd(
       liquidity(p)
-    )
-  );
+    );
 
-  setText(
-    'summaryRoute',
-    isPumpCurve(p)?
-      'Pump bonding curve':
-      (p.dexId||'Solana')
-  );
 
-  setText(
-    'tradeContract',
-    mint||'—'
-  );
+  $('summaryImpact').textContent=
+    '—';
 
-  setText(
-    'securityAddress',
-    short(mint)
-  );
 
-  setText(
-    'securityAge',
+  $('summaryRoute').textContent=
+    p.dexId||
+    'Solana';
+
+
+  $('summaryNetworkFee').textContent=
+    '—';
+
+
+  $('tradeReceiveAsset').textContent=
+    TP.action==='buy'
+      ?symbol
+      :'SOL';
+
+
+  $('tradeContract').textContent=
+    mint||
+    '—';
+
+
+  $('securityAddress').textContent=
+    short(mint);
+
+
+  $('securityAge').textContent=
     formatAge(
       p.pairCreatedAt
-    )
-  );
+    );
 
-  setText(
-    'securityLiq',
+
+  $('securityLiq').textContent=
     formatUsd(
       liquidity(p)
-    )
+    );
+
+
+  $('securityDex').textContent=
+    p.dexId||
+    '—';
+
+
+  $('securityStatus').textContent=
+    'Market check pending';
+
+
+  $('tradeChartLabel').textContent=
+    symbol+
+    ' · 24h';
+
+
+  $('tradeChartEmpty').style.display=
+    p.priceChange
+      ?'none'
+      :'flex';
+
+
+  updateChart(
+    p
   );
 
-  setText(
-    'securityDex',
-    p.dexId||'—'
-  );
 
-  updateChart(p);
   updateTradeStar();
+
+
   updateTradeActionUI();
+
+
   updateTradeBalances();
-  runLightSecurity();
-  schedulePreview();
+
+
+  /*
+    Update fee label.
+  */
+
+  $('tradeFeeNote').innerHTML=
+    'FIJI platform fee · '+
+    feePercent().toFixed(2)+
+    '% · shown before signing.';
+
+
+  /*
+    Tell router-aware UI that a token changed.
+  */
+
+  updateTradePreview();
+
 }
+
+
+/* ============================================================
+   CHART
+============================================================ */
+
+function updateChart(
+  p
+){
+
+  const pc=
+    p.priceChange||
+    {};
+
+
+  const h24=
+    num(
+      pc.h24
+    );
+
+
+  if(
+    h24===null
+  ){
+
+    $('tradeChartEmpty').style.display=
+      'flex';
+
+    return;
+
+  }
+
+
+  $('tradeChartEmpty').style.display=
+    'none';
+
+
+  const positive=
+    h24>=0;
+
+
+  const path=
+    positive
+
+      ?'0,40 8,37 16,39 25,31 33,34 42,25 50,28 58,19 66,22 75,14 83,17 92,9 100,12'
+
+      :'0,12 8,17 16,14 25,23 33,20 42,29 50,25 58,34 66,30 75,38 83,34 92,43 100,40';
+
+
+  $('tradeChartPath').setAttribute(
+    'points',
+    path
+  );
+
+}
+
+
+/* ============================================================
+   WATCH STAR
+============================================================ */
 
 function updateTradeStar(){
 
   const star=
     $('tradeStar');
 
-  if(!star)return;
+
+  if(
+    !star
+  )
+    return;
+
 
   const watched=
-    Boolean(
-      TP.selected&&
-      TP.watch.has(
-        tokenKey(TP.selected)
+    TP.selected&&
+    TP.watch.has(
+      tokenKey(
+        TP.selected
       )
     );
 
+
   star.classList.toggle(
     'on',
-    watched
+    Boolean(
+      watched
+    )
   );
 
+
   star.textContent=
-    watched?'★':'☆';
+    watched
+      ?'★'
+      :'☆';
+
 }
 
-function runLightSecurity(){
 
-  const p=TP.selected;
+async function toggleWatch(
+  p
+){
 
-  if(!p)return;
+  const wallet=
+    walletAddress();
 
-  const l=
-    liquidity(p);
-
-  if(isPumpCurve(p))
-    setText(
-      'securityStatus',
-      'Pump curve · not graduated'
-    );
-
-  else if(l<=0)
-    setText(
-      'securityStatus',
-      'Liquidity not available'
-    );
-
-  else if(l<5000)
-    setText(
-      'securityStatus',
-      'Low liquidity'
-    );
-
-  else
-    setText(
-      'securityStatus',
-      'Basic market data loaded'
-    );
-}
-
-async function selectByKey(key){
-
-  const p=findByKey(key);
-
-  if(!p)return;
-
-  if(!p.priceUsd){
-
-    try{
-
-      const rows=
-        await fetchTokenPairs([
-          p.baseToken.address
-        ]);
-
-      applyPair(
-        p,
-        rows[0]
-      );
-
-    }catch(e){}
-  }
-
-  TP.selected=p;
-
-  updateSelectedUI();
-  refreshSelectedToken();
-
-  const card=
-    $('selectedTokenCard');
 
   if(
-    card&&
-    window.matchMedia&&
-    window.matchMedia(
-      '(max-width:760px)'
-    ).matches
+    !wallet
   ){
 
-    card.scrollIntoView({
-      behavior:'smooth',
-      block:'start'
-    });
-  }
-}
+    toast(
+      'Connect your wallet first'
+    );
 
-async function refreshSelectedToken(){
-
-  const p=TP.selected;
-
-  if(!p?.baseToken?.address)
     return;
+
+  }
+
+
+  if(
+    !p
+  ){
+
+    toast(
+      'Select a token first'
+    );
+
+    return;
+
+  }
+
+
+  const db=
+    CORE.getSupabase
+      ?CORE.getSupabase()
+      :null;
+
+
+  if(
+    !db
+  ){
+
+    toast(
+      'Supabase is unavailable'
+    );
+
+    return;
+
+  }
+
+
+  const chain=
+    p.chainId||
+    'solana';
+
+
+  const mint=
+    p.baseToken?.address;
+
+
+  if(
+    !mint
+  ){
+
+    toast(
+      'Token address unavailable'
+    );
+
+    return;
+
+  }
+
 
   try{
 
-    const rows=
-      await fetchTokenPairs([
-        p.baseToken.address
-      ]);
+    const {
+      data,
+      error
+    }=
+      await db.rpc(
+        'fiji_watch_toggle',
+        {
 
-    if(!rows[0])
-      return;
+          p_wallet:
+            wallet,
 
-    applyPair(
-      p,
-      rows[0]
+          p_chain:
+            chain,
+
+          p_mint:
+            mint
+
+        }
+      );
+
+
+    if(
+      error
+    )
+      throw error;
+
+
+    const key=
+      chain+
+      ':'+
+      mint;
+
+
+    if(
+      data===true
+    ){
+
+      TP.watch.add(
+        key
+      );
+
+
+      toast(
+        'Added to watchlist ⭐'
+      );
+
+    }else{
+
+      TP.watch.delete(
+        key
+      );
+
+
+      toast(
+        'Removed from watchlist'
+      );
+
+    }
+
+
+    updateTradeStar();
+
+
+    renderFeed();
+
+
+    if(
+      TP.mode==='watchlist'
+    ){
+
+      await tradeRefresh(
+        false
+      );
+
+    }
+
+  }catch(e){
+
+    console.error(
+      'Watchlist toggle error',
+      e
     );
 
-    updateSelectedUI();
 
-  }catch(e){}
+    toast(
+      'Watchlist error: '+
+      (
+        e.message||
+        e
+      )
+    );
+
+  }
+
 }
 
+
 /* ============================================================
-   12. BUY / SELL
+   ACTION UI
 ============================================================ */
 
 function updateTradeActionUI(){
 
-  const buy=$('buyTab');
-  const sell=$('sellTab');
+  const buy=
+    $('buyTab');
 
-  if(buy){
+  const sell=
+    $('sellTab');
 
-    buy.classList.toggle(
-      'on',
-      TP.action==='buy'
-    );
 
-    buy.classList.toggle(
-      'buy',
-      TP.action==='buy'
-    );
-  }
-
-  if(sell){
-
-    sell.classList.toggle(
-      'on',
-      TP.action==='sell'
-    );
-
-    sell.classList.toggle(
-      'sell',
-      TP.action==='sell'
-    );
-  }
-
-  const symbol=
-    TP.selected?.baseToken?.symbol||
-    'TOKEN';
-
-  setText(
-    'tradePayAsset',
-    TP.action==='buy'?
-      'SOL':
-      symbol
+  buy.classList.toggle(
+    'on',
+    TP.action==='buy'
   );
 
-  setText(
-    'tradeAmountUnit',
-    TP.action==='buy'?
-      'SOL':
-      '% of holdings'
+
+  sell.classList.toggle(
+    'on',
+    TP.action==='sell'
   );
 
-  setText(
-    'tradeReceiveAsset',
-    TP.action==='buy'?
-      symbol:
-      'SOL'
+
+  buy.classList.toggle(
+    'buy',
+    TP.action==='buy'
   );
 
-  setText(
-    'tradeExecuteButton',
-    TP.selected?
-      (
-        TP.action==='buy'?
-        'BUY NOW':
-        'SELL NOW'
-      ):
-      'Select a token'
+
+  sell.classList.toggle(
+    'sell',
+    TP.action==='sell'
   );
 
-  setText(
-    'tradeFeeNote',
-    'FIJI platform fee · '+
-    feePercent().toFixed(2)+
-    '% on Jupiter routes · shown before signing.'
-  );
+
+  $('tradePayAsset').textContent=
+    TP.action==='buy'
+      ?'SOL'
+      :(
+        TP.selected
+          ?.baseToken
+          ?.symbol||
+        'TOKEN'
+      );
+
+
+  $('tradeAmountUnit').textContent=
+    TP.action==='buy'
+      ?'SOL'
+      :(
+        TP.selected
+          ?.baseToken
+          ?.symbol||
+        'TOKEN'
+      );
+
+
+  $('tradeReceiveAsset').textContent=
+    TP.action==='buy'
+      ?(
+        TP.selected
+          ?.baseToken
+          ?.symbol||
+        'TOKEN'
+      )
+      :'SOL';
+
+
+  $('tradeExecuteButton').textContent=
+    TP.selected
+
+      ?(
+        TP.action==='buy'
+          ?'BUY NOW'
+          :'SELL NOW'
+       )
+
+      :'Select a token';
+
 
   updateTradeBalances();
+
 }
 
-function setAction(action){
+
+function setAction(
+  action
+){
 
   TP.action=
-    action==='sell'?
-    'sell':
-    'buy';
+    action==='sell'
+      ?'sell'
+      :'buy';
 
-  const amt=
-    $('tradeAmount');
-
-  if(amt)
-    amt.value='';
 
   updateTradeActionUI();
+
+
+  /*
+    Re-render token cards because their
+    Quick Buy / Sell buttons depend on action.
+  */
+
   renderFeed();
-  schedulePreview();
+
+
+  updateTradePreview();
+
 }
+
+
+/* ============================================================
+   QUICK PRESETS
+============================================================ */
 
 function getAvailableSol(){
 
   return Math.max(
     0,
-    (TP.portfolio.sol||0)-
+    (
+      TP.portfolio.sol||
+      0
+    )-
     TPCFG.SOL_RESERVE
   );
+
 }
 
-function setPreset(percent){
 
-  if(!TP.selected)
-    return toast(
+function setPreset(
+  percent
+){
+
+  if(
+    !TP.selected
+  ){
+
+    toast(
       'Select a token first'
     );
 
+    return;
+
+  }
+
+
   const pct=
     clamp(
-      Number(percent)||0,
+      Number(percent)||
+      0,
       0,
       100
     );
 
-  const amt=
-    $('tradeAmount');
 
-  if(!amt)return;
+  if(
+    TP.action==='buy'
+  ){
 
-  if(TP.action==='buy'){
-
-    const avail=
+    const available=
       getAvailableSol();
 
-    if(avail<=0)
-      return toast(
+
+    if(
+      available<=0
+    ){
+
+      toast(
         'Not enough SOL after network reserve'
       );
 
-    amt.value=
-      (
-        avail*pct/100
-      ).toFixed(4);
+      return;
+
+    }
+
+
+    const amount=
+      available*
+      pct/100;
+
+
+    $('tradeAmount').value=
+      amount
+        .toFixed(4);
+
 
   }else{
 
-    amt.value=
-      String(pct);
+    $('tradeAmount').value=
+      String(
+        pct
+      );
+
+
   }
 
-  schedulePreview();
+
+  updateTradePreview();
+
 }
+
+
+/* ============================================================
+   PREVIEW
+============================================================ */
+
+function routerUrl(
+  path
+){
+
+  if(
+    !TPCFG.TRADE_ROUTER_URL
+  )
+    return '';
+
+
+  return(
+    TPCFG.TRADE_ROUTER_URL
+      .replace(
+        /\/$/,
+        ''
+      )+
+    path
+  );
+
+}
+
+
+async function routerPost(
+  path,
+  body
+){
+
+  const url=
+    routerUrl(
+      path
+    );
+
+
+  if(
+    !url
+  ){
+
+    throw new Error(
+      'Trade router is not configured'
+    );
+
+  }
+
+
+  return fetchJson(
+    url,
+    {
+      method:'POST',
+
+      headers:{
+        'Content-Type':
+          'application/json'
+      },
+
+      body:
+        JSON.stringify(
+          body
+        )
+    }
+  );
+
+}
+
+
+function currentTradeAmount(){
+
+  return num(
+    $('tradeAmount')?.value
+  );
+
+}
+
+
+function tradeAmountValid(){
+
+  const amount=
+    currentTradeAmount();
+
+
+  if(
+    amount===null||
+    amount<=0
+  )
+    return false;
+
+
+  if(
+    TP.action==='buy'
+  ){
+
+    return amount<=
+      getAvailableSol();
+
+  }
+
+
+  return amount<=100;
+
+}
+
+
+async function updateTradePreview(){
+
+  if(
+    !TP.selected
+  )
+    return;
+
+
+  if(
+    !routerUrl('/quote')
+  ){
+
+    $('summaryImpact').textContent=
+      '—';
+
+
+    $('summaryNetworkFee').textContent=
+      '—';
+
+
+    $('tradeReceiveAmount').value=
+      '';
+
+
+    return;
+
+  }
+
+
+  if(
+    !tradeAmountValid()
+  ){
+
+    $('tradeReceiveAmount').value=
+      '';
+
+
+    $('summaryImpact').textContent=
+      '—';
+
+
+    $('summaryRoute').textContent=
+      '—';
+
+
+    return;
+
+  }
+
+
+  const mint=
+    TP.selected
+      ?.baseToken
+      ?.address;
+
+
+  if(
+    !mint
+  )
+    return;
+
+
+  const amount=
+    currentTradeAmount();
+
+
+  const slippage=
+    getSlippageBps();
+
+
+  try{
+
+    const result=
+      await routerPost(
+        '/quote',
+        {
+
+          wallet:
+            walletAddress(),
+
+          mint,
+
+          side:
+            TP.action,
+
+          amount,
+
+          slippageBps:
+            slippage,
+
+          feeBps:
+            TPCFG.FEE_BPS
+
+        }
+      );
+
+
+    const receive=
+      num(
+        result.outAmount
+      );
+
+
+    if(
+      receive!==null
+    ){
+
+      $('tradeReceiveAmount').value=
+        result.outDecimals!==null
+          ?Number(
+            receive
+          ).toLocaleString(
+            undefined,
+            {
+              maximumFractionDigits:6
+            }
+          )
+          :String(
+            receive
+          );
+
+    }
+
+
+    $('summaryImpact').textContent=
+      result.priceImpactPct!=null
+
+        ?(
+          Number(
+            result.priceImpactPct
+          )*100
+        ).toFixed(2)+
+        '%'
+
+        :'—';
+
+
+    $('summaryRoute').textContent=
+      result.routeLabel||
+      result.route||
+      'Solana';
+
+
+    $('summaryNetworkFee').textContent=
+      result.networkFeeSol!=null
+
+        ?formatSol(
+          result.networkFeeSol
+        )+
+        ' SOL'
+
+        :'—';
+
+
+    if(
+      result.platformFeeBps!=null
+    ){
+
+      $('tradeFeeNote').textContent=
+        'FIJI platform fee · '+
+        (
+          Number(
+            result.platformFeeBps
+          )/100
+        ).toFixed(2)+
+        '% · shown before signing.';
+
+    }
+
+  }catch(e){
+
+    $('tradeReceiveAmount').value=
+      '';
+
+
+    $('summaryImpact').textContent=
+      '—';
+
+
+    $('summaryNetworkFee').textContent=
+      '—';
+
+
+    $('summaryRoute').textContent=
+      'Quote unavailable';
+
+
+    console.debug(
+      'Trade preview unavailable',
+      e
+    );
+
+  }
+
+}
+
+
+/* ============================================================
+   SLIPPAGE
+============================================================ */
 
 function getSlippageBps(){
 
@@ -2705,1333 +4223,513 @@ function getSlippageBps(){
     $('tradeSlippage')?.value||
     'auto';
 
-  if(v==='auto')
-    return 100;
+
+  if(
+    v==='auto'
+  )
+    return100;
+
+
+  const pct=
+    Number(v)||1;
+
 
   return Math.round(
-    (Number(v)||1)*100
+    pct*
+    100
   );
+
 }
 
-function currentAmount(){
-
-  return num(
-    $('tradeAmount')?.value
-  );
-}
-
-function amountValid(){
-
-  const a=currentAmount();
-
-  if(
-    a===null||
-    a<=0
-  )
-    return false;
-
-  return TP.action==='buy'?
-    a<=getAvailableSol():
-    a<=100;
-}
 
 /* ============================================================
-   13. TRADE BODY
+   WALLET SIGNING HELPERS
 ============================================================ */
 
-function buildTradeBody(){
+function decodeBase64(
+  value
+){
 
-  const p=TP.selected;
-
-  if(!p?.baseToken?.address)
-    throw new Error(
-      'Select a token first'
+  const binary=
+    atob(
+      value
     );
 
-  const wallet=
-    walletAddress();
-
-  if(!wallet)
-    throw new Error(
-      'Connect your wallet first'
-    );
-
-  const mint=
-    p.baseToken.address;
-
-  const v=
-    currentAmount();
-
-  const buy=
-    TP.action==='buy';
-
-  const pump=
-    isPumpCurve(p);
-
-  const base={
-    wallet,
-    action:TP.action,
-    pool:pump?'pump':'auto',
-    slippageBps:
-      getSlippageBps()
-  };
-
-  if(pump){
-
-    if(buy){
-
-      return {
-        ...base,
-        inputMint:SOL_MINT,
-        outputMint:mint,
-        amount:v,
-        denominatedInSol:true
-      };
-
-    }
-
-    return {
-      ...base,
-      inputMint:mint,
-      outputMint:SOL_MINT,
-      amount:
-        Math.round(v)+'%',
-      denominatedInSol:false
-    };
-  }
-
-  if(buy){
-
-    return {
-      ...base,
-      inputMint:SOL_MINT,
-      outputMint:mint,
-      amount:
-        String(
-          Math.floor(v*1e9)
-        )
-    };
-  }
-
-  const t=
-    portfolioToken(mint);
-
-  const raw=
-    BigInt(
-      t?.tokenAmount?.amount||'0'
-    );
-
-  if(raw<=0n)
-    throw new Error(
-      'You do not hold this token'
-    );
-
-  const part=
-    raw*
-    BigInt(
-      Math.round(v)
-    )/
-    100n;
-
-  if(part<=0n)
-    throw new Error(
-      'Amount is too small'
-    );
-
-  return {
-    ...base,
-    inputMint:mint,
-    outputMint:SOL_MINT,
-    amount:part.toString()
-  };
-}
-
-/* ============================================================
-   14. QUOTE
-============================================================ */
-
-function schedulePreview(){
-
-  clearTimeout(
-    previewTimer
-  );
-
-  previewTimer=
-    setTimeout(
-      updateTradePreview,
-      350
-    );
-}
-
-function clearPreview(route){
-
-  const r=
-    $('tradeReceiveAmount');
-
-  if(r)
-    r.value='';
-
-  setText(
-    'summaryImpact',
-    '—'
-  );
-
-  setText(
-    'summaryNetworkFee',
-    '—'
-  );
-
-  setText(
-    'summaryRoute',
-    route||'—'
-  );
-}
-
-async function updateTradePreview(){
-
-  const seq=
-    ++previewSeq;
-
-  const p=
-    TP.selected;
-
-  if(!p)return;
-
-  if(!amountValid()){
-
-    clearPreview(
-      isPumpCurve(p)?
-      'Pump bonding curve':
-      (p.dexId||'—')
-    );
-
-    return;
-  }
-
-  if(isPumpCurve(p)){
-
-    clearPreview(
-      'Pump bonding curve'
-    );
-
-    const recv=
-      $('tradeReceiveAmount');
-
-    if(
-      TP.action==='buy'&&
-      recv
-    ){
-
-      const est=
-        pumpBuyEstimate(
-          p,
-          currentAmount()
-        );
-
-      if(est!==null){
-
-        recv.value=
-          '≈ '+
-          est.toLocaleString(
-            undefined,
-            {
-              maximumFractionDigits:2
-            }
-          );
-      }
-    }
-
-    setText(
-      'tradeFeeNote',
-      'Pump route · provider fee about 0.5% · FIJI fee 0% on Pump routes.'
-    );
-
-    return;
-  }
-
-  setText(
-    'summaryRoute',
-    'Finding route…'
-  );
-
-  try{
-
-    const body=
-      buildTradeBody();
-
-    const res=
-      await routerPost(
-        '/quote',
-        body
-      );
-
-    if(seq!==previewSeq)
-      return;
-
-    const q=res.quote;
-
-    if(!q)
-      throw new Error(
-        'No route found'
-      );
-
-    const outMint=
-      body.outputMint;
-
-    const dec=
-      await getDecimals(
-        outMint
-      );
-
-    if(seq!==previewSeq)
-      return;
-
-    const out=
-      Number(q.outAmount)/
-      Math.pow(10,dec);
-
-    const recv=
-      $('tradeReceiveAmount');
-
-    if(recv){
-
-      recv.value=
-        out.toLocaleString(
-          undefined,
-          {
-            maximumFractionDigits:6
-          }
-        );
-    }
-
-    const impact=
-      num(q.priceImpactPct);
-
-    setText(
-      'summaryImpact',
-      impact!==null?
-      (impact*100).toFixed(2)+'%':
-      '—'
-    );
-
-    const labels=[
-      ...new Set(
-        (q.routePlan||[])
-          .map(
-            r=>
-              r?.swapInfo?.label
-          )
-          .filter(Boolean)
-      )
-    ];
-
-    setText(
-      'summaryRoute',
-      labels.length?
-        labels.join(' → '):
-        (p.dexId||'Jupiter')
-    );
-
-    setText(
-      'summaryNetworkFee',
-      '—'
-    );
-
-    if(res.feeBps!=null){
-
-      setText(
-        'tradeFeeNote',
-        'FIJI platform fee · '+
-        (
-          Number(res.feeBps)/100
-        ).toFixed(2)+
-        '% · shown before signing.'
-      );
-    }
-
-  }catch(e){
-
-    if(seq!==previewSeq)
-      return;
-
-    clearPreview(
-      'Quote unavailable'
-    );
-
-    setText(
-      'tradeFeeNote',
-      '⚠ '+
-      (e.message||'Quote failed')
-    );
-  }
-}
-
-function pumpBuyEstimate(p,sol){
-
-  const vs=
-    num(
-      p.vSolInBondingCurve
-    );
-
-  const vt=
-    num(
-      p.vTokensInBondingCurve
-    );
-
-  if(!vs||!vt)
-    return null;
-
-  const dx=
-    sol*0.99;
-
-  return
-    vt-
-    (vs*vt)/(vs+dx);
-}
-
-/* ============================================================
-   15. TRANSACTION SIGNING
-============================================================ */
-
-function decodeBase64(value){
-
-  if(
-    value instanceof Uint8Array
-  )
-    return value;
-
-  if(
-    value instanceof ArrayBuffer
-  )
-    return new Uint8Array(value);
-
-  if(
-    ArrayBuffer.isView(value)
-  )
-    return new Uint8Array(
-      value.buffer,
-      value.byteOffset,
-      value.byteLength
-    );
-
-  const bin=
-    atob(String(value));
 
   const bytes=
     new Uint8Array(
-      bin.length
+      binary.length
     );
+
 
   for(
     let i=0;
-    i<bin.length;
+    i<binary.length;
     i++
-  )
-    bytes[i]=
-      bin.charCodeAt(i);
-
-  return bytes;
-}
-
-function normalizeSignedBytes(value){
-
-  if(!value)
-    return null;
-
-  if(
-    value instanceof Uint8Array
-  )
-    return value;
-
-  if(
-    value instanceof ArrayBuffer
-  )
-    return new Uint8Array(value);
-
-  if(
-    ArrayBuffer.isView(value)
-  )
-    return new Uint8Array(
-      value.buffer,
-      value.byteOffset,
-      value.byteLength
-    );
-
-  if(
-    typeof value==='string'
   ){
 
-    try{
-      return decodeBase64(value);
-    }catch(e){
-      return null;
-    }
+    bytes[i]=
+      binary.charCodeAt(i);
+
   }
 
-  return null;
+
+  return bytes;
+
 }
 
-async function signAndSend(encoded){
+
+async function signAndSend(
+  encodedTransaction
+){
 
   const provider=
-    CORE.getProvider?
-    CORE.getProvider():
-    null;
+    CORE.getProvider
+      ?CORE.getProvider()
+      :null;
+
 
   const connection=
-    CORE.getConnection?
-    CORE.getConnection():
-    null;
+    CORE.getConnection
+      ?CORE.getConnection()
+      :null;
+
 
   const address=
     walletAddress();
+
 
   if(
     !provider||
     !connection||
     !address
-  )
+  ){
+
     throw new Error(
       'Wallet is not connected'
     );
 
-  if(!window.solanaWeb3)
+  }
+
+
+  if(
+    !window.solanaWeb3
+  ){
+
     throw new Error(
       'Solana Web3 library is unavailable'
     );
 
-  const bytes=
-    decodeBase64(encoded);
+  }
 
-  let tx=null;
+
+  const bytes=
+    decodeBase64(
+      encodedTransaction
+    );
+
+
+  /*
+    First try VersionedTransaction.
+
+    Modern Solana swap routers normally return
+    versioned transactions.
+  */
+
+  let versioned;
+
 
   try{
 
-    tx=
-      solanaWeb3.VersionedTransaction
-        .deserialize(bytes);
+    versioned=
+      solanaWeb3.VersionedTransaction.deserialize(
+        bytes
+      );
 
   }catch(e){
 
-    try{
+    versioned=
+      null;
 
-      tx=
-        solanaWeb3.Transaction.from(
-          bytes
-        );
-
-    }catch(e2){
-
-      throw new Error(
-        'Unable to decode trade transaction'
-      );
-    }
   }
 
-  const opts={
-    maxRetries:5,
-    skipPreflight:false,
-    preflightCommitment:'processed'
-  };
 
-  /* Injected wallet */
+  /*
+    Legacy provider.
+  */
 
   if(
-    typeof provider.signTransaction===
-    'function'
+    provider.signTransaction
   ){
+
+    if(
+      versioned
+    ){
+
+      const signed=
+        await provider.signTransaction(
+          versioned
+        );
+
+
+      const raw=
+        signed.serialize();
+
+
+      return connection.sendRawTransaction(
+        raw,
+        {
+          maxRetries:2,
+          skipPreflight:false
+        }
+      );
+
+    }
+
+
+    /*
+      Fallback legacy transaction.
+    */
+
+    const legacy=
+      solanaWeb3.Transaction.from(
+        bytes
+      );
+
 
     const signed=
       await provider.signTransaction(
-        tx
+        legacy
       );
 
-    if(!signed)
-      throw new Error(
-        'Wallet did not return a signed transaction'
-      );
 
-    return {
-      signature:
-        await connection.sendRawTransaction(
-          signed.serialize(),
-          opts
-        ),
-      transaction:tx
-    };
+    return connection.sendRawTransaction(
+      signed.serialize(),
+      {
+        maxRetries:2,
+        skipPreflight:false
+      }
+    );
+
   }
 
-  /* Wallet Standard */
 
-  const feature=
-    provider?.features?.[
+  /*
+    Wallet Standard.
+  */
+
+  const features=
+    provider
+      ?.features||
+    {};
+
+
+  const signFeature=
+    features[
       'solana:signTransaction'
     ];
 
+
   const accounts=
-    provider?.accounts||[];
+    provider?.accounts||
+    [];
+
 
   const account=
     accounts.find(
-      a=>a.address===address
+      x=>
+        x.address===
+        address
     )||
     accounts[0];
 
+
   if(
-    feature&&
+    signFeature&&
     account
   ){
 
-    const res=
-      await feature.signTransaction({
+    const result=
+      await signFeature.signTransaction({
+
         account,
-        transaction:bytes,
-        chain:'solana:mainnet'
+
+        transaction:
+          bytes,
+
+        chain:
+          'solana:mainnet'
+
       });
 
-    const raw=
-      res?.signedTransaction||
-      res?.[0]?.signedTransaction||
-      res?.transaction||
-      res?.[0]?.transaction;
 
     const signed=
-      normalizeSignedBytes(raw);
+      result?.signedTransaction||
+      result?.[0]?.signedTransaction;
 
-    if(!signed)
+
+    if(
+      !signed
+    ){
+
       throw new Error(
         'Wallet did not return a signed transaction'
       );
 
-    return {
-      signature:
-        await connection.sendRawTransaction(
-          signed,
-          opts
-        ),
-      transaction:tx
-    };
+    }
+
+
+    return connection.sendRawTransaction(
+      signed,
+      {
+        maxRetries:2,
+        skipPreflight:false
+      }
+    );
+
   }
+
 
   throw new Error(
     'This wallet cannot sign transactions through FIJI yet'
   );
+
 }
 
-/* ============================================================
-   16. CONFIRMATION
-============================================================ */
-
-async function waitForConfirmation(
-  signature
-){
-
-  const conn=
-    CORE.getConnection?
-    CORE.getConnection():
-    null;
-
-  if(!conn)
-    throw new Error(
-      'Solana connection unavailable'
-    );
-
-  const started=
-    Date.now();
-
-  while(
-    Date.now()-started<
-    TPCFG.CONFIRM_TIMEOUT_MS
-  ){
-
-    try{
-
-      const response=
-        await conn.getSignatureStatuses(
-          [signature],
-          {
-            searchTransactionHistory:true
-          }
-        );
-
-      const status=
-        response?.value?.[0];
-
-      if(status){
-
-        if(status.err){
-
-          return {
-            status:'failed',
-            err:status.err
-          };
-        }
-
-        if(
-          status.confirmationStatus===
-            'confirmed'||
-          status.confirmationStatus===
-            'finalized'
-        ){
-
-          return {
-            status:'confirmed',
-            confirmationStatus:
-              status.confirmationStatus
-          };
-        }
-      }
-
-    }catch(e){
-
-      console.warn(
-        'Signature status lookup failed',
-        e
-      );
-    }
-
-    await new Promise(
-      resolve=>
-        setTimeout(
-          resolve,
-          TPCFG.CONFIRM_INTERVAL_MS
-        )
-    );
-  }
-
-  return {
-    status:'unknown'
-  };
-}
 
 /* ============================================================
-   17. TRADE POINTS
-============================================================ */
-
-async function claimTradePoints(
-  sig,
-  mint
-){
-
-  const wallet=
-    walletAddress();
-
-  if(!wallet||!sig)
-    return;
-
-  for(
-    let i=0;
-    i<4;
-    i++
-  ){
-
-    try{
-
-      const res=
-        await routerPost(
-          '/claim',
-          {
-            wallet,
-            signature:sig,
-            mint
-          }
-        );
-
-      if(res?.awarded){
-
-        if(
-          res.profile&&
-          CORE.setProfile
-        )
-          CORE.setProfile(
-            res.profile
-          );
-
-        toast(
-          '+'+
-          res.points+
-          ' points for your trade ⭐'
-        );
-
-      }else if(
-        res?.reason&&
-        !/already/i.test(
-          res.reason
-        )
-      ){
-
-        toast(
-          res.reason
-        );
-      }
-
-      return;
-
-    }catch(e){
-
-      const m=
-        String(
-          e.message||e
-        );
-
-      if(
-        /not found yet/i.test(m)&&
-        i<3
-      ){
-
-        await new Promise(
-          r=>setTimeout(
-            r,
-            2500
-          )
-        );
-
-        continue;
-      }
-
-      console.warn(
-        'Trade points claim failed',
-        e
-      );
-
-      return;
-    }
-  }
-}
-
-/* ============================================================
-   18. EARN
-============================================================ */
-
-/*
-   Earn remains owned by the core index.html.
-
-   If index.html already contains:
-     doEarn(type)
-
-   this safely calls that function.
-
-   It does NOT redefine doEarn and therefore
-   does not conflict with the existing Earn system.
-*/
-
-async function earnPoints(type){
-
-  if(
-    typeof window.doEarn==='function'
-  ){
-
-    return window.doEarn(
-      type||'game'
-    );
-  }
-
-  const db=
-    CORE.getSupabase?
-    CORE.getSupabase():
-    null;
-
-  const wallet=
-    walletAddress();
-
-  if(!wallet)
-    return toast(
-      'Connect your wallet first'
-    );
-
-  if(!db)
-    return toast(
-      'Supabase is unavailable'
-    );
-
-  try{
-
-    const {data,error}=
-      await db.rpc(
-        'fiji_earn',
-        {
-          p_wallet:wallet,
-          p_type:type||'game'
-        }
-      );
-
-    if(error)
-      throw error;
-
-    if(
-      data&&
-      CORE.setProfile
-    )
-      CORE.setProfile(data);
-
-    toast(
-      'Points earned ⭐'
-    );
-
-    return data;
-
-  }catch(e){
-
-    console.error(
-      'Earn error',
-      e
-    );
-
-    toast(
-      e.message||
-      'Unable to earn points'
-    );
-  }
-}
-
-/* ============================================================
-   19. BOARD
-============================================================ */
-
-async function loadBoard(){
-
-  /*
-    If the existing index.html already owns
-    loadBoard(), use it.
-  */
-
-  if(
-    typeof window.loadBoard==='function'&&
-    window.loadBoard!==loadBoard
-  ){
-
-    return window.loadBoard();
-  }
-
-  const db=
-    CORE.getSupabase?
-    CORE.getSupabase():
-    null;
-
-  if(!db)
-    return;
-
-  const table=
-    'fiji_profiles';
-
-  try{
-
-    const {data,error}=
-      await db
-        .from(table)
-        .select(
-          'wallet,points,streak'
-        )
-        .order(
-          'points',
-          {ascending:false}
-        )
-        .limit(25);
-
-    if(error)
-      throw error;
-
-    const lb=
-      $('lb');
-
-    if(!lb)
-      return;
-
-    lb.innerHTML=
-      '<tr>'+
-      '<th>#</th>'+
-      '<th>Wallet</th>'+
-      '<th>Points</th>'+
-      '<th>Streak</th>'+
-      '</tr>'+
-      (
-        data||[]
-      )
-      .map(
-        (p,i)=>
-          `
-          <tr>
-            <td>
-              ${
-                ['🥇','🥈','🥉'][i]||
-                i+1
-              }
-            </td>
-
-            <td>
-              ${esc(short(p.wallet))}
-            </td>
-
-            <td>
-              ${esc(p.points||0)}
-            </td>
-
-            <td>
-              🔥 ${esc(p.streak||0)}
-            </td>
-          </tr>
-          `
-      )
-      .join('');
-
-  }catch(e){
-
-    console.error(
-      'Board load failed',
-      e
-    );
-  }
-}
-
-/* ============================================================
-   20. TRADE EXECUTION
+   EXECUTE TRADE
 ============================================================ */
 
 async function executeTrade(){
 
-  const UI=
-    window.FIJI_TRADE_UI;
+  if(
+    !walletAddress()
+  ){
 
-  if(!walletAddress())
-    return toast(
+    toast(
       'Connect your wallet first'
     );
 
-  if(!TP.selected)
-    return toast(
+    return;
+
+  }
+
+
+  if(
+    !TP.selected
+  ){
+
+    toast(
       'Select a token first'
     );
 
-  if(!amountValid())
-    return toast(
-      TP.action==='buy'
-      ?
-      'Enter a valid SOL amount'
-      :
-      'Enter a sell percentage from 1 to 100'
-    );
+    return;
 
-  if(!routerUrl('/build'))
-    return toast(
-      'Trade router is not configured yet'
-    );
-
-  const btn=
-    $('tradeExecuteButton');
-
-  if(btn){
-
-    if(btn.disabled)
-      return;
-
-    btn.disabled=true;
-
-    btn.textContent=
-      'Building transaction…';
   }
 
-  let info={};
-  let sig='';
+
+  const amount=
+    currentTradeAmount();
+
+
+  if(
+    !tradeAmountValid()
+  ){
+
+    toast(
+      TP.action==='buy'
+        ?'Enter a valid SOL amount'
+        :'Enter a sell percentage from 1 to 100'
+    );
+
+    return;
+
+  }
+
+
+  const button=
+    $('tradeExecuteButton');
+
+
+  button.disabled=
+    true;
+
+
+  const mint=
+    TP.selected
+      ?.baseToken
+      ?.address;
+
 
   try{
 
-    const body=
-      buildTradeBody();
+    if(
+      !routerUrl('/build')
+    ){
 
-    const p=
-      TP.selected;
-
-    const symbol=
-      p.baseToken?.symbol||
-      'TOKEN';
-
-    const amount=
-      currentAmount();
-
-    const buy=
-      TP.action==='buy';
-
-    const recvBox=
-      $('tradeReceiveAmount');
-
-    info={
-      side:TP.action,
-
-      symbol,
-
-      image:
-        safeImage(
-          p.info?.imageUrl
-        ),
-
-      pay:
-        buy?
-        amount.toFixed(4)+' SOL':
-        amount+'% of your '+symbol,
-
-      receive:
-        recvBox?
-        String(
-          recvBox.value||''
-        ).replace(
-          '≈ ',
-          ''
-        ):
-        '',
-
-      slippage:
-        (
-          getSlippageBps()/100
-        )+'%',
-
-      route:
-        isPumpCurve(p)?
-        'Pump bonding curve':
-        (p.dexId||'Jupiter')
-    };
-
-    if(UI)
-      UI.pending(
-        info,
-        'Building your trade',
-        'Finding the best route…'
+      toast(
+        'Trade router is not configured yet'
       );
 
-    const res=
+      return;
+
+    }
+
+
+    /*
+      Request the server-side transaction.
+
+      The router must enforce the actual FIJI fee.
+    */
+
+    const result=
       await routerPost(
         '/build',
-        body
+        {
+
+          wallet:
+            walletAddress(),
+
+          mint,
+
+          side:
+            TP.action,
+
+          amount,
+
+          slippageBps:
+            getSlippageBps(),
+
+          feeBps:
+            TPCFG.FEE_BPS
+
+        }
       );
 
-    if(!res?.transaction)
+
+    if(
+      !result?.transaction
+    ){
+
       throw new Error(
-        res?.error||
+        result?.error||
         'Trade router did not return a transaction'
       );
 
-    const fijiFee=
-      Number(
-        res.feeBps||0
-      )/100;
-
-    const provFee=
-      res.providerFeeBps?
-      Number(
-        res.providerFeeBps
-      )/100:
-      0;
-
-    info.fijiFee=
-      fijiFee.toFixed(2)+'%';
-
-    info.provFee=
-      provFee?
-      'about '+provFee.toFixed(2)+'%':
-      '';
-
-    let ok;
-
-    if(UI){
-
-      ok=
-        await UI.confirm(
-          info
-        );
-
-    }else{
-
-      ok=
-        window.confirm(
-          (
-            buy?
-            'Buy ':
-            'Sell '
-          )+
-          symbol+
-          ' · '+
-          info.pay+
-          '\n\nFIJI platform fee: '+
-          info.fijiFee+
-          '\n\nYour wallet will ask you to sign the transaction.'
-        );
     }
 
-    if(!ok)
-      return;
-
-    if(btn)
-      btn.textContent=
-        'Waiting for wallet…';
-
-    if(UI){
-
-      UI.pending(
-        info,
-        'Approve in your wallet',
-        'Confirm the transaction in your wallet window.'
-      );
-    }
-
-    const sent=
-      await signAndSend(
-        res.transaction
-      );
-
-    sig=
-      typeof sent==='string'?
-      sent:
-      sent.signature;
-
-    if(!sig)
-      throw new Error(
-        'The network did not return a transaction signature'
-      );
-
-    TP.lastSignature=sig;
-
-    if(UI){
-
-      UI.pending(
-        info,
-        'Trade sent',
-        'Waiting for the network to confirm…',
-        sig
-      );
-
-    }else{
-
-      toast(
-        'Transaction sent ✔'
-      );
-    }
-
-    const result=
-      await waitForConfirmation(
-        sig
-      );
-
-    if(
-      result.status==='failed'
-    ){
-
-      TP.lastTradeStatus='failed';
-
-      if(UI){
-
-        UI.result({
-          ok:false,
-          info,
-          sig,
-
-          title:
-            'Trade failed on-chain',
-
-          text:
-            'The network rejected this trade. No tokens were swapped.'
-        });
-
-      }else{
-
-        toast(
-          'Transaction failed on-chain'
-        );
-      }
-
-      return;
-    }
-
-    if(
-      result.status==='unknown'
-    ){
-
-      TP.lastTradeStatus='unknown';
-
-      if(UI){
-
-        UI.result({
-          ok:null,
-          info,
-          sig,
-
-          title:
-            'Still confirming',
-
-          text:
-            'The transaction was submitted, but confirmation is taking longer than expected. Check the transaction signature in Solana Explorer.'
-        });
-
-      }else{
-
-        toast(
-          'Transaction sent, confirmation is taking longer than expected'
-        );
-      }
-
-      return;
-    }
-
-    /* ========================================================
-       CONFIRMED
-    ======================================================== */
-
-    TP.lastTradeStatus='confirmed';
-
-    if(UI){
-
-      UI.result({
-        ok:true,
-        info,
-        sig,
-
-        title:
-          buy?
-          'Buy successful':
-          'Sell successful',
-
-        text:
-          'Your trade is confirmed on Solana.'
-      });
-
-    }else{
-
-      toast(
-        buy?
-        'Buy confirmed ✔':
-        'Sell confirmed ✔'
-      );
-    }
 
     /*
-      Award trade points ONLY after confirmed.
+      Explicit confirmation before the wallet popup.
     */
 
-    await claimTradePoints(
-      sig,
-      TP.selected?.baseToken?.address
+    const symbol=
+      TP.selected
+        ?.baseToken
+        ?.symbol||
+      'TOKEN';
+
+
+    const amountText=
+      TP.action==='buy'
+        ?amount.toFixed(4)+
+         ' SOL'
+        :amount+
+         '%';
+
+
+    const confirmed=
+      window.confirm(
+        (
+          TP.action==='buy'
+            ?'Buy '
+            :'Sell '
+        )+
+        symbol+
+        ' · '+
+        amountText+
+        '\n\n'+
+        'FIJI platform fee: '+
+        feePercent().toFixed(2)+
+        '%\n\n'+
+        'Your wallet will ask you to sign the transaction.'
+      );
+
+
+    if(
+      !confirmed
+    ){
+
+      return;
+
+    }
+
+
+    const signature=
+      await signAndSend(
+        result.transaction
+      );
+
+
+    toast(
+      'Transaction sent ✔ '+
+      short(signature)
     );
 
+
     /*
-      Refresh portfolio so the new
-      balance / token / value / gain-loss
-      appears immediately.
+      Give the network a moment.
     */
 
-    if(CORE.loadAssets){
+    try{
 
-      try{
-        await CORE.loadAssets();
-      }catch(e){
-        console.warn(
-          'Asset refresh failed',
-          e
+      const connection=
+        CORE.getConnection
+          ?CORE.getConnection()
+          :null;
+
+
+      if(
+        connection
+      ){
+
+        await connection.confirmTransaction(
+          signature,
+          'confirmed'
         );
+
       }
+
+    }catch(e){
+
+      console.warn(
+        'Confirmation lookup failed',
+        e
+      );
+
     }
 
-    await refreshSelectedToken();
 
-    renderAssetSummary();
-    updateTradeBalances();
+    toast(
+      'Trade submitted ✔'
+    );
+
+
+    /*
+      Refresh portfolio.
+    */
+
+    if(
+      CORE.loadAssets
+    ){
+
+      await CORE.loadAssets();
+
+    }
+
+
+    await refreshSelectedToken();
 
   }catch(e){
 
@@ -4040,121 +4738,427 @@ async function executeTrade(){
       e
     );
 
-    if(UI){
 
-      UI.fail(
-        e,
-        info,
-        sig
-      );
-
-    }else{
-
-      toast(
-        'Trade failed: '+
-        (e.message||e)
-      );
-    }
+    toast(
+      'Trade failed: '+
+      (
+        e.message||
+        e
+      )
+    );
 
   }finally{
 
-    if(btn)
-      btn.disabled=false;
+    button.disabled=
+      false;
 
-    updateTradeActionUI();
   }
+
 }
 
+
 /* ============================================================
-   21. QUICK BUY
+   QUICK BUY
 ============================================================ */
 
-async function quickBuyByKey(key){
+async function quickBuyByKey(
+  key
+){
 
   const p=
-    findByKey(key);
+    findByKey(
+      key
+    );
 
-  if(!p)
-    return toast(
+
+  if(
+    !p
+  ){
+
+    toast(
       'Token data is no longer available'
     );
 
-  TP.selected=p;
-  TP.action='buy';
+    return;
+
+  }
+
+
+  TP.selected=
+    p;
+
 
   updateSelectedUI();
 
+
+  TP.action=
+    'buy';
+
+
+  updateTradeActionUI();
+
+
+  const amount=
+    0.10;
+
+
+  const available=
+    getAvailableSol();
+
+
   if(
-    getAvailableSol()<
-    TPCFG.QUICK_BUY_SOL
+    available<
+    amount
   ){
 
-    return toast(
-      'You need at least '+
-      TPCFG.QUICK_BUY_SOL.toFixed(2)+
-      ' SOL available'
+    toast(
+      'You need at least 0.10 SOL available'
     );
+
+    return;
+
   }
 
-  const amt=
-    $('tradeAmount');
 
-  if(amt)
-    amt.value=
-      TPCFG.QUICK_BUY_SOL.toFixed(2);
+  $('tradeAmount').value=
+    amount.toFixed(2);
+
+
+  updateTradePreview();
+
 
   await executeTrade();
+
 }
+
 
 /* ============================================================
-   22. SEARCH
+   SELECT TOKEN
 ============================================================ */
 
-function matchesSearch(p,q){
+async function selectByKey(
+  key
+){
 
-  return (
-    String(
-      p?.baseToken?.symbol||''
-    )
-    .toLowerCase()
-    .includes(q)
-  )||
-  (
-    String(
-      p?.baseToken?.name||''
-    )
-    .toLowerCase()
-    .includes(q)
-  )||
-  (
-    String(
-      p?.baseToken?.address||''
-    )
-    .toLowerCase()
-    .includes(q)
-  );
+  let p=
+    findByKey(
+      key
+    );
+
+
+  if(
+    !p
+  )
+    return;
+
+
+  /*
+    Enrich live lightweight objects before
+    showing them when possible.
+  */
+
+  if(
+    !p.priceUsd
+  ){
+
+    try{
+
+      const rows=
+        await fetchTokenPairs(
+          [
+            p.baseToken.address
+          ]
+        );
+
+
+      if(
+        rows[0]
+      ){
+
+        const oldDiscovery=
+          p.discoveryType;
+
+
+        const oldBond=
+          p.bonding;
+
+
+        Object.assign(
+          p,
+          rows[0]
+        );
+
+
+        p.discoveryType=
+          oldDiscovery;
+
+
+        p.bonding=
+          oldBond;
+
+      }
+
+    }catch(e){}
+
+  }
+
+
+  TP.selected=
+    p;
+
+
+  updateSelectedUI();
+
+
+  /*
+    Refresh the exact selected pair shortly after.
+  */
+
+  refreshSelectedToken();
+
 }
+
+
+async function refreshSelectedToken(){
+
+  const p=
+    TP.selected;
+
+
+  if(
+    !p?.baseToken?.address
+  )
+    return;
+
+
+  try{
+
+    const rows=
+      await fetchTokenPairs(
+        [
+          p.baseToken.address
+        ]
+      );
+
+
+    const latest=
+      rows[0];
+
+
+    if(
+      !latest
+    )
+      return;
+
+
+    const discovery=
+      p.discoveryType;
+
+
+    const bonding=
+      p.bonding;
+
+
+    Object.assign(
+      p,
+      latest
+    );
+
+
+    p.discoveryType=
+      discovery;
+
+
+    p.bonding=
+      bonding;
+
+
+    /*
+      If the feed item exists,
+      keep it updated too.
+    */
+
+    const feedItem=
+      TP.feed.find(
+        x=>
+          tokenKey(x)===
+          tokenKey(p)
+      );
+
+
+    if(
+      feedItem
+    ){
+
+      Object.assign(
+        feedItem,
+        p
+      );
+
+      feedItem.discoveryType=
+        discovery;
+
+      feedItem.bonding=
+        bonding;
+
+    }
+
+
+    updateSelectedUI();
+
+  }catch(e){
+
+    console.debug(
+      'Selected token refresh unavailable',
+      e
+    );
+
+  }
+
+}
+
+
+/* ============================================================
+   SECURITY STATUS
+============================================================ */
+
+function setSecurityStatus(
+ text
+){
+
+  if(
+    $('securityStatus')
+  ){
+
+    $('securityStatus').textContent=
+      text;
+
+  }
+
+}
+
+
+async function runLightSecurity(){
+
+  const p=
+    TP.selected;
+
+
+  if(
+    !p
+  )
+    return;
+
+
+  /*
+    This is intentionally a basic market check.
+    Full RugCheck / holder analysis belongs in the
+    backend or a separate API integration.
+  */
+
+  if(
+    liquidity(p)<=0
+  ){
+
+    setSecurityStatus(
+      'Liquidity not available'
+    );
+
+  }else if(
+    liquidity(p)<5000
+  ){
+
+    setSecurityStatus(
+      'Low liquidity'
+    );
+
+  }else{
+
+    setSecurityStatus(
+      'Basic market data loaded'
+    );
+
+  }
+
+}
+
+
+/* ============================================================
+   SEARCH
+============================================================ */
+
+let searchTimer=
+  null;
+
 
 async function applySearch(){
 
-  const q=TP.search;
+  TP.search=
+    String(
+      $('tradeSearch')
+        ?.value||
+      ''
+    )
+    .trim()
+    .toLowerCase();
 
-  if(!q){
 
-    TP.feed=
-      TP.base.slice();
+  if(
+    !TP.search
+  ){
 
     renderFeed();
 
     return;
+
   }
 
+
+  /*
+    First filter currently loaded data.
+  */
+
   const loaded=
-    TP.base.filter(
-      p=>matchesSearch(p,q)
+    TP.feed.filter(
+      p=>{
+
+        const symbol=
+          String(
+            p?.baseToken?.symbol||
+            ''
+          )
+          .toLowerCase();
+
+
+        const name=
+          String(
+            p?.baseToken?.name||
+            ''
+          )
+          .toLowerCase();
+
+
+        const mint=
+          String(
+            p?.baseToken?.address||
+            ''
+          )
+          .toLowerCase();
+
+
+        return(
+          symbol.includes(TP.search)||
+          name.includes(TP.search)||
+          mint.includes(TP.search)
+        );
+
+      }
     );
 
-  if(loaded.length){
+
+  if(
+    loaded.length
+  ){
 
     TP.feed=
       loaded.slice(
@@ -4162,49 +5166,73 @@ async function applySearch(){
         TPCFG.MAX_FEED
       );
 
+
     renderFeed();
 
     return;
+
   }
+
+
+  /*
+    Search DEX Screener when the token isn't already loaded.
+  */
 
   try{
 
     const data=
       await ds(
         '/latest/dex/search?q='+
-        encodeURIComponent(q),
+        encodeURIComponent(
+          TP.search
+        ),
         4000
       );
 
-    if(q!==TP.search)
-      return;
 
     const pairs=
-      (data?.pairs||[])
-        .filter(
-          p=>p?.chainId==='solana'
-        );
+      (
+        data?.pairs||
+        []
+      )
+      .filter(
+        p=>
+          p?.chainId===
+          'solana'
+      );
+
 
     TP.feed=
-      mergeByMint(pairs)
-        .slice(
-          0,
-          TPCFG.MAX_FEED
-        );
+      mergeByMint(
+        pairs
+      )
+      .slice(
+        0,
+        TPCFG.MAX_FEED
+      );
+
+
+    renderFeed();
 
   }catch(e){
 
-    TP.feed=[];
+    console.warn(
+      'Search failed',
+      e
+    );
+
   }
 
-  renderFeed();
 }
 
+
 /* ============================================================
-   23. REFRESH
+   REFRESH
 ============================================================ */
 
-async function refresh(forced=false){
+async function refresh(
+  forced=false
+){
 
   if(
     TP.loading&&
@@ -4212,56 +5240,192 @@ async function refresh(forced=false){
   )
     return;
 
-  TP.loading=true;
-  TP.error='';
 
-  if(!TP.feed.length)
+  TP.loading=
+    true;
+
+
+  TP.error=
+    '';
+
+
+  if(
+    !TP.feed.length
+  )
     renderFeed();
+
 
   try{
 
-    const rows=
+    if(
+      TP.mode==='watchlist'
+    ){
+
+      await loadWatchlist();
+
+    }
+
+
+    let rows=
       await getFeed();
 
-    TP.base=
-      mergeByMint(rows)
-        .slice(
-          0,
-          TPCFG.MAX_FEED
+
+    /*
+      Search filter after the current feed is loaded.
+    */
+
+    if(
+      TP.search
+    ){
+
+      const q=
+        TP.search;
+
+
+      rows=
+        rows.filter(
+          p=>{
+
+            const symbol=
+              String(
+                p?.baseToken?.symbol||
+                ''
+              )
+              .toLowerCase();
+
+
+            const name=
+              String(
+                p?.baseToken?.name||
+                ''
+              )
+              .toLowerCase();
+
+
+            const mint=
+              String(
+                p?.baseToken?.address||
+                ''
+              )
+              .toLowerCase();
+
+
+            return(
+              symbol.includes(q)||
+              name.includes(q)||
+              mint.includes(q)
+            );
+
+          }
         );
 
+    }
+
+
+    /*
+      Additional mode-specific sorting.
+    */
+
+    if(
+      TP.mode==='trending'
+    ){
+
+      rows.sort(
+        (a,b)=>
+          (
+            volume1h(b)-
+            volume1h(a)
+          )+
+          (
+            transactions24(b)-
+            transactions24(a)
+          )*25
+      );
+
+    }
+
+
+    if(
+      TP.mode==='new'
+    ){
+
+      rows.sort(
+        (a,b)=>
+          Number(
+            b.pairCreatedAt||0
+          )-
+          Number(
+            a.pairCreatedAt||0
+          )
+      );
+
+    }
+
+
+    if(
+      TP.mode==='migrated'
+    ){
+
+      rows.sort(
+        (a,b)=>
+          Number(
+            b.pairCreatedAt||0
+          )-
+          Number(
+            a.pairCreatedAt||0
+          )
+      );
+
+    }
+
+
     TP.feed=
-      TP.search?
-      TP.feed:
-      TP.base.slice();
+      mergeByMint(
+        rows
+      )
+      .slice(
+        0,
+        TPCFG.MAX_FEED
+      );
+
 
     TP.updatedAt=
       Date.now();
 
-    if(TP.search)
-      await applySearch();
-    else
-      renderFeed();
 
-    if(TP.selected){
+    renderFeed();
 
-      const upd=
-        TP.base.find(
+
+    if(
+      TP.selected
+    ){
+
+      const updated=
+        TP.feed.find(
           p=>
             tokenKey(p)===
-            tokenKey(TP.selected)
+            tokenKey(
+              TP.selected
+            )
         );
 
-      if(upd){
 
-        applyPair(
-          TP.selected,
-          upd
-        );
+      if(
+        updated
+      ){
+
+        TP.selected=
+          updated;
 
         updateSelectedUI();
+
       }
+
     }
+
+
+    await runLightSecurity();
+
 
   }catch(e){
 
@@ -4270,50 +5434,86 @@ async function refresh(forced=false){
       e
     );
 
+
     TP.error=
       'Could not load live Solana discovery right now.';
+
 
     renderFeed();
 
   }finally{
 
-    TP.loading=false;
+    TP.loading=
+      false;
+
+
     updateLiveStatus();
+
   }
+
 }
 
+
 /* ============================================================
-   24. TIMERS
+   RUNTIME REFRESH
 ============================================================ */
 
 function startTimers(){
 
-  stopTimers();
+  clearInterval(
+    TP.refreshTimer
+  );
+
+
+  clearInterval(
+    TP.ageTimer
+  );
+
 
   TP.refreshTimer=
     setInterval(
       ()=>{
+
         if(
           TP.started&&
           !document.hidden
-        )
-          refresh(false);
+        ){
+
+          refresh(
+            false
+          );
+
+        }
+
       },
       TPCFG.REFRESH_MS
     );
 
+
   TP.ageTimer=
     setInterval(
       ()=>{
+
         updateLiveStatus();
 
-        if(TP.feed.length)
+
+        /*
+          Age labels are part of rendered cards,
+          so repaint the current feed without
+          triggering a network request.
+        */
+
+        if(
+          TP.feed.length
+        )
           renderFeed();
 
       },
       30000
     );
+
 }
+
 
 function stopTimers(){
 
@@ -4321,78 +5521,112 @@ function stopTimers(){
     TP.refreshTimer
   );
 
+
   clearInterval(
     TP.ageTimer
   );
 
-  TP.refreshTimer=null;
-  TP.ageTimer=null;
+
+  TP.refreshTimer=
+    null;
+
+
+  TP.ageTimer=
+    null;
+
 }
+
 
 /* ============================================================
-   25. MODES
+   TRADE PAD PUBLIC METHODS
 ============================================================ */
-
-function renderModeTabs(){
-
-  document
-    .querySelectorAll(
-      '.discovery-tab'
-    )
-    .forEach(
-      b=>
-        b.classList.toggle(
-          'on',
-          b.dataset.mode===TP.mode
-        )
-    );
-}
 
 function start(){
 
-  if(TP.started){
+  if(
+    TP.started
+  ){
 
     updatePortfolioFromCore({
-      sol:TP.portfolio.sol,
-      tokens:TP.portfolio.tokens
+      sol:
+        TP.portfolio.sol,
+      tokens:
+        TP.portfolio.tokens
     });
 
     return;
+
   }
 
-  TP.started=true;
-  TP.error='';
+
+  TP.started=
+    true;
+
+
+  TP.mode=
+    'new';
+
+
+  TP.action=
+    'buy';
+
+
+  TP.error=
+    '';
+
 
   renderModeTabs();
+
+
   renderFeed();
+
+
   startTimers();
+
+
   openPumpSocket();
 
-  loadWatchlist()
-    .catch(()=>{});
 
-  refresh(true);
+  loadWatchlist()
+    .catch(
+      ()=>{}
+    );
+
+
+  refresh(
+    true
+  );
+
 
   updateTradeActionUI();
+
+
   updateTradeBalances();
-  renderAssetSummary();
+
 }
+
 
 function stop(){
 
-  TP.started=false;
+  TP.started=
+    false;
+
 
   stopTimers();
+
+
   closePumpSocket();
 
-  clearTimeout(
-    TP.enrichTimer
-  );
-
-  TP.enrichTimer=null;
 }
 
-async function setMode(mode){
+
+/* ============================================================
+   MODE SWITCH
+============================================================ */
+
+async function setMode(
+  mode
+){
 
   const allowed=[
     'new',
@@ -4402,90 +5636,160 @@ async function setMode(mode){
     'watchlist'
   ];
 
-  TP.mode=
-    allowed.includes(mode)?
-    mode:
-    'new';
-
-  TP.feed=[];
-  TP.base=[];
-
-  renderModeTabs();
-  renderFeed();
-
-  await refresh(true);
-}
-
-/* ============================================================
-   26. WALLET / PORTFOLIO EVENTS
-============================================================ */
-
-async function walletChanged(address){
-
-  if(address)
-    await loadWatchlist();
-  else
-    TP.watch.clear();
-
-  updateTradeBalances();
-  updateTradeStar();
-  renderAssetSummary();
 
   if(
-    TP.mode==='watchlist'
+    !allowed.includes(
+      mode
+    )
+  )
+    mode='new';
+
+
+  TP.mode=
+    mode;
+
+
+  TP.feed=[];
+
+
+  renderModeTabs();
+
+
+  renderFeed();
+
+
+  await refresh(
+    true
+  );
+
+}
+
+
+function renderModeTabs(){
+
+  document
+    .querySelectorAll(
+      '.discovery-tab'
+    )
+    .forEach(
+      button=>{
+
+        button.classList.toggle(
+          'on',
+          button.dataset.mode===
+          TP.mode
+        );
+
+      }
+    );
+
+}
+
+
+/* ============================================================
+   WATCHLIST PUBLIC
+============================================================ */
+
+async function publicToggleWatch(){
+
+  if(
+    !TP.selected
   ){
 
-    TP.feed=[];
-    TP.base=[];
-
-    await refresh(true);
-  }
-}
-
-function portfolioUpdated(payload){
-
-  updatePortfolioFromCore(
-    payload
-  );
-
-  schedulePreview();
-}
-
-function publicSearch(value){
-
-  TP.search=
-    String(
-      value||''
-    )
-    .trim()
-    .toLowerCase();
-
-  clearTimeout(
-    searchTimer
-  );
-
-  searchTimer=
-    setTimeout(
-      applySearch,
-      200
-    );
-}
-
-async function copyContract(){
-
-  const mint=
-    TP.selected?.baseToken?.address;
-
-  if(!mint)
-    return toast(
+    toast(
       'Select a token first'
     );
+
+    return;
+
+  }
+
+
+  await toggleWatch(
+    TP.selected
+  );
+
+}
+
+
+/* ============================================================
+   ACTION PUBLIC
+============================================================ */
+
+function publicSetAction(
+  action
+){
+
+  setAction(
+    action
+  );
+
+}
+
+
+function publicSetPreset(
+  percent
+){
+
+  setPreset(
+    percent
+  );
+
+}
+
+
+function publicFlipSide(){
+
+  if(
+    TP.action==='buy'
+  ){
+
+    setAction(
+      'sell'
+    );
+
+  }else{
+
+    setAction(
+      'buy'
+    );
+
+  }
+
+}
+
+
+/* ============================================================
+   CONTRACT COPY
+============================================================ */
+
+async function publicCopyContract(){
+
+  const mint=
+    TP.selected
+      ?.baseToken
+      ?.address;
+
+
+  if(
+    !mint
+  ){
+
+    toast(
+      'Select a token first'
+    );
+
+    return;
+
+  }
+
 
   try{
 
     await navigator.clipboard.writeText(
       mint
     );
+
 
     toast(
       'Contract copied 💧'
@@ -4496,183 +5800,381 @@ async function copyContract(){
     toast(
       'Copy failed'
     );
+
   }
+
 }
 
-function flipSide(){
-
-  setAction(
-    TP.action==='buy'?
-    'sell':
-    'buy'
-  );
-}
 
 /* ============================================================
-   27. PUBLIC FIJI API
+   PUBLIC REFRESH
+============================================================ */
+
+async function publicRefresh(
+  forced=false
+){
+
+  await refresh(
+    Boolean(
+      forced
+    )
+  );
+
+}
+
+
+/* ============================================================
+   PUBLIC SEARCH
+============================================================ */
+
+function publicSearch(
+  value
+){
+
+  TP.search=
+    String(
+      value||''
+    )
+    .trim()
+    .toLowerCase();
+
+
+  clearTimeout(
+    searchTimer
+  );
+
+
+  searchTimer=
+    setTimeout(
+      applySearch,
+      180
+    );
+
+}
+
+
+/* ============================================================
+   PUBLIC EXECUTE
+============================================================ */
+
+async function publicExecute(){
+
+  await executeTrade();
+
+}
+
+
+/* ============================================================
+   PUBLIC QUICK BUY
+============================================================ */
+
+async function publicQuickBuy(
+  key
+){
+
+  await quickBuyByKey(
+    key
+  );
+
+}
+
+
+/* ============================================================
+   PUBLIC SNIPER
+============================================================ */
+
+function publicToggleSniper(){
+
+  /*
+    This remains a configuration UI only.
+    Automated execution will be enabled later
+    through the backend after the normal trade
+    path has been tested.
+  */
+
+  TP.sniper=
+    !TP.sniper;
+
+
+  const button=
+    $('sniperButton');
+
+
+  if(
+    !button
+  )
+    return;
+
+
+  button.textContent=
+    TP.sniper
+      ?'🛑 Disarm Sniper'
+      :'⚡ Arm Sniper';
+
+
+  toast(
+    TP.sniper
+      ?'Sniper monitor armed'
+      :'Sniper monitor disarmed'
+  );
+
+}
+
+
+/* ============================================================
+   WALLET CHANGE HOOK
+============================================================ */
+
+async function walletChanged(
+  address
+){
+
+  if(
+    address
+  ){
+
+    await loadWatchlist();
+
+  }else{
+
+    TP.watch.clear();
+
+  }
+
+
+  updateTradeBalances();
+
+
+  updateTradeStar();
+
+
+  if(
+    TP.mode==='watchlist'
+  ){
+
+    TP.feed=[];
+
+    await refresh(
+      true
+    );
+
+  }
+
+}
+
+
+/* ============================================================
+   PORTFOLIO UPDATE HOOK
+============================================================ */
+
+function portfolioUpdated(
+  payload
+){
+
+  updatePortfolioFromCore(
+    payload
+  );
+
+
+  updateTradePreview();
+
+}
+
+
+/* ============================================================
+   EXPOSE API
 ============================================================ */
 
 window.FIJI_TRADE={
 
   start,
+
   stop,
 
   setMode,
 
-  refresh:
-    f=>refresh(Boolean(f)),
+  refresh:publicRefresh,
 
-  search:
-    publicSearch,
+  search:publicSearch,
 
-  setAction,
-  setPreset,
-  flipSide,
+  setAction:publicSetAction,
 
-  toggleWatch:
-    ()=>{
-      TP.selected?
-      toggleWatch(TP.selected):
-      toast(
-        'Select a token first'
-      );
-    },
+  setPreset:publicSetPreset,
 
-  copyContract,
+  flipSide:publicFlipSide,
+
+  toggleWatch:publicToggleWatch,
+
+  copyContract:
+    publicCopyContract,
 
   execute:
-    executeTrade,
+    publicExecute,
 
   quickBuy:
-    quickBuyByKey,
+    publicQuickBuy,
+
+  toggleSniper:
+    publicToggleSniper,
 
   walletChanged,
 
   portfolioUpdated,
 
-  /*
-    Earn + Board bridge
-  */
-
-  earn:
-    earnPoints,
-
-  loadBoard,
-
   getState:
     ()=>TP
+
 };
 
-/* ============================================================
-   28. GLOBAL HTML HANDLERS
-============================================================ */
+
+/*
+  The index.html already calls these names directly,
+  but expose the helpers globally too.
+*/
 
 window.tradeSetMode=
   setMode;
 
 window.tradeRefresh=
-  f=>refresh(Boolean(f));
+  publicRefresh;
 
 window.tradeToggleWatch=
-  window.FIJI_TRADE.toggleWatch;
+  publicToggleWatch;
 
 window.tradeSetAction=
-  setAction;
+  publicSetAction;
 
 window.tradeSetPreset=
-  setPreset;
+  publicSetPreset;
 
 window.tradeFlipSide=
-  flipSide;
+  publicFlipSide;
 
 window.tradeExecute=
-  executeTrade;
+  publicExecute;
 
 window.tradeQuickBuy=
-  quickBuyByKey;
+  publicQuickBuy;
 
 window.tradeSelectByKey=
   selectByKey;
 
 window.tradeCopyContract=
-  copyContract;
+  publicCopyContract;
 
-/*
-  Optional global Earn / Board helpers.
-  Existing functions are never overwritten.
-*/
+window.tradeToggleSniper=
+  publicToggleSniper;
 
-if(typeof window.fijiEarn!=='function'){
-
-  window.fijiEarn=
-    type=>
-      earnPoints(type||'game');
-}
-
-if(typeof window.fijiLoadBoard!=='function'){
-
-  window.fijiLoadBoard=
-    ()=>loadBoard();
-}
 
 /* ============================================================
-   29. DOM EVENTS
+   DOM HOOKS
 ============================================================ */
 
-const searchBox=
+/*
+  Search input.
+*/
+
+const tradeSearch=
   $('tradeSearch');
 
-if(searchBox){
 
-  searchBox.addEventListener(
+if(
+  tradeSearch
+){
+
+  tradeSearch.addEventListener(
     'input',
     ()=>{
       publicSearch(
-        searchBox.value
+        tradeSearch.value
       );
     }
   );
+
 }
 
-const slip=
+
+/*
+  Slippage.
+*/
+
+const slippage=
   $('tradeSlippage');
 
-if(slip){
 
-  slip.addEventListener(
+if(
+  slippage
+){
+
+  slippage.addEventListener(
     'change',
-    schedulePreview
+    ()=>{
+      updateTradePreview();
+    }
   );
+
 }
 
-const amtBox=
+
+/*
+  Amount.
+*/
+
+const amount=
   $('tradeAmount');
 
-if(amtBox){
 
-  amtBox.addEventListener(
+if(
+  amount
+){
+
+  amount.addEventListener(
     'input',
-    schedulePreview
+    ()=>{
+      updateTradePreview();
+    }
   );
+
 }
 
+
+/*
+  Wallet Core event support.
+
+  The main index.html will call
+  FIJI_TRADE.walletChanged()
+  and FIJI_TRADE.portfolioUpdated().
+*/
+
+
 /* ============================================================
-   30. INITIALIZE
+   INITIAL STATIC UI
 ============================================================ */
 
 updateTradeActionUI();
+
 updateTradeBalances();
-renderAssetSummary();
+
 renderModeTabs();
+
+
+/* ============================================================
+   START ONLY WHEN TRADE TAB OPENS
+============================================================ */
 
 if(
   document
-    .getElementById('trade')
-    ?.classList
-    .contains('on')
+    .getElementById(
+      'trade'
+    )
+    ?.classList.contains(
+      'on'
+    )
 ){
 
   start();
+
 }
+
 
 })();
