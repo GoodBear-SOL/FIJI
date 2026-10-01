@@ -935,6 +935,7 @@ async function claimTradePoints(sig,mint){
   }
 }
 async function executeTrade(){
+  const UI=window.FIJI_TRADE_UI;   // styled windows from tradepad-popup.js (v2)
   if(!walletAddress())return toast('Connect your wallet first');
   if(!TP.selected)return toast('Select a token first');
   if(!amountValid())
@@ -943,40 +944,63 @@ async function executeTrade(){
 
   const btn=$('tradeExecuteButton');
   if(btn){if(btn.disabled)return;btn.disabled=true;btn.textContent='Building transaction…'}
+  let info={},sig='';
   try{
     const body=buildTradeBody();
+    const p=TP.selected,symbol=p.baseToken?.symbol||'TOKEN',amount=currentAmount(),buy=TP.action==='buy';
+    const recvBox=$('tradeReceiveAmount');
+    info={
+      side:TP.action,symbol,image:safeImage(p.info?.imageUrl),
+      pay:buy?amount.toFixed(4)+' SOL':amount+'% of your '+symbol,
+      receive:recvBox?String(recvBox.value||'').replace('≈ ',''):'',
+      slippage:(getSlippageBps()/100)+'%',
+      route:isPumpCurve(p)?'Pump bonding curve':(p.dexId||'Jupiter')
+    };
+
+    if(UI)UI.pending(info,'Building your trade','Finding the best route…');
     const res=await routerPost('/build',body);
     if(!res?.transaction)throw new Error(res?.error||'Trade router did not return a transaction');
 
-    const p=TP.selected,symbol=p.baseToken?.symbol||'TOKEN',amount=currentAmount();
     const fijiFee=Number(res.feeBps||0)/100,provFee=res.providerFeeBps?Number(res.providerFeeBps)/100:0;
-    const amountText=TP.action==='buy'?amount.toFixed(4)+' SOL':amount+'% of your '+symbol;
-    const ok=window.confirm(
-      (TP.action==='buy'?'Buy ':'Sell ')+symbol+' · '+amountText+'\n\n'+
-      'FIJI platform fee: '+fijiFee.toFixed(2)+'%\n'+
-      (provFee?'Route provider fee: about '+provFee.toFixed(2)+'%\n':'')+
-      '\nYour wallet will ask you to sign the transaction.'
-    );
+    info.fijiFee=fijiFee.toFixed(2)+'%';
+    info.provFee=provFee?'about '+provFee.toFixed(2)+'%':'';
+
+    let ok;
+    if(UI)ok=await UI.confirm(info);
+    else ok=window.confirm((buy?'Buy ':'Sell ')+symbol+' · '+info.pay+'\n\nFIJI platform fee: '+info.fijiFee+'\n\nYour wallet will ask you to sign the transaction.');
     if(!ok)return;
 
     if(btn)btn.textContent='Waiting for wallet…';
-    const sig=await signAndSend(res.transaction);
-    toast('Transaction sent ✔ '+short(sig));
+    if(UI)UI.pending(info,'Approve in your wallet','Confirm the transaction in your wallet window.');
+    sig=await signAndSend(res.transaction);
+    if(UI)UI.pending(info,'Trade sent','Waiting for the network to confirm…',sig);
+    else toast('Transaction sent ✔ '+short(sig));
 
-    let failed=false;
+    let failed=false,unknown=false;
     try{
       const conn=CORE.getConnection();
       const r=await conn.confirmTransaction(sig,'confirmed');
       if(r?.value?.err)failed=true;
-    }catch(e){console.warn('Confirmation lookup failed',e)}
-    toast(failed?'Transaction failed on-chain':'Trade confirmed ✔');
-      if(!failed)await claimTradePoints(sig,TP.selected?.baseToken?.address);
+    }catch(e){unknown=true;console.warn('Confirmation lookup failed',e)}
+
+    if(failed){
+      if(UI)UI.result({ok:false,info,sig,title:'Trade failed on-chain',text:'The network rejected this trade. No tokens were swapped. Try again with higher slippage.'});
+      else toast('Transaction failed on-chain');
+    }else if(unknown){
+      if(UI)UI.result({ok:null,info,sig,title:'Still confirming',text:'We could not confirm it yet. Check Solscan to see if it went through.'});
+      else toast('Sent, but could not confirm yet');
+    }else{
+      if(UI)UI.result({ok:true,info,sig,title:buy?'Buy successful':'Sell successful',text:'Your trade is confirmed on Solana.'});
+      else toast('Trade confirmed ✔');
+      await claimTradePoints(sig,TP.selected?.baseToken?.address);
+    }
 
     if(CORE.loadAssets)await CORE.loadAssets();
     await refreshSelectedToken();
   }catch(e){
     console.error('Trade execution failed',e);
-    toast('Trade failed: '+(e.message||e));
+    if(UI)UI.fail(e,info,sig);
+    else toast('Trade failed: '+(e.message||e));
   }finally{
     if(btn)btn.disabled=false;
     updateTradeActionUI();
