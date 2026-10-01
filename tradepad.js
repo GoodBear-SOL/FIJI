@@ -976,105 +976,200 @@ async function executeTrade(){
     if(UI)UI.pending(info,'Trade sent','Waiting for the network to confirm…',sig);
     else toast('Transaction sent ✔ '+short(sig));
 
-    /* Reliable transaction status check */
-    let failed=false,confirmed=false,unknown=false;
+/* ============================================================
+   RELIABLE TRANSACTION CONFIRMATION
+   - Uses signature status polling
+   - Searches transaction history
+   - Detects on-chain errors
+   - Does not treat RPC confirmation exceptions as success
+   - Gives the user the actual transaction signature
+============================================================ */
+let failed=false;
+let confirmed=false;
+let unknown=false;
+
+try{
+  const conn=CORE.getConnection?CORE.getConnection():null;
+
+  if(!conn){
+    throw new Error('Solana connection is unavailable');
+  }
+
+  const maxChecks=45;
+  const delayMs=1000;
+
+  for(let i=0;i<maxChecks;i++){
+
+    let statusRes;
 
     try{
-      const conn=CORE.getConnection();
-
-      // Give the RPC some time to see the submitted transaction.
-      // We check the signature directly instead of relying only on
-      // confirmTransaction(signature), which can throw even when the
-      // transaction was submitted successfully.
-      const maxChecks=30;
-      const delayMs=1000;
-
-      for(let i=0;i<maxChecks;i++){
-        const statusRes=await conn.getSignatureStatuses(
-          [sig],
-          {searchTransactionHistory:true}
-        );
-
-        const status=statusRes?.value?.[0];
-
-        if(status){
-          if(status.err){
-            failed=true;
-            break;
-          }
-
-          if(
-            status.confirmationStatus==='confirmed' ||
-            status.confirmationStatus==='finalized'
-          ){
-            confirmed=true;
-            break;
-          }
-        }
-
-        await new Promise(resolve=>setTimeout(resolve,delayMs));
-      }
-
-      // If the RPC never found the signature, don't falsely call it
-      // successful. Keep it as unknown so the user can verify it.
-      if(!failed && !confirmed){
-        unknown=true;
-      }
-
-    }catch(e){
-      unknown=true;
-      console.warn('Transaction status lookup failed:',e);
-    }
-
-    if(failed){
-
-      if(UI){
-        UI.result({
-          ok:false,
-          info,
-          sig,
-          title:'Trade failed on-chain',
-          text:'The network rejected this trade. No tokens were swapped. Try again with higher slippage.'
-        });
-      }else{
-        toast('Transaction failed on-chain');
-      }
-
-    }else if(confirmed){
-
-      if(UI){
-        UI.result({
-          ok:true,
-          info,
-          sig,
-          title:buy?'Buy successful':'Sell successful',
-          text:'Your trade is confirmed on Solana.'
-        });
-      }else{
-        toast('Trade confirmed ✔');
-      }
-
-      await claimTradePoints(
-        sig,
-        TP.selected?.baseToken?.address
+      statusRes=await conn.getSignatureStatuses(
+        [sig],
+        {searchTransactionHistory:true}
+      );
+    }catch(statusError){
+      console.warn(
+        'Signature status lookup failed:',
+        statusError
       );
 
-    }else if(unknown){
-
-      if(UI){
-        UI.result({
-          ok:null,
-          info,
-          sig,
-          title:'Transaction not confirmed',
-          text:'The transaction was submitted, but the network has not reported it yet. Check Solscan using the transaction signature before trying again.'
-        });
-      }else{
-        toast('Transaction submitted, but confirmation is unavailable yet');
-      }
+      /*
+         Do not immediately mark the trade as failed.
+         RPC nodes can temporarily reject status requests.
+      */
+      await new Promise(resolve=>setTimeout(resolve,delayMs));
+      continue;
     }
 
-    if(CORE.loadAssets)await CORE.loadAssets();
+    const status=statusRes?.value?.[0];
+
+    /*
+      The RPC does not know the signature yet.
+
+      This can happen immediately after sendRawTransaction().
+      Keep polling instead of incorrectly telling the user
+      that the transaction failed.
+    */
+    if(!status){
+      await new Promise(resolve=>setTimeout(resolve,delayMs));
+      continue;
+    }
+
+    /*
+      The transaction was found and contains an on-chain error.
+    */
+    if(status.err){
+      failed=true;
+      console.error(
+        'Trade transaction failed on-chain:',
+        status.err
+      );
+      break;
+    }
+
+    /*
+      confirmed OR finalized = successful transaction.
+    */
+    if(
+      status.confirmationStatus==='confirmed' ||
+      status.confirmationStatus==='finalized'
+    ){
+      confirmed=true;
+      break;
+    }
+
+    /*
+      Transaction exists but is still processing.
+    */
+    await new Promise(resolve=>setTimeout(resolve,delayMs));
+  }
+
+  /*
+    If the signature never appeared during the polling window,
+    don't claim success.
+
+    This is deliberately different from the old:
+      confirmTransaction() -> exception -> "Still confirming"
+
+    Now the UI clearly says the signature was not found yet.
+  */
+  if(!failed && !confirmed){
+    unknown=true;
+  }
+
+}catch(e){
+
+  console.warn(
+    'Transaction confirmation system failed:',
+    e
+  );
+
+  /*
+    We already received a transaction signature from
+    sendRawTransaction(). Therefore an RPC confirmation problem
+    must NOT be presented as an on-chain failure.
+  */
+  unknown=true;
+}
+
+
+/* ============================================================
+   RESULT
+============================================================ */
+
+if(failed){
+
+  if(UI){
+
+    UI.result({
+      ok:false,
+      info,
+      sig,
+      title:'Trade failed on-chain',
+      text:
+        'The transaction reached Solana but was rejected. '+
+        'No successful swap was completed. '+
+        'Check the transaction details on Solscan before trying again.'
+    });
+
+  }else{
+
+    toast(
+      'Trade failed on-chain. '+
+      'Check the transaction on Solscan.'
+    );
+  }
+
+}else if(confirmed){
+
+  if(UI){
+
+    UI.result({
+      ok:true,
+      info,
+      sig,
+      title:buy?'Buy successful':'Sell successful',
+      text:'Your trade is confirmed on Solana.'
+    });
+
+  }else{
+
+    toast('Trade confirmed ✔');
+  }
+
+  /*
+    Only award trade points after the transaction is actually
+    confirmed on-chain.
+  */
+  await claimTradePoints(
+    sig,
+    TP.selected?.baseToken?.address
+  );
+
+}else if(unknown){
+
+  if(UI){
+
+    UI.result({
+      ok:null,
+      info,
+      sig,
+      title:'Transaction not confirmed yet',
+      text:
+        'The wallet returned a transaction signature, but '+
+        'the RPC has not reported confirmation yet. '+
+        'Check the transaction signature on Solscan before '+
+        'submitting the trade again.'
+    });
+
+  }else{
+
+    toast(
+      'Transaction submitted, but confirmation is not available yet.'
+    );
+  }
+}
+     
     await refreshSelectedToken();
   }catch(e){
     console.error('Trade execution failed',e);
