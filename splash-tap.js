@@ -27,7 +27,7 @@ if(!pad||!bar||!C.getWallet||typeof window.doEarn!=='function'){
 
 /* ---------------- settings ---------------- */
 const IDLE='fiji-smile.png';                 // smiling face while idle
-const TAP_FACES=['fiji-hurt.png'];           // faces used when tapped, e.g. ['fiji-hurt.png','fiji-shock.png']
+const TAP_FACES=['fiji-hurt.png','fiji-shock.png','fiji-angry.png']; // faces used when tapped, e.g. ['fiji-hurt.png','fiji-shock.png']
 const FACE_MS=350;                           // how long the tap face stays
 const DROPS=8;                               // splash drops per tap
 const FALLBACK=pad.getAttribute('src')||'fiji.png';
