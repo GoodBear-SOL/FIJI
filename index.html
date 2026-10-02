@@ -342,7 +342,7 @@ th{font-family:Fredoka}
 <section class="pg on" id="home">
  <div class="hero">
   <div>
-   <span class="eyebrow">💧 check-in · discover · trade · refer</span>
+   <span class="eyebrow">Check-in · Discover · Trade · Refer</span>
    <h1>A fuzzy bunny friend <span>with a little something extra.</span></h1>
    <p>Meet FIJI, a pure meme with a little home of its own.🐰💙 FIJI gives the community a place to play, aim like a sniper, invite fellow bunnies, and earn points while exploring new tokens and their risk data along the way. No complicated promises, no pretending to be something we're not—just FIJI, the community, and a little fun along the way. Hop in🐰</p>
    <div class="btns">
@@ -387,7 +387,7 @@ th{font-family:Fredoka}
  <div class="tag">Fiji market</div>
  <h2>Splash into the market.</h2>
  <div class="mk-live small"><span class="live"><i></i><span id="mkAgo">loading…</span></span><button class="btn sm alt" onclick="refreshMarket(true)">Refresh</button></div>
- <div class="sticker card mk-hero" id="mkHero"><div class="mk-empty">Fetching Fiji… 💧</div></div>
+ <div class="sticker card mk-hero" id="mkHero"><div class="mk-empty">Fetching Fiji…🌐</div></div>
  <div class="mk-majors" id="mkMajors"></div>
  <div class="mk-bar"><div class="mk-pills" id="mkChains"></div></div>
  <div class="mk-bar"><div class="mk-pills" id="mkTf"></div><div class="mk-pills" id="mkSort"></div></div>
@@ -731,7 +731,7 @@ async function afterConnect(o,r){
  try{
   const {data,error}=await db.rpc('fiji_ensure_profile',{p_wallet:wallet,p_ref:new URLSearchParams(location.search).get('ref')});
   if(error)throw error;
-  setProfile(data);toast('Wallet connected 💧');
+  setProfile(data);toast('Wallet connected 🔗');
  }catch(e){toast('Connected, but Supabase failed: '+(e.message||e))}
 }
 async function connect(){
@@ -806,7 +806,7 @@ async function loadBoard(){
 /* ---------------- 9. MARKET (DexScreener) ---------------- */
 const DS='https://api.dexscreener.com';
 const MK={chain:'solana',tf:'h24',sort:'chg',cache:{},last:{},pairs:{},list:[],maj:null,err:'',timer:null,tick:null,at:0,busy:false};
-const OOPS='Couldn’t reach DexScreener right now. Trying again in a moment 💧';
+const OOPS='Couldn’t reach DexScreener right now. Trying again in a moment🔌';
 const LOADING='<div class="sticker card mk-empty" style="grid-column:1/-1">Splashing through the pond… 💦</div>';
 const CHAINS={
  solana:{name:'Solana',emoji:'◎',quote:'SOL',list:['BONK','WIF','POPCAT','FARTCOIN','PNUT','MEW']},
@@ -910,7 +910,7 @@ function flashEl(el){
 function flash(root){root.querySelectorAll('[data-k]').forEach(flashEl)}
 function renderHero(p){
  const h=$('mkHero');
- if(!p){h.innerHTML='<div class="mk-empty">Fiji isn’t showing on DexScreener yet. Check back soon 💧</div>';return}
+ if(!p){h.innerHTML='<div class="mk-empty">Fiji isn’t showing on DexScreener yet. Check back soon ⚠️</div>';return}
  const k=key(p);MK.pairs[k]=p;h.dataset.k=k;
  const pc=p.priceChange||{},m=cls(pc.h24),t=(p.txns&&p.txns.h24)||{};
  const say={up:'splashy day! 💦',dn:'drip drip… stay with me 💧',flat:'calm pond today 🌿'}[m];
@@ -1010,7 +1010,7 @@ function openPair(k){
    <button class="btn sm alt mk-cp" data-copy="${esc(p.baseToken.address)}">Copy contract</button></div></div>`;
  d.onclick=e=>{if(e.target===d)closePair()};
  d.querySelector('.mk-x').onclick=closePair;
- d.querySelector('.mk-cp').onclick=function(){safeCopy(this.dataset.copy);toast('Contract copied 💧')};
+ d.querySelector('.mk-cp').onclick=function(){safeCopy(this.dataset.copy);toast('Contract copied 🗐')};
  document.body.appendChild(d);
 }
 
@@ -1023,7 +1023,7 @@ function openPair(k){
 window.tradeCopyContract=function(){
  const v=$('tradeContract').textContent.trim();
  if(!v||v.startsWith('Contract'))return toast('Select a token first');
- safeCopy(v);toast('Contract copied 💧');
+ safeCopy(v);toast('Contract copied 🗐');
 };
 
 /* ---------------- 11. START ---------------- */
