@@ -20,7 +20,7 @@ const C=window.FIJI_CORE||{},T=window.FIJI_TRADE;
 if(!T||!C.CFG){console.warn('tradepad-gate: load it after tradepad.js');return}
 
 /* ---------------- settings ---------------- */
-const MIN_FIJI=5000;           // required FIJI balance
+const MIN_FIJI=0;           // required FIJI balance
 const RECHECK_MS=20000;          // balance re-check while on the Trade tab
 const MINT=C.CFG.FIJI_MINT;
 const BUY_URL='https://jup.ag/swap/SOL-'+MINT;
