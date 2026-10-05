@@ -1,5 +1,5 @@
 /* ============================================================
-   FIJI TRADE PAD v5
+   FIJI TRADE PAD v5.1
    Solana-only discovery + watchlist + trade router client.
 
    Load AFTER the core script in index.html:
@@ -13,6 +13,16 @@
      POST {TRADE_ROUTER_URL}/quote   (Jupiter routes only)
      POST {TRADE_ROUTER_URL}/build   (Jupiter and Pump routes)
      POST {TRADE_ROUTER_URL}/claim   (trade points)
+
+   v5.1 change (sell box works like Jupiter):
+     - In SELL mode the amount box is a real TOKEN amount, not a
+       percent. 10% / 25% / 50% / MAX fill in the actual number of
+       tokens you hold. You can also type your own amount.
+     - Balance label shows the token symbol next to your balance.
+     - Jupiter-route sells send the exact raw amount you entered.
+     - Pump bonding-curve sells go out in whole-percent steps (the
+       trade router only accepts percentages for Pump sells), and
+       the note under the box shows exactly what will be sold.
 
    v5 changes (buy/sell reliability):
      - Pump vs Jupiter route is decided from the on-chain bonding
@@ -142,6 +152,23 @@ const tx24=p=>(num(p?.txns?.h24?.buys)||0)+(num(p?.txns?.h24?.sells)||0);
 const tokenKey=p=>(!p?.chainId||!p?.baseToken?.address)?'':p.chainId+':'+p.baseToken.address;
 function tokenKeyParts(key){const s=String(key||''),i=s.indexOf(':');return i<0?null:{chain:s.slice(0,i),mint:s.slice(i+1)}}
 const walletAddress=()=>CORE.getWallet?CORE.getWallet():(window.wallet||null);
+
+/* Exact token-amount math. Token balances are integers on chain ("raw"),
+   so the sell box converts between what you type and the raw amount
+   without floating point rounding. */
+function uiToRaw(str,dec){
+  const s=String(str==null?'':str).trim();
+  if(!/^\d*\.?\d*$/.test(s)||s===''||s==='.')return 0n;
+  const parts=s.split('.');
+  const frac=((parts[1]||'')+'0'.repeat(dec)).slice(0,dec);
+  return BigInt(parts[0]||'0')*(10n**BigInt(dec))+BigInt(frac||'0');
+}
+function rawToUi(raw,dec){
+  const s=BigInt(raw).toString().padStart(dec+1,'0');
+  const whole=s.slice(0,s.length-dec);
+  const frac=s.slice(s.length-dec).replace(/0+$/,'');
+  return frac?whole+'.'+frac:whole;
+}
 
 /* Could this token still be on the Pump bonding curve? (cheap, no network) */
 const maybePump=p=>Boolean(p&&(p.bonding||p.curveChecked||!p.dexId||['pumpfun','pump','launch'].includes(p.dexId)));
@@ -570,6 +597,19 @@ function portfolioTokenAmount(mint){
   return num(t?.tokenAmount?.uiAmount||0)||0;
 }
 
+/* Exact raw balance (BigInt) of a token in the portfolio. */
+function heldRaw(mint){
+  const t=portfolioToken(mint);
+  try{return BigInt(t?.tokenAmount?.amount||'0')}catch(e){return 0n}
+}
+/* Decimals of a token: from the portfolio first, then the cache, else 6. */
+function tokenDecimals(mint){
+  const t=portfolioToken(mint);
+  const d=num(t?.tokenAmount?.decimals);
+  if(d!==null)return d;
+  return decCache.has(mint)?decCache.get(mint):6;
+}
+
 function updatePortfolioFromCore(payload){
   if(!payload)return;
   if(num(payload.sol)!==null)TP.portfolio.sol=num(payload.sol)||0;
@@ -643,7 +683,8 @@ function updateTradeBalances(){
   if(TP.action==='buy'){
     setText('tradePayBalance','Balance: '+formatSol(sol)+' SOL');
   }else{
-    setText('tradePayBalance','Balance: '+formatNumber(portfolioTokenAmount(TP.selected?.baseToken?.address)));
+    const sym=TP.selected?.baseToken?.symbol||'';
+    setText('tradePayBalance','Balance: '+formatNumber(portfolioTokenAmount(TP.selected?.baseToken?.address))+(sym?' '+sym:''));
   }
 }
 
@@ -904,7 +945,9 @@ function updateTradeActionUI(){
   if(sell){sell.classList.toggle('on',TP.action==='sell');sell.classList.toggle('sell',TP.action==='sell')}
   const symbol=TP.selected?.baseToken?.symbol||'TOKEN';
   setText('tradePayAsset',TP.action==='buy'?'SOL':symbol);
-  setText('tradeAmountUnit',TP.action==='buy'?'SOL':'% of holdings');
+  /* Sell mode: the box is a token amount and the token name is already shown
+     on the left, so no extra unit label is needed. */
+  setText('tradeAmountUnit',TP.action==='buy'?'SOL':'');
   setText('tradeReceiveAsset',TP.action==='buy'?symbol:'SOL');
   setText('tradeExecuteButton',TP.selected?(TP.action==='buy'?'BUY NOW':'SELL NOW'):'Select a token');
   setText('tradeFeeNote','FIJI platform fee · '+feePercent().toFixed(2)+'% on Jupiter routes · shown before signing.');
@@ -923,6 +966,10 @@ function setAction(action){
 
 function getAvailableSol(){return Math.max(0,(TP.portfolio.sol||0)-TPCFG.SOL_RESERVE)}
 
+/* Preset buttons.
+   BUY : fills in that share of your available SOL.
+   SELL: fills in that share of your token balance as an actual token
+         amount (MAX = your whole balance, exact). */
 function setPreset(percent){
   if(!TP.selected)return toast('Select a token first');
   const pct=clamp(Number(percent)||0,0,100),amt=$('tradeAmount');
@@ -932,7 +979,14 @@ function setPreset(percent){
     if(avail<=0)return toast('Not enough SOL after network reserve');
     amt.value=(avail*pct/100).toFixed(4);
   }else{
-    amt.value=String(pct);
+    const mint=TP.selected.baseToken?.address;
+    const sym=TP.selected.baseToken?.symbol||'this token';
+    const held=heldRaw(mint);
+    if(held<=0n)return toast('You don’t hold any '+sym+' to sell');
+    const dec=tokenDecimals(mint);
+    const part=pct>=100?held:held*BigInt(Math.round(pct))/100n;
+    if(part<=0n)return toast('Amount is too small');
+    amt.value=rawToUi(part,dec);
   }
   schedulePreview();
 }
@@ -946,10 +1000,33 @@ function getSlippageBps(){
 
 function currentAmount(){return num($('tradeAmount')?.value)}
 
+/* SELL plan: what will actually be sold, worked out in exact raw units.
+   - Jupiter routes sell exactly the amount typed (never more than held).
+   - Pump curve sells can only be sent as a whole percent of your holding,
+     so the amount is rounded to the nearest whole percent. */
+function sellPlan(){
+  const p=TP.selected,mint=p?.baseToken?.address;
+  if(!mint)return null;
+  const dec=tokenDecimals(mint),held=heldRaw(mint);
+  const typed=uiToRaw($('tradeAmount')?.value,dec);
+  let raw=typed>held?held:typed,pct=null;
+  if(isPumpCurve(p)){
+    if(held>0n&&raw>0n){
+      pct=clamp(Math.round(Number(raw*10000n/held)/100),1,100);
+      raw=pct>=100?held:held*BigInt(pct)/100n;
+    }else pct=0;
+  }
+  return {mint,dec,held,typed,raw,pct,ui:rawToUi(raw,dec)};
+}
+
 function amountValid(){
   const a=currentAmount();
   if(a===null||a<=0)return false;
-  return TP.action==='buy'?a<=getAvailableSol():(a>=1&&a<=100);
+  if(TP.action==='buy')return a<=getAvailableSol();
+  const mint=TP.selected?.baseToken?.address;
+  if(!mint)return false;
+  const typed=uiToRaw($('tradeAmount')?.value,tokenDecimals(mint));
+  return typed>0n&&typed<=heldRaw(mint);
 }
 
 /* ============================================================
@@ -964,20 +1041,21 @@ function buildTradeBody(){
   const pump=isPumpCurve(p);
   const base={wallet,action:TP.action,pool:pump?'pump':'auto',slippageBps:getSlippageBps()};
 
-  if(pump){
-    return buy
-      ?{...base,inputMint:SOL_MINT,outputMint:mint,amount:Number(v.toFixed(9)),denominatedInSol:true}
-      :{...base,inputMint:mint,outputMint:SOL_MINT,amount:Math.round(v)+'%',denominatedInSol:false};
-  }
   if(buy){
-    return {...base,inputMint:SOL_MINT,outputMint:mint,amount:String(Math.round(v*1e9))};
+    return pump
+      ?{...base,inputMint:SOL_MINT,outputMint:mint,amount:Number(v.toFixed(9)),denominatedInSol:true}
+      :{...base,inputMint:SOL_MINT,outputMint:mint,amount:String(Math.round(v*1e9))};
   }
-  const t=portfolioToken(mint);
-  const raw=BigInt(t?.tokenAmount?.amount||'0');
-  if(raw<=0n)throw new Error('You do not hold this token');
-  const part=raw*BigInt(Math.round(v))/100n;
-  if(part<=0n)throw new Error('Amount is too small');
-  return {...base,inputMint:mint,outputMint:SOL_MINT,amount:part.toString()};
+
+  /* SELL */
+  const plan=sellPlan();
+  if(!plan||plan.held<=0n)throw new Error('You do not hold this token');
+  if(plan.raw<=0n)throw new Error('Amount is too small');
+  if(pump){
+    // The router only accepts a whole percent for Pump sells.
+    return {...base,inputMint:mint,outputMint:SOL_MINT,amount:plan.pct+'%',denominatedInSol:false};
+  }
+  return {...base,inputMint:mint,outputMint:SOL_MINT,amount:plan.raw.toString()};
 }
 
 /* ============================================================
@@ -1027,11 +1105,19 @@ async function updateTradePreview(){
     clearPreview('Pump bonding curve');
     const recv=$('tradeReceiveAmount');
     const amt=currentAmount();
-    const est=TP.action==='buy'
-      ?pumpEstimate(p,amt,true)
-      :pumpEstimate(p,portfolioTokenAmount(mint)*amt/100,false);
+    let est=null,note='Pump route · provider fee about 0.5% · FIJI fee 0% on Pump routes.';
+    if(TP.action==='buy'){
+      est=pumpEstimate(p,amt,true);
+    }else{
+      const plan=sellPlan();
+      if(plan&&plan.raw>0n){
+        est=pumpEstimate(p,Number(plan.raw)/Math.pow(10,plan.dec),false);
+        if(plan.raw!==plan.typed)
+          note='Pump sells go out in whole % steps. Selling '+formatNumber(plan.ui)+' '+(p.baseToken?.symbol||'')+' ('+plan.pct+'% of your holding).';
+      }
+    }
     if(est!==null&&recv)recv.value='≈ '+est.toLocaleString(undefined,{maximumFractionDigits:TP.action==='buy'?2:6});
-    setText('tradeFeeNote',solWarn()||'Pump route · provider fee about 0.5% · FIJI fee 0% on Pump routes.');
+    setText('tradeFeeNote',solWarn()||note);
     return;
   }
 
@@ -1199,7 +1285,7 @@ async function executeTrade(){
     if(!buy)held=await refreshHolding(mint);
 
     if(!amountValid())
-      return void toast(buy?'Enter a valid SOL amount (about 0.005 SOL is kept for fees)':'Enter a sell percentage from 1 to 100');
+      return void toast(buy?'Enter a valid SOL amount (about 0.005 SOL is kept for fees)':'Enter an amount of '+symbol+' that you hold, or tap MAX');
     if(!routerUrl('/build'))return void toast('Trade router is not configured yet');
     if(!buy&&held!==null&&held<=0n)
       return void toast('This wallet does not hold '+symbol+' yet. Wait a few seconds and try again.');
@@ -1208,11 +1294,17 @@ async function executeTrade(){
 
     if(btn)btn.textContent='Building transaction…';
     const body=buildTradeBody();
-    const amount=currentAmount();
     const recvBox=$('tradeReceiveAmount');
+    let payText;
+    if(buy){
+      payText=currentAmount().toFixed(4)+' SOL';
+    }else{
+      const plan=sellPlan();
+      payText=formatNumber(plan.ui)+' '+symbol+(plan.pct!==null?' ('+plan.pct+'% of your holding)':'');
+    }
     info={
       side:TP.action,symbol,image:safeImage(p.info?.imageUrl),
-      pay:buy?amount.toFixed(4)+' SOL':amount+'% of your '+symbol,
+      pay:payText,
       receive:recvBox?String(recvBox.value||'').replace('≈ ',''):'',
       slippage:(getSlippageBps()/100)+'%',
       route:isPumpCurve(p)?'Pump bonding curve':(p.dexId||'Jupiter')
@@ -1275,7 +1367,7 @@ async function quickBuyByKey(key){
   /* In SELL mode this button only selects the token. It never fires a buy. */
   if(TP.action==='sell'){
     await selectByKey(key);
-    return toast('Choose a percentage, then tap SELL NOW');
+    return toast('Choose an amount, then tap SELL NOW');
   }
 
   TP.selected=p;
