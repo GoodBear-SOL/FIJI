@@ -1,9 +1,16 @@
 /* ============================================================
-   FIJI TRADE PAD · TOKEN POPUP  v3
+   FIJI TRADE PAD · TOKEN POPUP  v3.1
    Load AFTER tradepad.js (and BEFORE tradepad-gate.js):
      <script src="tradepad.js"></script>
      <script src="tradepad-popup.js"></script>
      <script src="tradepad-gate.js"></script>
+
+   What's new in v3.1 (Jupiter-style sell box):
+   - Preset buttons are now 10% / 25% / 50% / MAX.
+   - In SELL mode the presets fill the amount box with the actual
+     number of tokens you hold (done in tradepad.js v5.1).
+   - The sell hint under the presets shows your real token balance
+     instead of a percent.
 
    What's new in v3:
    - "Fresh wallets" and "Fresh · 1 coin" status cells: checks the
@@ -40,7 +47,7 @@ const TOKEN_PROG='TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',TOKEN22_PROG='Tok
 
 /* ---------------- formatters ---------------- */
 const fmUsd=v=>{const n=num(v);if(n===null||n<=0)return '—';return '$'+(n>=1e9?(n/1e9).toFixed(2)+'B':n>=1e6?(n/1e6).toFixed(2)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':n.toFixed(0))};
-const fmNum=v=>{const n=num(v);return n===null?'—':n.toLocaleString(undefined,{maximumFractionDigits:n>=100?0:4})};
+const fmNum=v=>{const n=num(v);return n===null?'—':n.toLocaleString(undefined,{maximumFractionDigits:n>=1000?2:6})};
 function fmPrice(v){
   const n=num(v);if(n===null||n<=0)return '—';
   if(n>=1000)return '$'+n.toLocaleString(undefined,{maximumFractionDigits:2});
@@ -161,8 +168,15 @@ if(slipSel&&!slipSel.querySelector('option[value="15"]')){
   ['15','25'].forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v+'%';slipSel.appendChild(o)});
 }
 
-/* sell hint line (under the % presets) */
+/* preset buttons: 10% / 25% / 50% / MAX (same look, same handler) */
 const presetBox=document.querySelector('.presets');
+if(presetBox){
+  presetBox.innerHTML=[10,25,50,100].map(n=>
+    '<button class="preset" type="button" onclick="tradeSetPreset('+n+')">'+(n===100?'MAX':n+'%')+'</button>'
+  ).join('');
+}
+
+/* sell hint line (under the presets) */
 if(presetBox){
   const h=document.createElement('div');
   h.id='tmSellHint';h.className='small';h.style.cssText='display:none;margin:-2px 0 8px';
@@ -470,7 +484,8 @@ function paintStar(p){
   const b=$('tmStar');b.classList.toggle('on',on);b.textContent=on?'★':'☆';
 }
 
-/* Sell side: stop people from "selling" a token they don't hold. */
+/* Sell side: stop people from "selling" a token they don't hold,
+   and show the real token balance under the presets. */
 let sellBlocked=false;
 function paintSell(){
   const st=T.getState(),p=st.selected,hint=$('tmSellHint'),btn=$('tradeExecuteButton');
@@ -489,8 +504,7 @@ function paintSell(){
           const a=$('tradeAmount');
           if(a&&a.value!==''){a.value='';a.dispatchEvent(new Event('input'))}
         }else{
-          const pct=num($('tradeAmount')&&$('tradeAmount').value);
-          hint.innerHTML='You hold <b>'+fmNum(h)+' '+esc(sym)+'</b>'+(pct>0&&pct<=100?' · '+pct+'% ≈ <b>'+fmNum(h*pct/100)+'</b>':'');
+          hint.innerHTML='You hold <b>'+fmNum(h)+' '+esc(sym)+'</b>';
           hint.style.display='block';
         }
       }
