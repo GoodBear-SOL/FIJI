@@ -537,9 +537,9 @@ function openModal(){
   timer=setInterval(()=>{
     tick++;
     const p=T.getState().selected;if(!p)return;
-    if(tick%3===0)refreshLive();                              // market cap + price every ~3s
-    if(tick%30===0&&curMint)loadSec(curMint,true);            // status every ~30s
-    if(tick%30===1||(!solUsd&&tick%5===0))refreshSol();       // SOL price for curve market cap
+    if(tick%2===0)refreshLive();                              // market cap + price every ~3s
+    if(tick%15===0&&curMint)loadSec(curMint,true);            // status every ~30s
+    if(tick%10===1||(!solUsd&&tick%5===0))refreshSol();       // SOL price for curve market cap
     syncStream(p);
     paintStats(p);paintLive();paintChart(p);paintStar(p);paintSell();
   },1000);
