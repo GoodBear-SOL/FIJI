@@ -47,13 +47,13 @@ const TPCFG={
   AUTO_SLIPPAGE_PUMP_BPS:2000,// 20% (router caps Pump slippage at 30%)
   AUTO_SLIPPAGE_DEX_BPS:500,  // 5%
   QUICK_BUY_SOL:0.10,
-  REFRESH_MS:15000,
-  PORTFOLIO_MS:30000,
+  REFRESH_MS:8000,
+  PORTFOLIO_MS:15000,
   MAX_FEED:30,
   MAX_LIVE:80,
   DS_BATCH:30,
   TIMEOUT_MS:10000,
-  ENRICH_EVERY_MS:4000
+  ENRICH_EVERY_MS:2000
 };
 
 const CORE=window.FIJI_CORE||{};
@@ -177,7 +177,7 @@ async function fetchJson(url,opt={}){
   }finally{clearTimeout(timer)}
 }
 
-async function ds(path,cacheMs=10000){
+async function ds(path,cacheMs=4000){
   const c=TP.cache.get(path);
   if(c&&Date.now()-c.time<cacheMs)return c.data;
   const data=await fetchJson(DS+path);
@@ -213,7 +213,7 @@ async function fetchTokenPairs(mints){
   for(let i=0;i<unique.length;i+=TPCFG.DS_BATCH){
     const chunk=unique.slice(i,i+TPCFG.DS_BATCH);
     try{
-      const data=await ds('/tokens/v1/solana/'+chunk.map(encodeURIComponent).join(','),7000);
+      const data=await ds('/tokens/v1/solana/'+chunk.map(encodeURIComponent).join(','),4000);
       if(Array.isArray(data))data.forEach(p=>{if(p?.chainId==='solana')all.push(p)});
     }catch(e){console.warn('Token enrichment failed',e)}
   }
@@ -228,7 +228,7 @@ async function fetchTokenPairs(mints){
 }
 
 async function buildProfileFeed(){
-  const data=await ds('/token-profiles/latest/v1',8000);
+  const data=await ds('/token-profiles/latest/v1',5000);
   const profiles=Array.isArray(data)?data:(data&&typeof data==='object'?[data]:[]);
   const sol=profiles.filter(p=>p?.chainId==='solana'&&p?.tokenAddress).slice(0,40);
   const pairs=await fetchTokenPairs(sol.map(p=>p.tokenAddress));
@@ -247,7 +247,7 @@ async function buildProfileFeed(){
 }
 
 async function fetchTrending(){
-  const data=await ds('/token-boosts/top/v1',7000);
+  const data=await ds('/token-boosts/top/v1',5000);
   const rows=Array.isArray(data)?data:[];
   const sol=rows.filter(x=>x?.chainId==='solana'&&x?.tokenAddress).slice(0,45);
   const pairs=await fetchTokenPairs(sol.map(x=>x.tokenAddress));
