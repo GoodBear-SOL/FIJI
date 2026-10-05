@@ -200,7 +200,8 @@ async function getSec(mint,force){
   const c=secCache.get(mint);
   if(!force&&c&&Date.now()-c.t<60000)return c.d;
   const [a,b]=await Promise.allSettled([getJson(RC+encodeURIComponent(mint)+'/report'),getJson(DSO+encodeURIComponent(mint))]);
-  const d={rc:a.status==='fulfilled'?a.value:null,ord:b.status==='fulfilled'&&Array.isArray(b.value)?b.value:null};
+  const prev=c&&c.d;   // a failed refresh keeps the last good data instead of blanking the cells
+  const d={rc:a.status==='fulfilled'?a.value:(prev&&prev.rc)||null,ord:b.status==='fulfilled'&&Array.isArray(b.value)?b.value:(prev&&prev.ord)||null};
   secCache.set(mint,{t:Date.now(),d});
   return d;
 }
@@ -537,9 +538,9 @@ function openModal(){
   timer=setInterval(()=>{
     tick++;
     const p=T.getState().selected;if(!p)return;
-    if(tick%2===0)refreshLive();                              // market cap + price every ~3s
-    if(tick%15===0&&curMint)loadSec(curMint,true);            // status every ~30s
-    if(tick%10===1||(!solUsd&&tick%5===0))refreshSol();       // SOL price for curve market cap
+    if(tick%2===0)refreshLive();                              // market cap + price every ~2s
+    if(tick%10===0&&curMint)loadSec(curMint,true);            // status every ~10s
+    if(tick%10===1||(!solUsd&&tick%5===0))refreshSol();       // SOL price for curve market cap (~10s)
     syncStream(p);
     paintStats(p);paintLive();paintChart(p);paintStar(p);paintSell();
   },1000);
