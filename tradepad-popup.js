@@ -1,9 +1,14 @@
 /* ============================================================
-   FIJI TRADE PAD · TOKEN POPUP  v2
+   FIJI TRADE PAD · TOKEN POPUP  v3
    Load AFTER tradepad.js (and BEFORE tradepad-gate.js):
      <script src="tradepad.js"></script>
      <script src="tradepad-popup.js"></script>
      <script src="tradepad-gate.js"></script>
+
+   What's new in v3:
+   - "Fresh wallets" and "Fresh · 1 coin" status cells: checks the
+     top non-pool holders (RugCheck list) through your RPC and counts
+     wallets that are brand new, and brand new AND hold only this coin.
 
    What's new in v2:
    - Contract address row with a Copy button.
@@ -31,6 +36,7 @@ const RC='https://api.rugcheck.xyz/v1/tokens/';
 const DSO='https://api.dexscreener.com/orders/v1/solana/';
 const DST='https://api.dexscreener.com/tokens/v1/solana/';
 const SOL_MINT='So11111111111111111111111111111111111111112';
+const TOKEN_PROG='TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',TOKEN22_PROG='TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
 
 /* ---------------- formatters ---------------- */
 const fmUsd=v=>{const n=num(v);if(n===null||n<=0)return '—';return '$'+(n>=1e9?(n/1e9).toFixed(2)+'B':n>=1e6?(n/1e6).toFixed(2)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':n.toFixed(0))};
@@ -141,7 +147,7 @@ modal.innerHTML=`<div class="sticker tm-sheet" role="dialog" aria-label="Token d
  <div class="tm-stats" id="tmStats"></div>
  <div class="tm-risks" id="tmRisks"></div>
  <div class="tm-chart" id="tmChart"></div>
- <p class="tm-note">Status data comes from RugCheck and DexScreener. It is informational only and can be wrong or late.</p>
+ <p class="tm-note">Status data comes from RugCheck, DexScreener and the top holders' on-chain history. Fresh wallet counts only cover the biggest holders. It is informational only and can be wrong or late.</p>
  <div class="tm-slot" id="tmSlot"></div>
 </div>`;
 document.body.appendChild(modal);
@@ -184,7 +190,7 @@ function held(mint){
 }
 
 /* ---------------- state ---------------- */
-let curMint='',curPair='',secData=null,tick=0,timer=null;
+let curMint='',curPair='',secData=null,freshData=null,tick=0,timer=null;
 let live=null,liveAt=0,solUsd=null,stream=null,lastVal={};
 let hooked=null,subMint='';
 const secCache=new Map();
@@ -202,8 +208,73 @@ function loadSec(mint,force){
   getSec(mint,force).then(d=>{
     if(mint!==curMint)return;
     secData=d;
+    if(freshData===null)loadFresh(mint,d.rc);
     const p=T.getState().selected;if(p)paintStats(p);
-  }).catch(()=>{});
+  }).catch(()=>{if(mint===curMint&&freshData===null)freshData={na:true}});
+}
+
+/* ---------------- fresh single-coin wallets (uses the site RPC) ----------------
+   Sample = top 15 non-pool holders from RugCheck. A wallet is "fresh" when its
+   whole history is visible (under FRESH_SIGS transactions) and the first one is
+   under FRESH_DAYS old. "1 coin" = a fresh wallet that holds no other token
+   (wrapped SOL ignored). This is a heuristic on the biggest holders, not on
+   every buyer, and a clean result does not make a token safe. */
+const FRESH_DAYS=7,FRESH_SIGS=30,FRESH_SAMPLE=15;
+const freshCache=new Map();
+
+async function runPool(items,size,fn){
+  const out=new Array(items.length);let i=0;
+  await Promise.all(Array.from({length:Math.min(size,items.length)},async()=>{
+    while(i<items.length){const k=i++;try{out[k]=await fn(items[k])}catch(e){out[k]=null}}
+  }));
+  return out;
+}
+async function walletProfile(owner,mint){
+  const conn=C.getConnection&&C.getConnection();
+  if(!conn||!window.solanaWeb3)return null;
+  const pk=new solanaWeb3.PublicKey(owner);
+  const sigs=await conn.getSignaturesForAddress(pk,{limit:FRESH_SIGS});
+  const complete=sigs.length<FRESH_SIGS;
+  const first=complete&&sigs.length?sigs[sigs.length-1].blockTime:null;
+  const fresh=Boolean(first&&(Date.now()/1000-first)<FRESH_DAYS*86400);
+  if(!fresh)return {fresh:false,only:false};
+  const [a,b]=await Promise.all([
+    conn.getParsedTokenAccountsByOwner(pk,{programId:new solanaWeb3.PublicKey(TOKEN_PROG)}),
+    conn.getParsedTokenAccountsByOwner(pk,{programId:new solanaWeb3.PublicKey(TOKEN22_PROG)})
+  ]);
+  const others=[...a.value,...b.value].map(x=>x.account.data.parsed.info)
+    .filter(i=>i.tokenAmount.uiAmount>0&&i.mint!==mint&&i.mint!==SOL_MINT);
+  return {fresh:true,only:others.length===0};
+}
+async function getFresh(mint,rc){
+  const c=freshCache.get(mint);
+  if(c&&Date.now()-c.t<300000)return c.d;
+  const known=rc.knownAccounts||{};
+  const skip=h=>{const k=known[h.address]||known[h.owner];return k&&/amm|pool|lp|curve|bonding/i.test((k.type||'')+' '+(k.name||''))};
+  const hs=(rc.topHolders||[]).filter(h=>h&&(h.owner||h.address)&&!skip(h)).slice(0,FRESH_SAMPLE);
+  const res=await runPool(hs,4,h=>walletProfile(h.owner||h.address,mint));
+  const ok=hs.map((h,i)=>res[i]?{h,r:res[i]}:null).filter(Boolean);
+  let d={na:true};
+  if(ok.length>=Math.min(5,hs.length)&&hs.length){
+    d={na:false,checked:ok.length,
+      fresh:ok.filter(x=>x.r.fresh).length,
+      only:ok.filter(x=>x.r.only).length,
+      pctOnly:ok.filter(x=>x.r.only).reduce((s,x)=>s+(Number(x.h.pct)||0),0)};
+    freshCache.set(mint,{t:Date.now(),d});
+  }
+  return d;
+}
+let freshBusy='';
+function loadFresh(mint,rc){
+  if(!rc){freshData={na:true};return}
+  if(freshBusy===mint)return;
+  freshBusy=mint;
+  getFresh(mint,rc).then(d=>{
+    if(freshBusy===mint)freshBusy='';
+    if(mint!==curMint)return;
+    freshData=d;
+    const p=T.getState().selected;if(p)paintStats(p);
+  }).catch(()=>{if(freshBusy===mint)freshBusy='';if(mint===curMint)freshData={na:true}});
 }
 
 /* ---------------- live market data ---------------- */
@@ -341,6 +412,10 @@ function paintStats(p){
     if(!w&&!nets)return ['None','good','No linked insider wallets detected'];
     return [w+' wallets',w>=5||pct>15?'bad':'warn',nets+' network(s) · '+pct.toFixed(1)+'% held by top insider holders'];
   });
+  const fr=freshData,frNA=['n/a','na','Needs the top-holder list and a working RPC. Not available for this token right now.'];
+  const frWho='Top '+(fr&&fr.checked)+' non-pool holders checked. Fresh = first transaction under '+FRESH_DAYS+' days ago and under '+FRESH_SIGS+' transactions in total.';
+  const freshW=!fr?['…','']:fr.na?frNA:[fr.fresh+' / '+fr.checked,fr.fresh/fr.checked>=0.4?'bad':fr.fresh/fr.checked>=0.2?'warn':'good',frWho];
+  const freshOne=!fr?['…','']:fr.na?frNA:[fr.only+' · '+fr.pctOnly.toFixed(1)+'%',fr.pctOnly>15?'bad':fr.pctOnly>5?'warn':'good','Fresh wallets that hold no other token, and the share of supply they hold. '+frWho];
   const risks=(rc&&rc.risks)||[];
   const danger=risks.filter(x=>x.level==='danger').length,warn=risks.filter(x=>x.level==='warn').length;
   const flags=pick(r=>{
@@ -364,6 +439,8 @@ function paintStats(p){
     cell('Top 10',top[0],top[1],top[2])+
     cell('Dev holding',dev[0],dev[1],dev[2])+
     cell('Bundles',bundles[0],bundles[1],bundles[2])+
+    cell('Fresh wallets',freshW[0],freshW[1],freshW[2])+
+    cell('Fresh · 1 coin',freshOne[0],freshOne[1],freshOne[2])+
     cell('Snipers','n/a','na','Sniper counts need a paid on-chain data source')+
     cell('Scam flags',flags[0],flags[1],flags[2])+
     cell('Risk',risk[0],risk[1])+
@@ -433,7 +510,7 @@ function paint(){
   if(!p)return;
   const mint=p.baseToken?.address||'';
   if(mint!==curMint){
-    curMint=mint;curPair='';secData=null;live=null;liveAt=0;lastVal={};
+    curMint=mint;curPair='';secData=null;freshData=null;live=null;liveAt=0;lastVal={};
     unhook();
     $('tmChart').innerHTML='';
     loadSec(mint);refreshLive();
@@ -449,7 +526,7 @@ function paint(){
 
 /* ---------------- open / close ---------------- */
 function openModal(){
-  curMint='';live=null;liveAt=0;lastVal={};
+  curMint='';freshData=null;live=null;liveAt=0;lastVal={};
   unhook();
   $('tmSym').textContent='…';$('tmName').textContent='Loading token…';$('tmCA').textContent='…';
   ['tmMc','tmPrice'].forEach(id=>{const e=$(id);if(e){e.innerHTML='…';e.__h='…'}});
