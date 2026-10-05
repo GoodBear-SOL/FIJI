@@ -347,7 +347,7 @@ th{font-family:Fredoka}
    <p>Meet FIJI, a pure meme with a little home of its own.🐰💙 FIJI gives the community a place to play, aim like a sniper, invite fellow bunnies, and earn points while exploring new tokens and their risk data along the way. No complicated promises, no pretending to be something we're not—just FIJI, the community, and a little fun along the way. Hop in🐰</p>
    <div class="btns">
     <button class="btn" onclick="go('trade')">Open Trade Pad</button>
-    <button class="btn alt" onclick="go('wallet')">See the market</button>
+    <button class="btn alt" onclick="go('wallet')">Open the Burrow</button>
    </div>
   </div>
   <div class="mascot"><img src="fiji.png" alt="Fiji the mascot">
@@ -366,8 +366,8 @@ th{font-family:Fredoka}
  <div class="tag">what you can do</div>
  <h2>One place. Less confusion.</h2>
  <div class="grid">
-  <div class="sticker card"><div class="em">⚡</div><h3>Trade Pad</h3>Discover new, trending and migrated Solana tokens and trade them.</div>
-  <div class="sticker card"><div class="em">📈</div><h3>Market</h3>Live prices for Fiji and the big meme coins.</div>
+  <div class="sticker card"><div class="em">⚡</div><h3>Trade Pad</h3>Discover new, trending and migrated Solana tokens and trade them. Browse coins from every chain in All coins.</div>
+  <div class="sticker card"><div class="em">🐰</div><h3>Burrow</h3>Your wallet, FIJI status, and what's coming: Shop, Mining and NFTs.</div>
   <div class="sticker card"><div class="em">📅</div><h3>Daily visit</h3>Check in and grow a streak bonus.</div>
   <div class="sticker card"><div class="em">🤝</div><h3>Referrals</h3>Bring a friend, both of you win.</div>
   <div class="sticker card"><div class="em">🎮</div><h3>Games</h3>Quick splash games for bonus points.</div>
@@ -381,19 +381,14 @@ th{font-family:Fredoka}
 </section>
 
 <!-- ===================================================================
-     MARKET (nav label "Market", page id "wallet")
+     BURROW (nav label "Burrow", page id "wallet")
 =================================================================== -->
 <section class="pg" id="wallet">
- <div class="tag">Fiji market</div>
- <h2>Splash into the market.</h2>
+ <div class="tag">Fiji status</div>
+ <h2>How is Fiji doing?</h2>
  <div class="mk-live small"><span class="live"><i></i><span id="mkAgo">loading…</span></span><button class="btn sm alt" onclick="refreshMarket(true)">Refresh</button></div>
  <div class="sticker card mk-hero" id="mkHero"><div class="mk-empty">Fetching Fiji…🌐</div></div>
- <div class="mk-majors" id="mkMajors"></div>
- <div class="mk-bar"><div class="mk-pills" id="mkChains"></div></div>
- <div class="mk-bar"><div class="mk-pills" id="mkTf"></div><div class="mk-pills" id="mkSort"></div></div>
- <p class="small" id="mkNote" style="margin-bottom:12px"></p>
- <div class="grid" id="mkGrid"></div>
- <p class="small" style="margin-top:14px">Market data from DexScreener, refreshed about every 30 seconds. For fun and information only, not financial advice. Meme coins can lose value fast, and look-alike tokens exist, so always check the contract address.</p>
+ <p class="small" style="margin-top:14px">FIJI data from DexScreener, refreshed about every 30 seconds. For fun and information only, not financial advice. Always check the contract address. Looking for other coins? Open the <a href="#" onclick="go('trade');tradeSetMode('all');return false" style="color:var(--blue)">All coins</a> tab in the Trade Pad.</p>
 
  <div class="tag">My wallet</div>
  <h2>Your Bunny Bag</h2>
@@ -434,6 +429,7 @@ th{font-family:Fredoka}
  </div>
 
  <div class="sticker disc"><div class="disc-row">
+  <button class="discovery-tab" data-mode="all" onclick="tradeSetMode('all')">🌍 All coins</button>
   <button class="discovery-tab on" data-mode="new" onclick="tradeSetMode('new')">🆕 New</button>
   <button class="discovery-tab" data-mode="trending" onclick="tradeSetMode('trending')">🔥 Trending</button>
   <button class="discovery-tab" data-mode="bonding" onclick="tradeSetMode('bonding')">📈 Bonding</button>
@@ -449,6 +445,17 @@ th{font-family:Fredoka}
  <div class="live-strip">
   <span class="live"><i></i><span id="tradeLiveText">Connecting to live token feed…</span></span>
   <span class="small" id="tradeUpdated"></span>
+ </div>
+
+ <!-- ALL COINS: every chain, view-only except Solana (driven by the market code below + trade-all.js) -->
+ <div id="allCoins">
+  <div class="mk-live small"><span class="live"><i></i><span id="acAgo">loading…</span></span><button class="btn sm alt" onclick="refreshMarket(true)">Refresh</button></div>
+  <div class="mk-majors" id="mkMajors"></div>
+  <div class="mk-bar"><div class="mk-pills" id="mkChains"></div></div>
+  <div class="mk-bar"><div class="mk-pills" id="mkTf"></div><div class="mk-pills" id="mkSort"></div></div>
+  <p class="small" id="mkNote" style="margin-bottom:12px"></p>
+  <div class="grid" id="mkGrid"></div>
+  <p class="small" style="margin-top:14px">Market data from DexScreener, refreshed about every 30 seconds. Trading on the Trade Pad works for <b>Solana</b> coins only. Other chains are view-only. For fun and information only, not financial advice. Meme coins can lose value fast, and look-alike tokens exist, so always check the contract address.</p>
  </div>
 
  <div class="tlayout">
@@ -598,8 +605,8 @@ window.FIJI_CORE={CFG,$,toast,go,loadAssets,setProfile,
 
 /* ---------------- 3. NAVIGATION ---------------- */
 const pages=['home','wallet','earn','trade','board'];
-const ico={home:'🏠',wallet:'📈',earn:'⭐',trade:'⚡',board:'🏆'};
-const label={home:'Home',wallet:'Market',earn:'Earn',trade:'Trade',board:'Board'};
+const ico={home:'🏠',wallet:'🐰',earn:'⭐',trade:'⚡',board:'🏆'};
+const label={home:'Home',wallet:'Burrow',earn:'Earn',trade:'Trade',board:'Board'};
 $('links').innerHTML=pages.map(p=>`<a data-p="${p}" onclick="go('${p}')"><span class="ic">${ico[p]}</span><span>${label[p]}</span></a>`).join('');
 function go(p){
  if(!pages.includes(p))return;
@@ -805,7 +812,7 @@ async function loadBoard(){
 
 /* ---------------- 9. MARKET (DexScreener) ---------------- */
 const DS='https://api.dexscreener.com';
-const MK={chain:'solana',tf:'h24',sort:'chg',cache:{},last:{},pairs:{},list:[],maj:null,err:'',timer:null,tick:null,at:0,busy:false};
+const MK={all:false,chain:'solana',tf:'h24',sort:'chg',cache:{},last:{},pairs:{},list:[],maj:null,err:'',timer:null,tick:null,at:0,busy:false};
 const OOPS='Couldn’t reach DexScreener right now. Trying again in a moment🔌';
 const LOADING='<div class="sticker card mk-empty" style="grid-column:1/-1">Splashing through the pond… 💦</div>';
 const CHAINS={
@@ -964,16 +971,19 @@ async function refreshList(loading){
 }
 async function refreshMarket(manual){
  if(MK.busy)return;MK.busy=true;if(manual)MK.cache={};
+ const wantFiji=$('wallet').classList.contains('on'),wantAll=!!MK.all;   // Burrow shows FIJI, Trade > All coins shows the grid
  const [f,m]=await Promise.allSettled([
-  loadFiji(),
-  Promise.all(MAJORS.map(x=>findPair(x.q,x.chain,x.match).catch(()=>null))),
-  refreshList(false)
+  wantFiji?loadFiji():Promise.resolve(null),
+  wantAll?Promise.all(MAJORS.map(x=>findPair(x.q,x.chain,x.match).catch(()=>null))):Promise.resolve(null),
+  wantAll?refreshList(false):Promise.resolve()
  ]);
- if(f.status=='fulfilled')renderHero(f.value);else{console.error(f.reason);$('mkHero').innerHTML='<div class="mk-empty">'+OOPS+'</div>'}
- if(m.status=='fulfilled')renderMajors(m.value);
+ if(wantFiji){
+  if(f.status=='fulfilled')renderHero(f.value);else{console.error(f.reason);$('mkHero').innerHTML='<div class="mk-empty">'+OOPS+'</div>'}
+ }
+ if(wantAll&&m.status=='fulfilled')renderMajors(m.value);
  MK.at=Date.now();tickLive();MK.busy=false;
 }
-function tickLive(){$('mkAgo').textContent=MK.at?'live · updated '+Math.round((Date.now()-MK.at)/1000)+'s ago':'loading…'}
+function tickLive(){const t=MK.at?'live · updated '+Math.round((Date.now()-MK.at)/1000)+'s ago':'loading…';$('mkAgo').textContent=t;const a=$('acAgo');if(a)a.textContent=t}
 function startMarket(){
  renderControls();
  if(!MK.list.length&&!MK.err)$('mkGrid').innerHTML=LOADING;
@@ -1036,7 +1046,7 @@ go('home');
 <script src="tradepad-popup.js"></script>
 <script src="tradepad-gate.js"></script>
 <script src="market-tab.js"></script>
-<script src="market-trade.js"></script>
+<script src="trade-all.js"></script>
 <script src="splash-tap.js"></script>
 
 </body>
