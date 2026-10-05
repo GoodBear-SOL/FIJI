@@ -281,9 +281,15 @@ async function fetchTrending(){
   const boostMap=new Map(sol.map(x=>[x.tokenAddress,x]));
   const score=p=>volume1h(p)+tx24(p)*25+Math.abs(num(p.priceChange?.h1)||0)*1000;
   return pairs
-    .map(p=>({...p,discoveryType:'trending',boost:boostMap.get(p.baseToken.address)||null}))
-    .sort((a,b)=>score(b)-score(a))
-    .slice(0,TPCFG.MAX_FEED);
+  .map(p=>({...p,discoveryType:'trending',boost:boostMap.get(p.baseToken.address)||null}))
+  .filter(p=>
+    liquidity(p)>=10000 &&                    // rugs usually have liquidity pulled to ~0
+    volume24(p)>=5000 &&                      // needs real trading
+    tx24(p)>=50 &&                            // needs real activity
+    (num(p.priceChange?.h24)??0)>-70          // hides coins that already crashed
+  )
+  .sort((a,b)=>score(b)-score(a))
+  .slice(0,TPCFG.MAX_FEED);
 }
 
 function mergeByMint(rows){
