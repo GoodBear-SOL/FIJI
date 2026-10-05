@@ -1,9 +1,19 @@
 /* ============================================================
-   FIJI TRADE PAD · TOKEN POPUP  v3.1
+   FIJI TRADE PAD · TOKEN POPUP  v3.2
    Load AFTER tradepad.js (and BEFORE tradepad-gate.js):
      <script src="tradepad.js"></script>
      <script src="tradepad-popup.js"></script>
      <script src="tradepad-gate.js"></script>
+
+   What's new in v3.2 (RUGGED! stamp):
+   - When RugCheck marks the opened token as rugged, a big round
+     "RUGGED!" stamp zooms in over the popup, slams down, then fades
+     after about 3 seconds (tap it to close it sooner).
+   - A small RUGGED! badge stays under the token name afterwards.
+   - BUY is blocked on rugged tokens (the button, and the quick-buy
+     buttons on the feed cards). SELL still works so holders can exit.
+   - Only tokens RugCheck flags as rugged get the stamp. A missing
+     stamp does NOT mean a token is safe.
 
    What's new in v3.1 (Jupiter-style sell box):
    - Preset buttons are now 10% / 25% / 50% / MAX.
@@ -110,6 +120,24 @@ css.textContent=`
 .tm-slot aside{order:0}
 .tm-slot .swap-card{position:static}
 
+/* RUGGED! stamp: big round stamp that zooms in, plus a small badge that stays */
+.rg-badge{display:none;align-items:center;gap:10px;margin:10px 0 0;padding:8px 12px;border:3px solid var(--dni);border-radius:16px;background:#FFD0D8;color:var(--dni)}
+.rg-badge b{font:700 20px Fredoka;letter-spacing:.06em;border:3px solid var(--dni);border-radius:99px;padding:0 12px;transform:rotate(-6deg);background:#fff;flex:none}
+.rg-badge span{font-size:12px;font-weight:700;line-height:1.3}
+.rg-over{position:fixed;inset:0;z-index:470;display:none;align-items:center;justify-content:center;background:rgba(18,48,92,.35);cursor:pointer}
+.rg-over.on{display:flex;animation:rgFade .25s}
+.rg-over.out{animation:rgOut .4s forwards}
+.rg-stamp{width:min(270px,72vw);aspect-ratio:1;border-radius:50%;border:12px solid #D6304F;background:rgba(255,255,255,.93);color:#D6304F;
+ display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-family:Fredoka,sans-serif;transform:rotate(-12deg);
+ box-shadow:inset 0 0 0 5px rgba(255,255,255,.93),inset 0 0 0 9px #D6304F,0 8px 0 var(--ink)}
+.rg-over.on .rg-stamp{animation:rgSlam .7s cubic-bezier(.2,.9,.3,1.2) both}
+.rg-stamp b{font-size:clamp(40px,12vw,54px);font-weight:700;letter-spacing:.02em;line-height:1}
+.rg-stamp small{font:700 14px Fredoka;letter-spacing:.14em;margin:4px 0}
+.tm-sheet.rg-hit{animation:ouch .35s}
+@keyframes rgSlam{0%{transform:scale(4.2) rotate(-30deg);opacity:0}55%{transform:scale(.9) rotate(-10deg);opacity:1}75%{transform:scale(1.06) rotate(-13deg)}100%{transform:scale(1) rotate(-12deg);opacity:1}}
+@keyframes rgFade{from{opacity:0}to{opacity:1}}
+@keyframes rgOut{to{opacity:0}}
+
 /* trade confirm / progress / result windows */
 .tx-modal{position:fixed;inset:0;background:rgba(18,48,92,.6);z-index:520;display:none;align-items:center;justify-content:center;padding:16px}
 .tx-modal.on{display:flex}
@@ -145,6 +173,7 @@ modal.innerHTML=`<div class="sticker tm-sheet" role="dialog" aria-label="Token d
   <button class="tm-ib" id="tmStar" type="button" aria-label="Watchlist">☆</button>
   <button class="tm-ib" id="tmX" type="button" aria-label="Close">✕</button>
  </div>
+ <div class="rg-badge" id="tmRug"><b>RUGGED!</b><span>RugCheck marks this token as rugged. Buying is blocked.</span></div>
  <div class="mint tm-ca"><code id="tmCA">…</code><button class="btn sm alt" id="tmCopy" type="button">Copy</button></div>
  <div class="tm-live">
   <div class="tm-lv"><span>Market cap</span><b id="tmMc">…</b></div>
@@ -158,6 +187,13 @@ modal.innerHTML=`<div class="sticker tm-sheet" role="dialog" aria-label="Token d
  <div class="tm-slot" id="tmSlot"></div>
 </div>`;
 document.body.appendChild(modal);
+const tmSheet=modal.querySelector('.tm-sheet');
+
+/* the big RUGGED! stamp lives on top of everything in the popup */
+const rugOver=document.createElement('div');
+rugOver.className='rg-over';
+rugOver.innerHTML='<div class="rg-stamp" role="alert"><small>⚠ WARNING ⚠</small><b>RUGGED!</b><small>DO NOT BUY</small></div>';
+document.body.appendChild(rugOver);
 
 const aside=document.querySelector('#trade aside');
 if(aside)$('tmSlot').appendChild(aside);   // swap board + Token Check live in the popup
@@ -226,6 +262,42 @@ function loadSec(mint,force){
     if(freshData===null)loadFresh(mint,d.rc);
     const p=T.getState().selected;if(p)paintStats(p);
   }).catch(()=>{if(mint===curMint&&freshData===null)freshData={na:true}});
+}
+
+/* ---------------- RUGGED! detection, stamp and buy block ---------------- */
+/* True only when RugCheck has marked this token as rugged. */
+function isRugged(p){
+  const mint=p&&p.baseToken&&p.baseToken.address;
+  if(!mint)return false;
+  const c=secCache.get(mint);
+  return Boolean(c&&c.d&&c.d.rc&&c.d.rc.rugged===true);
+}
+
+let stampedFor='',stampTimer=null,hitTimer=null;
+function hideStamp(){
+  clearTimeout(stampTimer);stampTimer=null;
+  if(!rugOver.classList.contains('on'))return;
+  rugOver.classList.add('out');
+  setTimeout(()=>{rugOver.classList.remove('on','out')},400);
+}
+function showStamp(){
+  clearTimeout(stampTimer);clearTimeout(hitTimer);
+  rugOver.classList.remove('on','out');
+  void rugOver.offsetWidth;                 // restart the animation
+  rugOver.classList.add('on');
+  hitTimer=setTimeout(()=>{                 // little shake when the stamp lands
+    tmSheet.classList.remove('rg-hit');void tmSheet.offsetWidth;tmSheet.classList.add('rg-hit');
+    setTimeout(()=>tmSheet.classList.remove('rg-hit'),400);
+  },420);
+  stampTimer=setTimeout(hideStamp,3200);
+}
+rugOver.addEventListener('click',hideStamp);
+
+function paintRug(p){
+  const mint=p&&p.baseToken&&p.baseToken.address;
+  const rug=Boolean(mint&&mint===curMint&&isRugged(p));
+  $('tmRug').style.display=rug?'flex':'none';
+  if(rug&&stampedFor!==mint){stampedFor=mint;showStamp()}
 }
 
 /* ---------------- fresh single-coin wallets (uses the site RPC) ----------------
@@ -466,6 +538,8 @@ function paintStats(p){
   put('tmRisks',loading?'':rc?(list.length
     ?list.map(x=>`<span class="tm-r ${esc(x.level)}" title="${esc(x.description||'')}">${esc(x.name)}</span>`).join('')
     :'<span class="tm-r ok">No risks flagged</span>'):'');
+
+  paintRug(p);
 }
 
 function paintChart(p){
@@ -485,8 +559,9 @@ function paintStar(p){
 }
 
 /* Sell side: stop people from "selling" a token they don't hold,
-   and show the real token balance under the presets. */
-let sellBlocked=false;
+   and show the real token balance under the presets.
+   Buy side: block buying a token RugCheck marks as rugged. */
+let btnBlocked=false;
 function paintSell(){
   const st=T.getState(),p=st.selected,hint=$('tmSellHint'),btn=$('tradeExecuteButton');
   const sym=(p&&p.baseToken&&p.baseToken.symbol)||'TOKEN';
@@ -511,10 +586,13 @@ function paintSell(){
     }else hint.style.display='none';
   }
   document.querySelectorAll('.presets .preset').forEach(b=>{b.style.opacity=blocked?'.4':''});
+
+  const rugBuy=Boolean(p&&st.action==='buy'&&isRugged(p));
+  const reason=blocked?'No '+sym+' to sell':rugBuy?'RUGGED · BUY BLOCKED':'';
   if(btn){
-    if(blocked){btn.disabled=true;btn.textContent='No '+sym+' to sell';sellBlocked=true}
-    else if(sellBlocked){
-      btn.disabled=false;sellBlocked=false;
+    if(reason){btn.disabled=true;btn.textContent=reason;btnBlocked=true}
+    else if(btnBlocked){
+      btn.disabled=false;btnBlocked=false;
       btn.textContent=p?(st.action==='buy'?'BUY NOW':'SELL NOW'):'Select a token';
     }
   }
@@ -542,6 +620,7 @@ function paint(){
 /* ---------------- open / close ---------------- */
 function openModal(){
   curMint='';freshData=null;live=null;liveAt=0;lastVal={};
+  stampedFor='';hideStamp();$('tmRug').style.display='none';
   unhook();
   $('tmSym').textContent='…';$('tmName').textContent='Loading token…';$('tmCA').textContent='…';
   ['tmMc','tmPrice'].forEach(id=>{const e=$(id);if(e){e.innerHTML='…';e.__h='…'}});
@@ -564,6 +643,7 @@ function closeModal(){
   document.body.style.overflow='';
   clearInterval(timer);timer=null;
   unhook();live=null;
+  hideStamp();
   $('tmChart').innerHTML='';curPair='';
 }
 $('tmX').onclick=closeModal;
@@ -613,8 +693,30 @@ window.tradeExecute=function(){
     toast('You don’t hold any '+(p.baseToken.symbol||'of this token')+' to sell');
     paintSell();return;
   }
+  if(st.action==='buy'&&p&&isRugged(p)){
+    toast('RUGGED! Buying is blocked for this token.');
+    paintSell();return;
+  }
   return origExec.apply(this,arguments);
 };
+
+/* Quick-buy buttons on the feed cards skip the popup, so check RugCheck first
+   (cached for 60s, so repeat taps are instant). */
+const origQuick=window.tradeQuickBuy;
+if(typeof origQuick==='function'){
+  window.tradeQuickBuy=async function(key){
+    if(T.getState().action==='buy'){
+      const mint=String(key||'').split(':')[1]||'';
+      if(mint){
+        try{
+          const d=await getSec(mint);
+          if(d&&d.rc&&d.rc.rugged===true)return toast('RUGGED! Buying is blocked for this token.');
+        }catch(e){}
+      }
+    }
+    return origQuick.apply(this,arguments);
+  };
+}
 const amtBox=$('tradeAmount');
 if(amtBox)amtBox.addEventListener('input',paintSell);
 
