@@ -38,7 +38,8 @@ css.textContent=`
 #trade.fg-locked .disc,
 #trade.fg-locked .tsearch,
 #trade.fg-locked .live-strip,
-#trade.fg-locked .tlayout{display:none}
+#trade.fg-locked .tlayout,
+#trade.fg-locked #allCoins{display:none!important}
 .fg-modal{position:fixed;inset:0;background:rgba(18,48,92,.65);z-index:480;display:none;align-items:center;justify-content:center;padding:16px}
 .fg-modal.on{display:flex}
 .fg-sheet{width:100%;max-width:420px;text-align:center;padding:22px;background:var(--bg)}
