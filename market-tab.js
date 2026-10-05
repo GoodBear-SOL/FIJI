@@ -1,16 +1,17 @@
 /* ============================================================
-   FIJI MARKET TAB LAYOUT  v2
+   FIJI BURROW TAB LAYOUT  v3  (page id "wallet", nav label "Burrow")
    Load AFTER tradepad-gate.js:
      <script src="tradepad.js"></script>
      <script src="tradepad-popup.js"></script>
      <script src="tradepad-gate.js"></script>
      <script src="market-tab.js"></script>
 
-   Market tab order:
+   Burrow tab order:
      1. Your wallet: TICKER | HOLD | BALANCE | PNL (24h) | STATUS
      2. FIJI token status with Buy and Sell buttons
-     3. COMING SOON teaser
-     4. The existing meme coin market (unchanged)
+     3. COMING SOON: Shop, Mining, NFTs
+   The all-chain coin market now lives in Trade > All coins
+   (see trade-all.js).
 
    New in v2:
    - Wallet table with the real token image, USD balance, 24h PNL
@@ -31,7 +32,9 @@ css.textContent=`
 .fj-act{margin-top:14px}
 .fj-act .btn[data-a=buy]{background:#7CF0A8;color:var(--ink)}
 .fj-act .btn[data-a=sell]{background:#FFD0D8;color:var(--ink)}
-.cs{text-align:center;padding:30px 22px;margin:22px 0 0}
+.cs-grid{margin-top:6px}
+.cs{text-align:center;padding:26px 18px;margin:0}
+.cs .em{font-size:40px;margin-top:10px}
 .cs .pill{font-size:15px;letter-spacing:.08em;transform:rotate(-2deg)}
 .cs h3{font-size:clamp(24px,4vw,32px);margin:12px 0 4px}
 .cs .grid{margin-top:18px;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
@@ -251,26 +254,22 @@ hero.addEventListener('click',e=>{
   if(b)tradeFiji(b.dataset.a);
 });
 
-/* ---------------- 3. COMING SOON teaser ---------------- */
-const teaser=document.createElement('div');
-teaser.className='sticker card cs';
-teaser.innerHTML=`<span class="pill">COMING SOON</span>
- <h3>Spend your FIJI</h3>
- <p>New things to buy with FIJI are on the way. Details will be announced here.</p>
- <div class="grid">
-  <div class="cs-tile"><span>🎁</span>Mystery item</div>
-  <div class="cs-tile"><span>✨</span>Mystery item</div>
-  <div class="cs-tile"><span>🔒</span>Mystery item</div>
- </div>`;
-hero.after(teaser);
-
-/* ---------------- 4. label for the existing coin market ---------------- */
-const majors=$('mkMajors');
-if(majors){
-  const t=document.createElement('div');
-  t.className='tag';
-  t.textContent='meme coin market';
-  majors.before(t);
-}
+/* ---------------- 3. COMING SOON: Shop, Mining, NFTs ---------------- */
+const soon=document.createElement('div');
+soon.innerHTML=`<div class="tag">coming soon to the burrow</div>
+ <h2>More to dig up.</h2>
+ <div class="grid cs-grid">
+  <div class="sticker card cs"><span class="pill">COMING SOON</span><div class="em">🛍️</div><h3>Shop</h3>
+   <p>New things to buy with FIJI are on the way. Details will be announced here.</p>
+   <div class="grid"><div class="cs-tile"><span>🎁</span>Mystery item</div><div class="cs-tile"><span>✨</span>Mystery item</div></div></div>
+  <div class="sticker card cs"><span class="pill">COMING SOON</span><div class="em">⛏️</div><h3>Mining</h3>
+   <p>Dig for Fiji points together with the community. Points are for fun and have no cash value.</p>
+   <div class="grid"><div class="cs-tile"><span>🔒</span>Locked</div><div class="cs-tile"><span>🔒</span>Locked</div></div></div>
+  <div class="sticker card cs"><span class="pill">COMING SOON</span><div class="em">🖼️</div><h3>NFTs</h3>
+   <p>Bunny collectibles and your own NFTs will show up here. Nothing to claim yet.</p>
+   <div class="grid"><div class="cs-tile"><span>🐰</span>Mystery bunny</div><div class="cs-tile"><span>💧</span>Mystery drop</div></div></div>
+ </div>
+ <p class="small" style="margin-top:14px">Nothing here is live yet and no rewards are promised.</p>`;
+hero.after(soon);
 
 })();
