@@ -88,7 +88,7 @@ th{font-family:Fredoka}
 @keyframes float{50%{transform:translateY(-12px) rotate(1.5deg)}}
 .quote{text-align:center;padding:34px 24px}
 .quote p{font:600 clamp(22px,3.4vw,32px)/1.25 Fredoka;margin-bottom:16px}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;text-align:center}
 .stats b{display:block;font:700 28px Fredoka}
 #pad{width:120px;height:120px;object-fit:cover;border-radius:50%;border:3px solid var(--ink);cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-user-drag:none;-webkit-tap-highlight-color:transparent;display:inline-block;margin:8px 0;transition:.08s}
 #pad:active{transform:scale(.85) rotate(-6deg)}
@@ -271,6 +271,7 @@ th{font-family:Fredoka}
  .card{padding:16px}
  .quote{padding:22px 16px}
  .stats b{font-size:22px}
+ .stats{grid-template-columns:repeat(2,1fr)}
  .btn{min-height:44px}
  .btn.sm{padding:8px 14px}
  #cbtn{min-height:40px;font-size:14px;padding:6px 12px}
@@ -410,11 +411,11 @@ th{font-family:Fredoka}
 <section class="pg" id="earn">
  <div class="tag">Earn points</div>
  <h2>Play around, collect points🐰</h2>
- <div class="stats sticker card"><div><b id="spts">0</b>points</div><div><b id="streak">0</b>day streak</div><div><b id="rank">–</b>status</div></div><br>
+ <div class="stats sticker card"><div><b id="spts">0</b>points</div><div><b id="myrank">–</b>rank</div><div><b id="streak">0</b>day streak</div><div><b id="rank">–</b>status</div></div>
  <div class="grid">
   <div class="sticker card"><div class="em">📅</div><h3>Daily check-in</h3><p>+10 and streak bonus</p><br><button class="btn sm" onclick="doEarn('daily')">Check in</button></div>
   <div class="sticker card" style="text-align:center"><h3>🎮 Splash Tap</h3><p>Tap Fiji 10 times for +5 (5 plays/day)</p><img id="pad" src="fiji.png" alt="Tap Fiji" onclick="tap()" draggable="false"><div class="bar"><i id="tb"></i></div></div>
-  <div class="sticker card"><h3>🤝 Referral Rewards</h3><p>Get a +100 point gift box when your referred friend successfully buys 2 different tokens on the Trade Pad (Min 0.01 SOL each)</p><input id="ref" readonly placeholder="Connect wallet first"><button class="btn sm alt" onclick="copyReferral()">Copy link</button></div>
+  <div class="sticker card"><h3>🤝Referral Rewards</h3><p>Get a +100 point gift box when your referred friend successfully buys 2 different tokens on the Trade Pad (Min 0.01 SOL each)</p><input id="ref" readonly placeholder="Connect wallet first"><button class="btn sm alt" onclick="copyReferral()">Copy link</button></div>
    <div class="sticker card"><div class="em">⚡</div><h3>Trade &amp; earn</h3><p>+50 points for your every successful buy or sell on the Trade Pad (Min 0.001 SOL)</p></div>
  </div>
 </section>
@@ -617,8 +618,10 @@ function go(p){
  pages.forEach(x=>$(x).classList.toggle('on',x==p));
  document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('on',a.dataset.p==p));
  scrollTo({top:0});
+   
  if(p=='board')loadBoard();
  if(p=='wallet'){loadAssets();startMarket()}else stopMarket();
+ if(p=='earn'&&wallet&&db)updateRank(Number($('spts').textContent)||0);
  if(p=='trade')window.FIJI_TRADE?.start?.();else window.FIJI_TRADE?.stop?.();
 }
 
@@ -683,6 +686,7 @@ function clearWallet(){
  $('cbtn').textContent='Connect wallet';
  $('wstat').textContent='Connect a Solana wallet (Jupiter, Phantom, Solflare, Backpack) to see your assets and whether you hold FIJI.';
  $('holder').innerHTML='';$('assets').innerHTML='';
+ $('myrank').textContent='–';
  window.FIJI_TRADE?.portfolioUpdated?.({sol:0,tokens:[]});
  window.FIJI_TRADE?.walletChanged?.(null);
 }
@@ -727,10 +731,39 @@ function pick(list){
   d.querySelector('.wx').onclick=x;d.onclick=e=>{if(e.target===d)x()};
  });
 }
+async function updateRank(pts){
+ const el=$('myrank');
+ if(!el)return;
+ if(!wallet||!db){
+  el.textContent='–';
+  return;
+ }
+
+ try{
+  const {count,error}=await db
+   .from('fiji_profiles')
+   .select('wallet',{count:'exact',head:true})
+   .gt('points',pts);
+
+  if(error)throw error;
+
+  el.textContent='#'+((count||0)+1);
+ }catch(e){
+  console.warn('Rank lookup failed',e);
+  el.textContent='–';
+ }
+}
+
 function setProfile(p){
  if(!p)return;
- $('spts').textContent=p.points??0;$('streak').textContent=p.streak??0;
+
+ const pts=Number(p.points??0);
+
+ $('spts').textContent=pts;
+ $('streak').textContent=p.streak??0;
  $('ref').value=location.origin+location.pathname+'?ref='+(p.ref_code||'');
+
+ updateRank(pts);
 }
 async function afterConnect(o,r){
  wallet=r.addr;provider=r.provider;cur={off:r.off};
