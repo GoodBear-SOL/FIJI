@@ -745,6 +745,32 @@ async function afterConnect(o,r){
   setProfile(data);toast('Wallet connected 🔗');
  }catch(e){toast('Connected, but Supabase failed: '+(e.message||e))}
 }
+/* ---------- MOBILE: open the site inside a wallet app ---------- */
+const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+const MOBILE_WALLETS=[
+ {name:'Phantom', em:'👻', link:(u,o)=>`https://phantom.app/ul/browse/${u}?ref=${o}`},
+ {name:'Solflare',em:'🔆', link:(u,o)=>`https://solflare.com/ul/v1/browse/${u}?ref=${o}`},
+ {name:'Backpack',em:'🎒', link:(u,o)=>`https://backpack.app/ul/v1/browse/${u}?ref=${o}`}
+];
+function pickMobile(){
+ const u=encodeURIComponent(location.href),o=encodeURIComponent(location.origin);
+ const d=document.createElement('div');d.className='modal';
+ d.innerHTML='<div class="sticker card" style="max-width:360px;width:100%"><h3>Open in your wallet</h3>'+
+  '<div class="small" style="margin:5px 0 12px">Pick your wallet app. Fiji will open inside it so you can connect and sign.</div>'+
+  '<div class="wl" style="display:grid;gap:10px"></div><br><button class="btn sm alt wx">Cancel</button></div>';
+ document.body.appendChild(d);
+ const wl=d.querySelector('.wl');
+ MOBILE_WALLETS.forEach(w=>{
+  const a=document.createElement('a');
+  a.className='btn alt';a.href=w.link(u,o);
+  a.style.cssText='display:flex;align-items:center;gap:10px;justify-content:center';
+  a.textContent=w.em+' '+w.name;
+  a.onclick=()=>setTimeout(()=>d.remove(),400);
+  wl.appendChild(a);
+ });
+ d.querySelector('.wx').onclick=()=>d.remove();
+ d.onclick=e=>{if(e.target===d)d.remove()};
+}
 async function connect(){
  if(wallet){
   try{await cur?.off()}catch(e){}
@@ -752,7 +778,10 @@ async function connect(){
   clearWallet();return toast('Disconnected');
  }
  const list=await waitForWallets();
- if(!list.length)return toast('No Solana wallet detected. Open Fiji in your wallet browser or enable your wallet extension, then try again.');
+ if(!list.length){
+ if(isMobile)return pickMobile();
+ return toast('No Solana wallet detected. Enable your wallet extension, then try again.');
+}
  const o=list.length===1?list[0]:await pick(list);
  if(!o)return;
  try{await afterConnect(o,await connectWallet(o))}
