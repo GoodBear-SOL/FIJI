@@ -174,6 +174,10 @@ th{font-family:Fredoka}
 .sw{position:relative}
 .sw input{margin:0;padding-left:42px}
 .sw i{position:absolute;left:14px;top:50%;transform:translateY(-50%);pointer-events:none;font-style:normal}
+.sw input{padding-right:92px}
+.sw-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:2.5px solid var(--ink);background:var(--sun);color:var(--ink);border-radius:99px;padding:4px 12px;font:600 14px Fredoka;cursor:pointer;line-height:1.2}
+.sw-btn:hover{background:#fff6cf}
+.sw-btn.clr{background:#fff}
 .live-strip{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
 .tlayout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(290px,.65fr);gap:16px;align-items:start}
 .feed{display:grid;gap:10px}
@@ -438,7 +442,7 @@ th{font-family:Fredoka}
  </div></div>
 
  <div class="tsearch">
-  <div class="sw"><i>🔎</i><input id="tradeSearch" placeholder="Search token, ticker or contract..." autocomplete="off"></div>
+  <div class="sw"><i>🔎</i><input id="tradeSearch" placeholder="Search token, ticker or contract..." autocomplete="off"><button type="button" class="sw-btn" id="tradeSearchBtn">Paste</button></div>
   <button class="btn" onclick="tradeRefresh(true)">Refresh</button>
  </div>
 
@@ -1020,7 +1024,7 @@ function openPair(k){
    <button class="btn sm alt mk-cp" data-copy="${esc(p.baseToken.address)}">Copy contract</button></div></div>`;
  d.onclick=e=>{if(e.target===d)closePair()};
  d.querySelector('.mk-x').onclick=closePair;
- d.querySelector('.mk-cp').onclick=function(){safeCopy(this.dataset.copy);toast('Contract copied 🗐')};
+ d.querySelector('.mk-cp').onclick=function(){safeCopy(this.dataset.copy);toast('Contract copied📝')};
  document.body.appendChild(d);
 }
 
@@ -1035,6 +1039,30 @@ window.tradeCopyContract=function(){
  if(!v||v.startsWith('Contract'))return toast('Select a token first');
  safeCopy(v);toast('Contract copied 🗐');
 };
+/* ---------------- 10b. SEARCH BAR: Paste / Clear button ---------------- */
+(function(){
+ const box=$('tradeSearch'),btn=$('tradeSearchBtn');
+ if(!box||!btn)return;
+ const sync=()=>{
+  const has=box.value.length>0;
+  btn.textContent=has?'Clear':'Paste';
+  btn.classList.toggle('clr',has);
+ };
+ const fire=()=>{box.dispatchEvent(new Event('input',{bubbles:true}));sync()};
+ btn.addEventListener('click',async()=>{
+  if(box.value.length>0){box.value='';fire();box.focus();return}
+  try{
+   const t=(await navigator.clipboard.readText()||'').trim();
+   if(!t)return toast('Clipboard is empty');
+   box.value=t;fire();
+  }catch(e){
+   box.focus();
+   toast('Paste blocked by your browser. Long-press the box and paste instead.');
+  }
+ });
+ box.addEventListener('input',sync);
+ sync();
+})();
 
 /* ---------------- 11. START ----------- */
 $('mint').textContent='Not Yet Available';
