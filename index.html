@@ -626,7 +626,7 @@ async function safeCopy(t){
  try{await navigator.clipboard.writeText(String(t||''));return true}
  catch(e){try{const a=document.createElement('textarea');a.value=String(t||'');a.style.cssText='position:fixed;opacity:0';document.body.appendChild(a);a.select();document.execCommand('copy');a.remove();return true}catch(x){return false}}
 }
-function copyMint(){safeCopy(CFG.FIJI_MINT);toast('Contract copied 💧')}
+function copyMint(){safeCopy(CFG.FIJI_MINT);toast('Contract copied📝')}
 function copyReferral(){if(!$('ref').value)return toast('Connect your wallet first');safeCopy($('ref').value);toast('Referral link copied 🤝')}
 const lines=["you opened the Trade Pad. nice choice.","new tokens move fast. keep your eyes open.","check the contract before you chase the splash.","find it. check it. then decide.","drink some water. then check the chart."];
 let li=0;function say(){$('line').textContent='“'+lines[li++%lines.length]+'”'}say();
