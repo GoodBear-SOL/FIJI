@@ -1185,6 +1185,45 @@ function trRefresh(){
  if($('trade').classList.contains('ac-on'))refreshMarket(true);
  else tradeRefresh(true);
 }
+/* ---------------- 10c. MODE DROPDOWN (mobile) ---------------- */
+(function(){
+ const dd=$('modeDd'),btn=$('modeDdBtn'),list=$('modeDdList'),label=$('modeDdLabel');
+ if(!dd||!btn||!list)return;
+
+ const close=()=>dd.classList.remove('open');
+
+ function syncDropdown(mode){
+  list.querySelectorAll('button').forEach(b=>{
+   const on=b.dataset.mode===mode;
+   b.classList.toggle('on',on);
+   if(on)label.textContent=b.textContent.trim();
+  });
+ }
+
+ btn.addEventListener('click',e=>{
+  e.stopPropagation();
+  dd.classList.toggle('open');
+ });
+
+ list.addEventListener('click',e=>{
+  const b=e.target.closest('button[data-mode]');
+  if(!b)return;
+  e.stopPropagation();
+  close();
+  tradeSetMode(b.dataset.mode);   // calls the live handler at click time
+ });
+
+ document.addEventListener('click',e=>{if(!dd.contains(e.target))close()});
+ document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+
+ /* Keep the dropdown label and highlight in sync when the mode changes
+    from anywhere (desktop tabs, All coins link in the Burrow, etc.) */
+ const wrap=fn=>function(m){syncDropdown(m);return fn.apply(this,arguments)};
+ window.addEventListener('load',()=>{
+  if(typeof window.tradeSetMode==='function')window.tradeSetMode=wrap(window.tradeSetMode);
+  syncDropdown(window.FIJI_TRADE?.getState?.().mode||'new');
+ });
+})();
 /* ---------------- 11. START ----------- */
 $('mint').textContent='Not Yet Available';
 go('home');
