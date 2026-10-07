@@ -1,7 +1,9 @@
 /* ============================================================
-   FIJI ALL COINS v2  (drop-in replacement for the All coins UI)
+   FIJI ALL COINS v2.1  (replaces the All coins UI)
 
-   Load AFTER trade-all.js:
+   Load AFTER trade-all.js (it follows trade-all's "ac-on" class,
+   respects the holder gate, and opens Solana coins in the normal
+   Trade Pad popup):
      <script src="trade-all.js"></script>
      <script src="all-coins.js"></script>
 
@@ -227,8 +229,10 @@ function view(rows){
 
 /* ---------- UI ---------- */
 const CSS=`
-#trade.ac2-on #allCoins,#trade.ac2-on .tlayout,#trade.ac2-on .live-strip{display:none!important}
-#trade:not(.ac2-on) #acv2{display:none}
+#allCoins{display:none!important}
+#trade.ac-on .tlayout,#trade.ac-on .live-strip{display:none!important}
+#trade.ac-on:not(.fg-locked) .tsearch{display:grid!important}
+#trade:not(.ac-on) #acv2,#trade.fg-locked #acv2{display:none!important}
 #acv2 .ac-filters{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
 @media(min-width:761px){#acv2 .ac-filters{grid-template-columns:repeat(4,1fr)}}
 #acv2 .ac-f{display:block;min-width:0}
@@ -277,10 +281,8 @@ function build(){
  $('acDex').onchange=e=>{S.dex=e.target.value;S.limit=PAGE;render()};
  $('acMore').onclick=()=>{S.limit+=PAGE;render()};
  $('acGrid').onclick=e=>{
-  const t=e.target.closest('[data-trade]');
-  if(t){e.stopPropagation();return tradeSolana(t.dataset.trade)}
   if(e.target.closest('a'))return;
-  const c=e.target.closest('[data-k]');if(c)openDetail(c.dataset.k);
+  const c=e.target.closest('[data-k]');if(c)openCoin(c.dataset.k);
  };
 }
 
@@ -359,6 +361,19 @@ function bindSearch(){
 
 /* ---------- detail sheet ---------- */
 function closeSheet(){document.querySelectorAll('.ac-sheet').forEach(m=>m.remove())}
+const SOL_MINT='So11111111111111111111111111111111111111112';
+/* Solana coins open the SAME popup as New / Trending (RugCheck stats, holders,
+   fresh wallets, RUGGED stamp, swap box). Other chains get the view-only sheet. */
+function openCoin(k){
+ const p=S.pairs.get(k);if(!p)return;
+ const mint=p.baseToken.address,st=window.FIJI_TRADE?.getState?.();
+ if(p.chainId==='solana'&&mint!==SOL_MINT&&st&&typeof window.tradeSelectByKey==='function'){
+  st.base=[{...p},...st.base.filter(x=>x?.baseToken?.address!==mint)];   // lets the Trade Pad find this coin
+  window.tradeSelectByKey(k);
+  return;
+ }
+ openDetail(k);
+}
 async function openDetail(k){
  const p=S.pairs.get(k);if(!p)return;
  closeSheet();
@@ -374,7 +389,7 @@ async function openDetail(k){
   <div class="mk-chips" style="margin:6px 0">${['m5','h1','h6','h24'].map(x=>`<span class="pill mk-chip ${cls(pc[x])}">${TFS[x]} ${fc(pc[x])}</span>`).join('')}</div>
   <p style="margin:10px 0 2px"><span class="pill rk ${r.level}">${r.label}</span></p>
   <ul class="ac-why">${r.why.map(w=>`<li>⚠️ ${esc(w)}</li>`).join('')}${r.good.map(w=>`<li>✅ ${esc(w)}</li>`).join('')}
-   ${p.chainId==='solana'&&!r.onchain?'<li>⏳ Token authorities not checked yet</li>':''}</ul>
+</ul>
   <table>
    <tr><td>Market cap</td><td>${fm(p.marketCap||p.fdv)}</td></tr>
    <tr><td>Liquidity</td><td>${fm(liq(p))}</td></tr>
@@ -387,10 +402,9 @@ async function openDetail(k){
    ${so.web?`<tr><td>Website</td><td><a href="${esc(so.web)}" target="_blank" rel="noopener" style="color:var(--blue)">Open</a></td></tr>`:''}
    ${so.tg?`<tr><td>Telegram</td><td><a href="${esc(so.tg)}" target="_blank" rel="noopener" style="color:var(--blue)">Open</a></td></tr>`:''}
   </table>
-  <p class="small" id="acHold" style="margin-top:8px"></p>
   ${link?`<iframe class="mk-frame" title="Price chart" loading="lazy" sandbox="allow-scripts allow-same-origin allow-popups" src="${link}?embed=1&theme=light&trades=0&info=0"></iframe>`:''}
   <div class="mk-acts">
-   ${p.chainId==='solana'?`<button class="btn sm" data-trade="${esc(k)}">⚡ Trade this coin</button><button class="btn sm alt" id="acHoldBtn">Check top holders</button>`:''}
+   <span class="small" style="flex:1 1 100%">Trading works for Solana coins only, so this coin is view-only here.</span>
    ${link?`<a class="btn sm alt" href="${link}" target="_blank" rel="noopener">DexScreener</a>`:''}
    <button class="btn sm alt" id="acCopy">Copy contract</button>
   </div></div>`;
@@ -399,23 +413,8 @@ async function openDetail(k){
  d.querySelector('#acCopy').onclick=async()=>{
   try{await navigator.clipboard.writeText(p.baseToken.address);toast('Contract copied 📝')}catch(e){toast('Copy failed')}
  };
- const tr=d.querySelector('[data-trade]');if(tr)tr.onclick=()=>tradeSolana(k);
- const hb=d.querySelector('#acHoldBtn');if(hb)hb.onclick=()=>topHolders(p,hb,d.querySelector('#acHold'));
  document.body.appendChild(d);
  loadChanges(p,d);
-}
-async function topHolders(p,btn,out){
- const conn=CORE.getConnection?CORE.getConnection():null;
- if(!conn||!window.solanaWeb3)return toast('Solana connection unavailable');
- btn.disabled=true;btn.textContent='Checking…';
- try{
-  const pk=new solanaWeb3.PublicKey(p.baseToken.address);
-  const [big,sup]=await Promise.all([conn.getTokenLargestAccounts(pk),conn.getTokenSupply(pk)]);
-  const total=Number(sup.value.amount);
-  const top=big.value.slice(0,10).reduce((a,x)=>a+Number(x.amount),0);
-  out.textContent='Top 10 token accounts hold '+(top/total*100).toFixed(1)+'% of supply. This can include liquidity pool accounts, so treat it as a rough signal.';
-  btn.style.display='none';
- }catch(e){out.textContent='Could not read holders right now.';btn.disabled=false;btn.textContent='Check top holders'}
 }
 /* Optional: shows "X changes" once you add a tracker (see notes). Hidden otherwise. */
 async function loadChanges(p,d){
@@ -429,25 +428,14 @@ async function loadChanges(p,d){
  }catch(e){}
 }
 
-/* Hand a Solana coin to the Trade Pad swap box. */
-async function tradeSolana(k){
- const p=S.pairs.get(k);if(!p)return;
- const st=window.FIJI_TRADE?.getState?.();
- if(!st)return toast('Trade Pad is still loading');
- closeSheet();
- st.liveNew=[{...p,discoveryType:'new'},...st.liveNew.filter(x=>x?.baseToken?.address!==p.baseToken.address)];
- try{
-  await window.tradeSetMode('new');
-  await window.tradeSelectByKey(k);
-  document.querySelector('#trade aside')?.scrollIntoView({behavior:'smooth',block:'start'});
- }catch(e){toast('Could not open this coin in the Trade Pad')}
-}
-
 /* ---------- start / stop + hooks ---------- */
 function start(){
  build();
  if(S.on)return;
- S.on=true;render();load();
+ S.on=true;
+ S.q=($('tradeSearch')?.value||'').trim();
+ render();load();
+ if(S.q)remoteSearch();
  clearInterval(S.timer);clearInterval(S.tick);
  S.timer=setInterval(()=>{
   if(!document.hidden&&$('trade')?.classList.contains('on'))load();
@@ -455,20 +443,22 @@ function start(){
  S.tick=setInterval(()=>tickLive(),1000);
 }
 function stop(){S.on=false;clearInterval(S.timer);clearInterval(S.tick);closeSheet()}
-function setAll(on){
- const t=$('trade');if(!t)return;
- t.classList.toggle('ac2-on',on);
- on?start():stop();
-}
 
-const origMode=window.tradeSetMode;
-window.tradeSetMode=function(m){setAll(m==='all');return origMode?origMode.apply(this,arguments):undefined};
+/* trade-all.js toggles the "ac-on" class on #trade when All coins is open
+   (and the holder gate / tab changes clear it), so just follow that class. */
+const sec=$('trade');
+const syncMode=()=>{const on=Boolean(sec&&sec.classList.contains('ac-on'));if(on!==S.on)on?start():stop()};
+if(sec)new MutationObserver(syncMode).observe(sec,{attributes:true,attributeFilter:['class']});
+
+/* Keep the old All coins grid (market code in index.html) switched off */
+try{if(typeof MK!=='undefined')Object.defineProperty(MK,'all',{get:()=>false,set:()=>{},configurable:true})}catch(e){}
+
 const origTr=window.trRefresh;
 window.trRefresh=function(){if(S.on)return load(true);return origTr?origTr.apply(this,arguments):undefined};
 const origRf=window.tradeRefresh;
 window.tradeRefresh=function(){if(S.on)return load(true);return origRf?origRf.apply(this,arguments):undefined};
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
 
-build();bindSearch();
+build();bindSearch();syncMode();
 window.FIJI_ALL={start,stop,refresh:()=>load(true)};
 })();
