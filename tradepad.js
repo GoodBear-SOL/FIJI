@@ -1,5 +1,5 @@
 /* ============================================================
-   FIJI TRADE PAD v5.1
+   FIJI TRADE PAD v5.2
    Solana-only discovery + watchlist + trade router client.
 
    Load AFTER the core script in index.html:
@@ -13,6 +13,16 @@
      POST {TRADE_ROUTER_URL}/quote   (Jupiter routes only)
      POST {TRADE_ROUTER_URL}/build   (Jupiter and Pump routes)
      POST {TRADE_ROUTER_URL}/claim   (trade points)
+
+   v5.2 change (Mayhem Mode filter):
+     - Pump.fun "Mayhem Mode" tokens (AI agent trades the token) are
+       hidden from every feed: New, Trending, Bonding, Migrated,
+       Watchlist and search results.
+     - Detected two ways: the flag on the live PumpPortal create event,
+       and the flag stored in the token's on-chain bonding curve account.
+     - Once a mint is flagged it stays hidden, even after it migrates.
+     - Turn it off any time with HIDE_MAYHEM:false in TPCFG below.
+     - Nothing else in this file was changed.
 
    v5.1 change (sell box works like Jupiter):
      - In SELL mode the amount box is a real TOKEN amount, not a
@@ -63,7 +73,8 @@ const TPCFG={
   MAX_LIVE:80,
   DS_BATCH:30,
   TIMEOUT_MS:10000,
-  ENRICH_EVERY_MS:2000
+  ENRICH_EVERY_MS:2000,
+  HIDE_MAYHEM:true            // true = hide Pump.fun Mayhem Mode tokens everywhere
 };
 
 const CORE=window.FIJI_CORE||{};
@@ -152,6 +163,25 @@ const tx24=p=>(num(p?.txns?.h24?.buys)||0)+(num(p?.txns?.h24?.sells)||0);
 const tokenKey=p=>(!p?.chainId||!p?.baseToken?.address)?'':p.chainId+':'+p.baseToken.address;
 function tokenKeyParts(key){const s=String(key||''),i=s.indexOf(':');return i<0?null:{chain:s.slice(0,i),mint:s.slice(i+1)}}
 const walletAddress=()=>CORE.getWallet?CORE.getWallet():(window.wallet||null);
+
+/* ---- Mayhem Mode filter ----
+   MAYHEM remembers every mint found to be a Mayhem Mode token, so it stays
+   hidden in every tab (and after it migrates off the bonding curve). */
+const MAYHEM=new Set();
+const mayhemFlag=e=>Boolean(e)&&[e.is_mayhem_mode,e.isMayhemMode,e.mayhem_mode,e.mayhemMode,e.mayhem]
+  .some(v=>v===true||v===1||v==='true');
+function markMayhem(p){
+  if(!p)return;
+  p.mayhem=true;
+  const m=p.baseToken?.address;
+  if(m)MAYHEM.add(m);
+}
+const isBlocked=p=>{
+  if(!TPCFG.HIDE_MAYHEM||!p)return false;
+  const m=p.baseToken?.address;
+  return Boolean(p.mayhem||(m&&MAYHEM.has(m)));
+};
+const hideBlocked=rows=>TPCFG.HIDE_MAYHEM?(rows||[]).filter(p=>!isBlocked(p)):rows;
 
 /* Exact token-amount math. Token balances are integers on chain ("raw"),
    so the sell box converts between what you type and the raw amount
@@ -296,7 +326,7 @@ function mergeByMint(rows){
   const map=new Map();
   rows.forEach(p=>{
     const k=p?.baseToken?.address;
-    if(!k)return;
+    if(!k||isBlocked(p))return;               // Mayhem Mode tokens never enter a feed
     const cur=map.get(k);
     if(!cur||liquidity(p)>liquidity(cur))map.set(k,p);
   });
@@ -308,7 +338,8 @@ function mergeByMint(rows){
    Account layout (after 8-byte discriminator):
      u64 virtualTokenReserves, u64 virtualSolReserves,
      u64 realTokenReserves, u64 realSolReserves,
-     u64 tokenTotalSupply, bool complete
+     u64 tokenTotalSupply, bool complete,
+     pubkey creator, bool isMayhemMode (byte 81)
 ============================================================ */
 const curvePdaCache=new Map();
 
@@ -328,7 +359,8 @@ function parseCurve(acc){
   return {
     vTokens:Number(dv.getBigUint64(8,true))/1e6,   // Pump tokens have 6 decimals
     vSol:Number(dv.getBigUint64(16,true))/1e9,
-    complete:d[48]===1
+    complete:d[48]===1,
+    mayhem:d.length>=82&&d[81]===1                 // Mayhem Mode flag stored on the curve
   };
 }
 
@@ -359,6 +391,7 @@ function applyCurve(item,c){
   item.curveComplete=c.complete;
   item.curveChecked=true;
   if(c.complete)item.bonding=false;
+  if(c.mayhem)markMayhem(item);
 }
 
 async function refreshCurves(items){
@@ -369,7 +402,7 @@ async function refreshCurves(items){
 async function withCurves(rows){
   const list=rows.filter(maybePump);
   if(list.length){try{await refreshCurves(list)}catch(e){}}
-  return rows;
+  return hideBlocked(rows);
 }
 
 async function ensureCurve(p,force){
@@ -399,7 +432,8 @@ function normalizeNewEvent(e){
     vSolInBondingCurve:num(e.vSolInBondingCurve),
     vTokensInBondingCurve:num(e.vTokensInBondingCurve),
     marketCapSol:num(e.marketCapSol),initialBuy:num(e.initialBuy),
-    signature:e.signature||'',creator:e.traderPublicKey||''
+    signature:e.signature||'',creator:e.traderPublicKey||'',
+    mayhem:mayhemFlag(e)
   };
 }
 
@@ -427,7 +461,8 @@ function applyPair(item,pair){
     vTokensInBondingCurve:item.vTokensInBondingCurve,marketCapSol:item.marketCapSol,
     initialBuy:item.initialBuy,migrationSignature:item.migrationSignature,
     migrationPool:item.migrationPool,metadataUri:item.metadataUri,creator:item.creator,
-    curveChecked:item.curveChecked,curveComplete:item.curveComplete,curveAt:item.curveAt
+    curveChecked:item.curveChecked,curveComplete:item.curveComplete,curveAt:item.curveAt,
+    mayhem:item.mayhem
   };
   const oldImage=item.info?.imageUrl||'';
   Object.assign(item,pair,keep);
@@ -533,6 +568,8 @@ function openPumpSocket(){
     if(type==='create'){
       const item=normalizeNewEvent(d);
       if(!item)return;
+      if(item.mayhem)markMayhem(item);            // remember it so it stays hidden everywhere
+      if(isBlocked(item))return;                  // Mayhem Mode launch: drop it before it reaches any feed
       TP.liveNew.unshift(item);
       TP.liveNew=TP.liveNew.slice(0,TPCFG.MAX_LIVE);
       pushLive(item);
@@ -540,6 +577,7 @@ function openPumpSocket(){
     }else if(type.includes('migrat')){
       const item=normalizeMigration(d);
       if(!item)return;
+      if(isBlocked(item))return;                  // already known as Mayhem Mode
       TP.liveMigrated.unshift(item);
       TP.liveMigrated=TP.liveMigrated.slice(0,TPCFG.MAX_LIVE);
       pushLive(item);
@@ -719,10 +757,10 @@ async function getFeed(){
     return withCurves(rows);
   }
   if(TP.mode==='bonding'){
-    const live=TP.liveNew.filter(i=>i.bonding!==false&&!i.migrated).slice(0,TPCFG.MAX_LIVE);
+    const live=TP.liveNew.filter(i=>i.bonding!==false&&!i.migrated&&!isBlocked(i)).slice(0,TPCFG.MAX_LIVE);
     try{await refreshCurves(live)}catch(e){}
     const sorted=live
-      .filter(i=>!i.curveComplete)
+      .filter(i=>!i.curveComplete&&!isBlocked(i))
       .sort((a,b)=>{
         const am=num(a.marketCapSol),bm=num(b.marketCapSol);
         if(am!==null&&bm!==null)return bm-am; // closest to graduating first
@@ -831,7 +869,7 @@ function renderFeed(){
     else if(TP.mode==='migrated')msg='Fresh migrations will appear here from the live migration feed.';
     return void(box.innerHTML=emptyBox(TP.mode==='watchlist'?'⭐':'🌿',TP.mode==='watchlist'?'Watchlist':'Nothing here yet',msg));
   }
-  box.innerHTML=TP.feed.map(tradeTokenCard).join('');
+  box.innerHTML=hideBlocked(TP.feed).map(tradeTokenCard).join('');
 }
 
 function updateLiveStatus(){
@@ -1400,7 +1438,7 @@ function matchesSearch(p,q){
 async function applySearch(){
   const q=TP.search;
   if(!q){TP.feed=TP.base.slice();renderFeed();return}
-  const loaded=TP.base.filter(p=>matchesSearch(p,q));
+  const loaded=TP.base.filter(p=>matchesSearch(p,q)&&!isBlocked(p));
   if(loaded.length){TP.feed=loaded.slice(0,TPCFG.MAX_FEED);renderFeed();return}
   try{
     const data=await ds('/latest/dex/search?q='+encodeURIComponent(q),4000);
