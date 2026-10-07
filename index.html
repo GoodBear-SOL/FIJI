@@ -166,6 +166,12 @@ th{font-family:Fredoka}
 .twallet{display:flex;align-items:center;gap:7px;background:#fff;border:3px solid var(--ink);border-radius:18px;padding:9px 12px;box-shadow:0 4px 0 var(--ink);white-space:nowrap}
 .twallet b{font:700 20px Fredoka}
 .mode-sel{display:none}
+.mode-dd{display:none;position:relative}
+.mode-dd-btn{width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px;border:3px solid var(--ink);background:#fff;border-radius:99px;padding:9px 16px;font:600 15px Fredoka;box-shadow:0 4px 0 var(--ink);cursor:pointer}
+.mode-dd-list{display:none;position:absolute;left:0;right:0;top:calc(100% + 8px);z-index:20;background:#fff;border:3px solid var(--ink);border-radius:20px;box-shadow:0 5px 0 var(--ink);padding:6px;overflow:hidden}
+.mode-dd.open .mode-dd-list{display:grid;gap:4px}
+.mode-dd-list button{border:0;background:transparent;text-align:left;padding:10px 12px;border-radius:14px;font:600 15px Fredoka;color:var(--ink);cursor:pointer}
+.mode-dd-list button.on,.mode-dd-list button:hover{background:var(--sun)}
 .disc{padding:12px;margin-bottom:14px}
 .disc-row{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none}
 .disc-row::-webkit-scrollbar{display:none}
@@ -316,7 +322,7 @@ th{font-family:Fredoka}
  .trade-head>div:first-child{flex:0 0 100%}
  .trade-head h1{font-size:26px;margin:2px 0 0}
  .trade-head .small{display:none}
- .mode-sel{display:block;flex:1;min-width:0;margin:0;padding:9px 14px;border-radius:99px;font:600 15px Fredoka;box-shadow:0 4px 0 var(--ink)}
+ .mode-dd{display:block;flex:1;min-width:0}
  .twallet{flex:none;width:auto;padding:7px 12px;border-radius:99px;gap:5px}
  .twallet b{font-size:17px}
  .disc{display:none}
@@ -459,18 +465,19 @@ th{font-family:Fredoka}
    <h1>Spot it. Check it. Hop in.🐰</h1>
    <p class="small">Stay on the hop with live New, Trending, Bonding, and Migrated Solana tokens — fresh discoveries, updated in real time. 🐰</p>
   </div>
-    <select id="tradeModeSel" class="mode-sel" aria-label="Token feed" onchange="tradeSetMode(this.value)">
-   <option value="all">🌍 All coins</option>
-   <option value="new" selected>🆕 New</option>
-   <option value="trending">🔥 Trending</option>
-   <option value="bonding">📈 Bonding</option>
-   <option value="migrated">🎓 Migrated</option>
-   <option value="watchlist">⭐ Watchlist</option>
-  </select>
+    <div class="mode-dd" id="modeDd">
+      <button type="button" class="mode-dd-btn" id="modeDdBtn"><span id="modeDdLabel">🆕 New</span><span>▾</span></button>
+      <div class="mode-dd-list" id="modeDdList">
+       <button type="button" data-mode="all">🌍 All coins</button>
+       <button type="button" data-mode="new">🆕 New</button>
+       <button type="button" data-mode="trending">🔥 Trending</button>
+       <button type="button" data-mode="bonding">📈 Bonding</button>
+       <button type="button" data-mode="migrated">🎓 Migrated</button>
+       <button type="button" data-mode="watchlist">⭐ Watchlist</button>
+      </div>
+    </div>
   <div class="twallet"><span>🟣</span><b id="tradeSolBalance">—</b><span class="small">SOL</span></div>
  </div>
-
- <div class="sticker disc">
 
  <div class="sticker disc"><div class="disc-row">
   <button class="discovery-tab" data-mode="all" onclick="tradeSetMode('all')">🌍 All coins</button>
@@ -1166,9 +1173,19 @@ window.tradeCopyContract=function(){
 })();
 /* ---------------- 10c. MOBILE MODE DROPDOWN: keeps the select in sync with the tabs ---------------- */
 (function(){
- const sel=$('tradeModeSel'),row=document.querySelector('.disc-row');
- if(!sel||!row)return;
- const sync=()=>{const on=row.querySelector('.discovery-tab.on');if(on&&sel.value!==on.dataset.mode)sel.value=on.dataset.mode};
+ const dd=$('modeDd'),btn=$('modeDdBtn'),list=$('modeDdList'),lab=$('modeDdLabel'),row=document.querySelector('.disc-row');
+ if(!dd||!btn||!list||!row)return;
+ const sync=()=>{
+  const on=row.querySelector('.discovery-tab.on');if(!on)return;
+  lab.textContent=on.textContent.trim();
+  list.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.mode===on.dataset.mode));
+ };
+ btn.addEventListener('click',e=>{e.stopPropagation();dd.classList.toggle('open')});
+ list.addEventListener('click',e=>{
+  const b=e.target.closest('button[data-mode]');if(!b)return;
+  dd.classList.remove('open');tradeSetMode(b.dataset.mode);
+ });
+ document.addEventListener('click',e=>{if(!dd.contains(e.target))dd.classList.remove('open')});
  new MutationObserver(sync).observe(row,{attributes:true,subtree:true,attributeFilter:['class']});
  sync();
 })();
