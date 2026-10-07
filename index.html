@@ -172,6 +172,7 @@ th{font-family:Fredoka}
 .mode-dd.open .mode-dd-list{display:grid;gap:4px}
 .mode-dd-list button{border:0;background:transparent;text-align:left;padding:10px 12px;border-radius:14px;font:600 15px Fredoka;color:var(--ink);cursor:pointer}
 .mode-dd-list button.on,.mode-dd-list button:hover{background:var(--sun)}
+.tr-ref{display:none}
 .disc{padding:12px;margin-bottom:14px}
 .disc-row{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none}
 .disc-row::-webkit-scrollbar{display:none}
@@ -322,8 +323,10 @@ th{font-family:Fredoka}
  .trade-head>div:first-child{flex:0 0 100%}
  .trade-head h1{font-size:26px;margin:2px 0 0}
  .trade-head .small{display:none}
- .mode-dd{display:block;flex:1;min-width:0}
- .twallet{flex:none;width:auto;padding:7px 12px;border-radius:99px;gap:5px}
+ .mode-dd{display:block;margin-bottom:12px}
+ .tsearch .btn{display:none}
+ .tr-ref{display:flex;align-items:center;justify-content:center;flex:none;width:44px;height:44px;padding:0;border:3px solid var(--ink);border-radius:50%;background:var(--sun);box-shadow:0 4px 0 var(--ink);font:700 22px Fredoka;color:var(--ink);cursor:pointer}
+ .twallet{flex:1;min-width:0;padding:7px 14px;border-radius:99px;gap:5px}
  .twallet b{font-size:17px}
  .disc{display:none}
  .live-strip{margin-bottom:8px}
@@ -465,18 +468,9 @@ th{font-family:Fredoka}
    <h1>Spot it. Check it. Hop in.🐰</h1>
    <p class="small">Stay on the hop with live New, Trending, Bonding, and Migrated Solana tokens — fresh discoveries, updated in real time. 🐰</p>
   </div>
-    <div class="mode-dd" id="modeDd">
-      <button type="button" class="mode-dd-btn" id="modeDdBtn"><span id="modeDdLabel">🆕 New</span><span>▾</span></button>
-      <div class="mode-dd-list" id="modeDdList">
-       <button type="button" data-mode="all">🌍 All coins</button>
-       <button type="button" data-mode="new">🆕 New</button>
-       <button type="button" data-mode="trending">🔥 Trending</button>
-       <button type="button" data-mode="bonding">📈 Bonding</button>
-       <button type="button" data-mode="migrated">🎓 Migrated</button>
-       <button type="button" data-mode="watchlist">⭐ Watchlist</button>
-      </div>
-    </div>
+   
   <div class="twallet"><span>🟣</span><b id="tradeSolBalance">—</b><span class="small">SOL</span></div>
+  <button type="button" class="tr-ref" id="tradeRefIcon" aria-label="Refresh" onclick="trRefresh()">↻</button>
  </div>
 
  <div class="sticker disc"><div class="disc-row">
@@ -492,6 +486,17 @@ th{font-family:Fredoka}
   <div class="sw"><i>🔎</i><input id="tradeSearch" placeholder="Search token, ticker or contract..." autocomplete="off"><button type="button" class="sw-btn" id="tradeSearchBtn">Paste</button></div>
   <button class="btn" onclick="tradeRefresh(true)">Refresh</button>
  </div>
+  <div class="mode-dd" id="modeDd">
+   <button type="button" class="mode-dd-btn" id="modeDdBtn"><span id="modeDdLabel">🆕 New</span><span>▾</span></button>
+   <div class="mode-dd-list" id="modeDdList">
+    <button type="button" data-mode="all">🌍 All coins</button>
+    <button type="button" data-mode="new">🆕 New</button>
+    <button type="button" data-mode="trending">🔥 Trending</button>
+    <button type="button" data-mode="bonding">📈 Bonding</button>
+    <button type="button" data-mode="migrated">🎓 Migrated</button>
+    <button type="button" data-mode="watchlist">⭐ Watchlist</button>
+   </div>
+  </div>
 
  <div class="live-strip">
   <span class="live"><i></i><span id="tradeLiveText">Connecting to live token feed…</span></span>
@@ -1159,36 +1164,27 @@ window.tradeCopyContract=function(){
  const fire=()=>{box.dispatchEvent(new Event('input',{bubbles:true}));sync()};
  btn.addEventListener('click',async()=>{
   if(box.value.length>0){box.value='';fire();box.focus();return}
+  let t='';
   try{
-   const t=(await navigator.clipboard.readText()||'').trim();
-   if(!t)return toast('Clipboard is empty');
-   box.value=t;fire();
+   if(!navigator.clipboard||!navigator.clipboard.readText)throw new Error('unsupported');
+   t=((await navigator.clipboard.readText())||'').trim();
   }catch(e){
    box.focus();
-   toast('Paste blocked by your browser. Long-press the box and paste instead.');
+   try{box.select()}catch(x){}
+   toast('Tap and hold the search box, then choose Paste');
+   return;
   }
+  if(!t)return toast('Clipboard is empty');
+  box.value=t;fire();box.focus();
  });
+ box.addEventListener('paste',()=>setTimeout(()=>{box.value=box.value.trim();fire()},0));
  box.addEventListener('input',sync);
  sync();
 })();
-/* ---------------- 10c. MOBILE MODE DROPDOWN: keeps the select in sync with the tabs ---------------- */
-(function(){
- const dd=$('modeDd'),btn=$('modeDdBtn'),list=$('modeDdList'),lab=$('modeDdLabel'),row=document.querySelector('.disc-row');
- if(!dd||!btn||!list||!row)return;
- const sync=()=>{
-  const on=row.querySelector('.discovery-tab.on');if(!on)return;
-  lab.textContent=on.textContent.trim();
-  list.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.mode===on.dataset.mode));
- };
- btn.addEventListener('click',e=>{e.stopPropagation();dd.classList.toggle('open')});
- list.addEventListener('click',e=>{
-  const b=e.target.closest('button[data-mode]');if(!b)return;
-  dd.classList.remove('open');tradeSetMode(b.dataset.mode);
- });
- document.addEventListener('click',e=>{if(!dd.contains(e.target))dd.classList.remove('open')});
- new MutationObserver(sync).observe(row,{attributes:true,subtree:true,attributeFilter:['class']});
- sync();
-})();
+function trRefresh(){
+ if($('trade').classList.contains('ac-on'))refreshMarket(true);
+ else tradeRefresh(true);
+}
 /* ---------------- 11. START ----------- */
 $('mint').textContent='Not Yet Available';
 go('home');
