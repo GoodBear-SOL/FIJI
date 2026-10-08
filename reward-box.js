@@ -196,7 +196,7 @@ function render(){
     sheet.innerHTML=
       '<span class="rw-box pop">🎉</span>'+
       '<h3>You got</h3>'+
-      '<div class="rw-amt">'+(pts?'+'+amt+' points ⭐':'+'+amt+' 🥕 carrots')+'</div>'+
+      '<div class="rw-amt">'+(pts?'+'+amt+' BUN ⭐':'+'+amt+' 🥕 carrots')+'</div>'+
       (result.note?'<div class="rw-note">'+esc(result.note)+'</div>':'')+
       '<p class="small">Added to your account.</p>'+
       '<div class="rw-acts">'+
