@@ -106,7 +106,7 @@ window.openPair=function(k){
       const n=document.createElement('div');
       n.className='ac-note';
       n.innerHTML=mint===SOL_MINT
-        ?'SOL is the coin you pay with on the Trade Pad. Pick any Solana token to trade and earn <b>+50 points</b> per trade.'
+        ?'SOL is the coin you pay with on the Trade Pad. Pick any Solana token to trade and earn <b>+50 BUN</b> per trade.'
         :'The Fiji Trade Pad supports <b>Solana</b> tokens only, so this coin is view-only here. You can still follow it on DexScreener.';
       table.after(n);
     }
