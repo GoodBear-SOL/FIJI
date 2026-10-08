@@ -64,9 +64,9 @@ grid.querySelectorAll(':scope > .card[style]').forEach(c=>c.style.removeProperty
 
 /* ---------------- coming soon blocks (edit freely) ---------------- */
 const SOON=[
-  {em:'🎯',t:'Weekly Quests',d:'Simple community goals that earn bonus points.'},
+  {em:'🎯',t:'Weekly Quests',d:'Simple community goals that earn bonus BUN.'},
   {em:'🏅',t:'Bunny Badges',d:'Collect badges for streaks, trades and referrals.'},
-  {em:'🎡',t:'Lucky Spin',d:'A fun daily spin for a chance at extra points.'},
+  {em:'🎡',t:'Lucky Spin',d:'A fun daily spin for a chance at extra BUN.'},
   {em:'🥕',t:'Team Hops',d:'Hop together with the community to unlock shared goals.'}
 ];
 SOON.forEach(s=>{
@@ -78,7 +78,7 @@ SOON.forEach(s=>{
 
 const note=document.createElement('p');
 note.className='small';note.style.marginTop='14px';
-note.textContent='Coming soon blocks are not live yet. Points are for community fun only and no rewards are promised.';
+note.textContent='Some features are still coming soon. BUN is an in-site currency used for FIJI Labs activities and items. BUN has no cash value.';
 grid.after(note);
 
 })();
