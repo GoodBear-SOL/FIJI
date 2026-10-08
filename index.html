@@ -387,7 +387,7 @@ th{font-family:Fredoka}
   <div>
    <span class="eyebrow">Check-in · Discover · Trade · Refer</span>
    <h1>A fuzzy bunny friend <span>with a little something extra.</span></h1>
-   <p>Meet FIJI, a pure meme with a little home of its own.🐰💙 FIJI gives the community a place to play, aim like a sniper, invite fellow bunnies, and earn points while exploring new tokens and their risk data along the way. No complicated promises, no pretending to be something we're not—just FIJI, the community, and a little fun along the way. Hop in🐰</p>
+   <p>Meet FIJI, a pure meme with a little home of its own.🐰💙 FIJI gives the community a place to play, aim like a sniper, invite fellow bunnies, and earn BUN while exploring new tokens and their risk data along the way. No complicated promises, no pretending to be something we're not—just FIJI, the community, and a little fun along the way. Hop in🐰</p>
    <div class="btns">
     <button class="btn" onclick="go('trade')">Open Trade Pad</button>
     <button class="btn alt" onclick="go('wallet')">Open the Burrow</button>
@@ -413,10 +413,10 @@ th{font-family:Fredoka}
   <div class="sticker card"><div class="em">🐰</div><h3>Burrow</h3>Your wallet, FIJI status, and what's coming: Shop, Mining and NFTs.</div>
   <div class="sticker card"><div class="em">📅</div><h3>Daily visit</h3>Check in and grow a streak bonus.</div>
   <div class="sticker card"><div class="em">🤝</div><h3>Referrals</h3>Bring a friend, both of you win.</div>
-  <div class="sticker card"><div class="em">🎮</div><h3>Games</h3>Quick splash games for bonus points.</div>
+  <div class="sticker card"><div class="em">🎮</div><h3>Games</h3>Quick splash games for bonus BUN.</div>
   <div class="sticker card"><div class="em">🏆</div><h3>Leaderboard</h3>See who is at the top of the pond.</div>
  </div>
- <p class="small" style="margin-top:14px">Points are for community fun only. They have no cash value and no rewards are promised.</p>
+ <p class="small" style="margin-top:14px">BUN is for community fun only. It has no cash value and no rewards are promised.</p>
 
  <div class="tag">his voice</div>
  <h2>Say something, Fiji.</h2>
@@ -447,14 +447,14 @@ th{font-family:Fredoka}
      EARN
 =================================================================== -->
 <section class="pg" id="earn">
- <div class="tag">Earn points</div>
- <h2>Play around, collect points🐰</h2>
- <div class="stats sticker card"><div><b id="spts">0</b>points</div><div><b id="myrank">–</b>rank</div><div><b id="streak">0</b>day streak</div><div><b id="rank">–</b>status</div></div>
+ <div class="tag">Earn BUN</div>
+ <h2>Play around, collect BUN🐰</h2>
+ <div class="stats sticker card"><div><b id="spts">0</b>BUN</div><div><b id="myrank">–</b>rank</div><div><b id="streak">0</b>day streak</div><div><b id="rank">–</b>status</div></div>
  <div class="grid">
   <div class="sticker card"><div class="em">📅</div><h3>Daily check-in</h3><p>+10 and streak bonus</p><br><button class="btn sm" onclick="doEarn('daily')">Check in</button></div>
-  <div class="sticker card" style="text-align:center"><h3>🎮 Splash Tap</h3><p>Tap Fiji 10 times for +5 (5 plays/day)</p><img id="pad" src="fiji.png" alt="Tap Fiji" onclick="tap()" draggable="false"><div class="bar"><i id="tb"></i></div></div>
-  <div class="sticker card"><h3>🤝Referral Rewards</h3><p>Get a +100 point gift box when your referred friend successfully buys 2 different tokens on the Trade Pad (Min 0.01 SOL each)</p><input id="ref" readonly placeholder="Connect wallet first"><button class="btn sm alt" onclick="copyReferral()">Copy link</button></div>
-   <div class="sticker card"><div class="em">⚡</div><h3>Trade &amp; earn</h3><p>+50 points for your every successful buy or sell on the Trade Pad (Min 0.001 SOL)</p></div>
+  <div class="sticker card" style="text-align:center"><h3>🎮 Splash Tap</h3><p>Tap Fiji 10 times for +5 BUN (5 plays/day)</p><img id="pad" src="fiji.png" alt="Tap Fiji" onclick="tap()" draggable="false"><div class="bar"><i id="tb"></i></div></div>
+  <div class="sticker card"><h3>🤝Referral Rewards</h3><p>Get a +100 BUN when your referred friend successfully buys 2 different tokens on the Trade Pad (Min 0.01 SOL each)</p><input id="ref" readonly placeholder="Connect wallet first"><button class="btn sm alt" onclick="copyReferral()">Copy link</button></div>
+   <div class="sticker card"><div class="em">⚡</div><h3>Trade &amp; earn</h3><p>+50 BUN for your every successful buy or sell on the Trade Pad (Min 0.001 SOL)</p></div>
  </div>
 </section>
 
@@ -910,7 +910,7 @@ async function doEarn(t){
  if(!db)return toast('Supabase not set up yet');
  const {data,error}=await db.rpc('fiji_earn',{p_wallet:wallet,p_type:t});
  if(error)return toast(error.message);
- setProfile(data);toast('Points earned ⭐');
+ setProfile(data);toast('BUN earned ⭐');
 }
 let hurtOK=false;const hurtImg=new Image();hurtImg.onload=()=>hurtOK=true;hurtImg.src='fiji-hurt.png';
 function tap(){
@@ -923,7 +923,7 @@ function tap(){
 async function loadBoard(){
  if(!db)return;
  const {data}=await db.from('fiji_profiles').select('wallet,points,streak').order('points',{ascending:false}).limit(25);
- $('lb').innerHTML='<tr><th>#</th><th>Wallet</th><th>Points</th><th>Streak</th></tr>'+
+ $('lb').innerHTML='<tr><th>#</th><th>Wallet</th><th>BUN</th><th>Streak</th></tr>'+
   (data||[]).map((p,i)=>`<tr><td>${['🥇','🥈','🥉'][i]||i+1}</td><td>${short(p.wallet)}</td><td>${p.points}</td><td>🔥 ${p.streak}</td></tr>`).join('');
 }
 
