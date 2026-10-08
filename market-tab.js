@@ -263,7 +263,7 @@ soon.innerHTML=`<div class="tag">coming soon to the burrow</div>
    <p>New things to buy with FIJI are on the way. Details will be announced here.</p>
    <div class="grid"><div class="cs-tile"><span>🎁</span>Mystery item</div><div class="cs-tile"><span>✨</span>Mystery item</div></div></div>
   <div class="sticker card cs"><span class="pill">COMING SOON</span><div class="em">⛏️</div><h3>Mining</h3>
-   <p>Dig for Fiji points together with the community. Points are for fun and have no cash value.</p>
+   <p>Dig for BUN together with the community. BUN is for fun and has no cash value.</p>
    <div class="grid"><div class="cs-tile"><span>🔒</span>Locked</div><div class="cs-tile"><span>🔒</span>Locked</div></div></div>
   <div class="sticker card cs"><span class="pill">COMING SOON</span><div class="em">🖼️</div><h3>NFTs</h3>
    <p>Bunny collectibles and your own NFTs will show up here. Nothing to claim yet.</p>
