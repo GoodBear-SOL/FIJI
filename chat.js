@@ -259,7 +259,7 @@ window.loadBoard=async function(){
   const lb=document.getElementById('lb');if(!lb)return;
   const {data}=await db.from('fiji_profiles').select('wallet,points,streak,username').order('points',{ascending:false}).limit(25);
   const sh=a=>{const s=String(a||'');return s.length<=10?s:s.slice(0,4)+'…'+s.slice(-4)};
-  lb.innerHTML='<tr><th>#</th><th>Player</th><th>Points</th><th>Streak</th></tr>'+
+  lb.innerHTML='<tr><th>#</th><th>Player</th><th>BUN</th><th>Streak</th></tr>'+
     (data||[]).map((p,i)=>{
       const mine=wallet&&p.wallet===wallet;
       return '<tr'+(mine?' class="lb-me"':'')+'><td>'+(['🥇','🥈','🥉'][i]||i+1)+'</td><td>'+
