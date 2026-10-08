@@ -1295,7 +1295,7 @@ async function claimTradePoints(sig,mint){
       const res=await routerPost('/claim',{wallet,signature:sig,mint});
       if(res?.awarded){
         if(res.profile&&CORE.setProfile)CORE.setProfile(res.profile);
-        toast('+'+res.points+' points for your trade ⭐');
+        toast('+'+res.points+' BUN for your trade ⭐');
       }else if(res?.reason&&!/already/i.test(res.reason)){
         toast(res.reason);
       }
