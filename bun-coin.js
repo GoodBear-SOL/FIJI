@@ -51,7 +51,8 @@ css.textContent=`
 .bc-float{position:relative;width:84px;height:84px;animation:bcFloat 3.2s ease-in-out infinite}
 .bc-coin{position:relative;display:block;width:100%;height:100%;padding:0;border:0;background:none;cursor:pointer;border-radius:50%;transform-style:preserve-3d;-webkit-tap-highlight-color:transparent;filter:drop-shadow(0 5px 0 rgba(18,48,92,.35))}
 .bc-coin:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
-.bc-coin>img,.bc-coin>svg{display:block;width:100%;height:100%;border-radius:50%;object-fit:contain;user-select:none;-webkit-user-drag:none;pointer-events:none}
+#bcFace{display:block;width:100%;height:100%;overflow:hidden;border-radius:50%}
+.bc-coin img,.bc-coin svg{display:block;width:100%;height:100%;max-width:100%;max-height:100%;border-radius:50%;object-fit:contain;user-select:none;-webkit-user-drag:none;pointer-events:none}
 .bc-coin.spin{animation:bcSpin .9s cubic-bezier(.3,.7,.3,1)}
 .bc-coin.pop{animation:bcPop .7s cubic-bezier(.2,.9,.3,1.3)}
 .bc-shine{position:absolute;inset:0;border-radius:50%;overflow:hidden;pointer-events:none}
