@@ -1,43 +1,3 @@
-/* ============================================================
-   FIJI TRADE PAD · TOKEN POPUP  v3.2
-   Load AFTER tradepad.js (and BEFORE tradepad-gate.js):
-     <script src="tradepad.js"></script>
-     <script src="tradepad-popup.js"></script>
-     <script src="tradepad-gate.js"></script>
-
-   What's new in v3.2 (RUGGED! stamp):
-   - When RugCheck marks the opened token as rugged, a big round
-     "RUGGED!" stamp zooms in over the popup, slams down, then fades
-     after about 3 seconds (tap it to close it sooner).
-   - A small RUGGED! badge stays under the token name afterwards.
-   - BUY is blocked on rugged tokens (the button, and the quick-buy
-     buttons on the feed cards). SELL still works so holders can exit.
-   - Only tokens RugCheck flags as rugged get the stamp. A missing
-     stamp does NOT mean a token is safe.
-
-   What's new in v3.1 (Jupiter-style sell box):
-   - Preset buttons are now 10% / 25% / 50% / MAX.
-   - In SELL mode the presets fill the amount box with the actual
-     number of tokens you hold (done in tradepad.js v5.1).
-   - The sell hint under the presets shows your real token balance
-     instead of a percent.
-
-   What's new in v3:
-   - "Fresh wallets" and "Fresh · 1 coin" status cells: checks the
-     top non-pool holders (RugCheck list) through your RPC and counts
-     wallets that are brand new, and brand new AND hold only this coin.
-
-   What's new in v2:
-   - Contract address row with a Copy button.
-   - Live market cap + price (DexScreener every 3s, plus a live
-     trade stream for Pump bonding-curve tokens).
-   - Holder count (RugCheck) next to the other status cells.
-   - Sell side: if the wallet holds none of the token, the presets
-     and the sell button are blocked, and a hint shows what you hold.
-   - Styled confirm / pending / success / error windows for trades
-     (window.FIJI_TRADE_UI). Used by the patched executeTrade().
-   - Extra slippage options (15%, 25%).
-   ============================================================ */
 (function(){
 'use strict';
 
@@ -55,7 +15,6 @@ const DST='https://api.dexscreener.com/tokens/v1/solana/';
 const SOL_MINT='So11111111111111111111111111111111111111112';
 const TOKEN_PROG='TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',TOKEN22_PROG='TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
 
-/* ---------------- formatters ---------------- */
 const fmUsd=v=>{const n=num(v);if(n===null||n<=0)return '—';return '$'+(n>=1e9?(n/1e9).toFixed(2)+'B':n>=1e6?(n/1e6).toFixed(2)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':n.toFixed(0))};
 const fmNum=v=>{const n=num(v);return n===null?'—':n.toLocaleString(undefined,{maximumFractionDigits:n>=1000?2:6})};
 function fmPrice(v){
@@ -76,7 +35,6 @@ function fmtAge(ts){
 }
 const liq=p=>num(p&&p.liquidity&&p.liquidity.usd)||0;
 
-/* ---------------- styles (same sticker look as the site) ---------------- */
 const css=document.createElement('style');
 css.textContent=`
 #trade .tlayout{grid-template-columns:1fr}
@@ -90,7 +48,7 @@ css.textContent=`
 .tm-title{flex:1;min-width:0}
 .tm-title b{display:block;font:700 24px Fredoka;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tm-title span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tm-ib{width:40px;height:40px;border:2.5px solid var(--ink);border-radius:50%;background:#fff;cursor:pointer;font:600 18px Fredoka;flex:none}
+.tm-ib{width:40px;height:40px;border:2.5px solid var(--ink);border-radius:50%;background:#fff;cursor:pointer;font:600 18px Fredoka;flex:none;position:relative;z-index:2}
 .tm-ib.on{background:var(--sun)}
 .tm-ca{margin:12px 0 8px;font-size:12px;padding:8px 10px;gap:8px}
 .tm-live{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 6px}
@@ -124,10 +82,10 @@ css.textContent=`
 .rg-badge{display:none;align-items:center;gap:10px;margin:10px 0 0;padding:8px 12px;border:3px solid var(--dni);border-radius:16px;background:#FFD0D8;color:var(--dni)}
 .rg-badge b{font:700 20px Fredoka;letter-spacing:.06em;border:3px solid var(--dni);border-radius:99px;padding:0 12px;transform:rotate(-6deg);background:#fff;flex:none}
 .rg-badge span{font-size:12px;font-weight:700;line-height:1.3}
-.rg-over{position:fixed;inset:0;z-index:470;display:none;align-items:center;justify-content:center;background:rgba(18,48,92,.35);cursor:pointer}
+.rg-over{position:fixed;inset:0;z-index:470;display:none;align-items:center;justify-content:center;background:rgba(18,48,92,.35);cursor:pointer;pointer-events:none}
 .rg-over.on{display:flex;animation:rgFade .25s}
 .rg-over.out{animation:rgOut .4s forwards}
-.rg-stamp{width:min(270px,72vw);aspect-ratio:1;border-radius:50%;border:12px solid #D6304F;background:rgba(255,255,255,.93);color:#D6304F;
+.rg-stamp{pointer-events:auto;width:min(270px,72vw);aspect-ratio:1;border-radius:50%;border:12px solid #D6304F;background:rgba(255,255,255,.93);color:#D6304F;
  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-family:Fredoka,sans-serif;transform:rotate(-12deg);
  box-shadow:inset 0 0 0 5px rgba(255,255,255,.93),inset 0 0 0 9px #D6304F,0 8px 0 var(--ink)}
 .rg-over.on .rg-stamp{animation:rgSlam .7s cubic-bezier(.2,.9,.3,1.2) both}
@@ -163,7 +121,6 @@ css.textContent=`
 `;
 document.head.appendChild(css);
 
-/* ---------------- popup shell ---------------- */
 const modal=document.createElement('div');
 modal.className='tm-modal';
 modal.innerHTML=`<div class="sticker tm-sheet" role="dialog" aria-label="Token details">
@@ -188,23 +145,21 @@ modal.innerHTML=`<div class="sticker tm-sheet" role="dialog" aria-label="Token d
 </div>`;
 document.body.appendChild(modal);
 const tmSheet=modal.querySelector('.tm-sheet');
+const isOpen=()=>modal.classList.contains('on');
 
-/* the big RUGGED! stamp lives on top of everything in the popup */
 const rugOver=document.createElement('div');
 rugOver.className='rg-over';
 rugOver.innerHTML='<div class="rg-stamp" role="alert"><small>⚠ WARNING ⚠</small><b>RUGGED!</b><small>DO NOT BUY</small></div>';
 document.body.appendChild(rugOver);
 
 const aside=document.querySelector('#trade aside');
-if(aside)$('tmSlot').appendChild(aside);   // swap board + Token Check live in the popup
+if(aside)$('tmSlot').appendChild(aside);
 
-/* extra slippage options */
 const slipSel=$('tradeSlippage');
 if(slipSel&&!slipSel.querySelector('option[value="15"]')){
   ['15','25'].forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v+'%';slipSel.appendChild(o)});
 }
 
-/* preset buttons: 10% / 25% / 50% / MAX (same look, same handler) */
 const presetBox=document.querySelector('.presets');
 if(presetBox){
   presetBox.innerHTML=[10,25,50,100].map(n=>
@@ -212,14 +167,12 @@ if(presetBox){
   ).join('');
 }
 
-/* sell hint line (under the presets) */
 if(presetBox){
   const h=document.createElement('div');
   h.id='tmSellHint';h.className='small';h.style.cssText='display:none;margin:-2px 0 8px';
   presetBox.insertAdjacentElement('afterend',h);
 }
 
-/* ---------------- helpers ---------------- */
 async function getJson(url){
   const ac=new AbortController(),t=setTimeout(()=>ac.abort(),10000);
   try{const r=await fetch(url,{signal:ac.signal});if(!r.ok)throw new Error('HTTP '+r.status);return await r.json()}
@@ -239,13 +192,11 @@ function held(mint){
   return toks.filter(t=>t&&t.mint===mint).reduce((s,t)=>s+(Number(t.tokenAmount&&t.tokenAmount.uiAmount)||0),0);
 }
 
-/* ---------------- state ---------------- */
 let curMint='',curPair='',secData=null,freshData=null,tick=0,timer=null;
 let live=null,liveAt=0,solUsd=null,stream=null,lastVal={};
 let hooked=null,subMint='';
 const secCache=new Map();
 
-/* ---------------- security data (RugCheck + DexScreener orders) ---------------- */
 async function getSec(mint,force){
   const c=secCache.get(mint);
   if(!force&&c&&Date.now()-c.t<60000)return c.d;
@@ -264,8 +215,6 @@ function loadSec(mint,force){
   }).catch(()=>{if(mint===curMint&&freshData===null)freshData={na:true}});
 }
 
-/* ---------------- RUGGED! detection, stamp and buy block ---------------- */
-/* True only when RugCheck has marked this token as rugged. */
 function isRugged(p){
   const mint=p&&p.baseToken&&p.baseToken.address;
   if(!mint)return false;
@@ -283,9 +232,9 @@ function hideStamp(){
 function showStamp(){
   clearTimeout(stampTimer);clearTimeout(hitTimer);
   rugOver.classList.remove('on','out');
-  void rugOver.offsetWidth;                 // restart the animation
+  void rugOver.offsetWidth;
   rugOver.classList.add('on');
-  hitTimer=setTimeout(()=>{                 // little shake when the stamp lands
+  hitTimer=setTimeout(()=>{
     tmSheet.classList.remove('rg-hit');void tmSheet.offsetWidth;tmSheet.classList.add('rg-hit');
     setTimeout(()=>tmSheet.classList.remove('rg-hit'),400);
   },420);
@@ -297,15 +246,9 @@ function paintRug(p){
   const mint=p&&p.baseToken&&p.baseToken.address;
   const rug=Boolean(mint&&mint===curMint&&isRugged(p));
   $('tmRug').style.display=rug?'flex':'none';
-  if(rug&&stampedFor!==mint){stampedFor=mint;showStamp()}
+  if(rug&&stampedFor!==mint&&isOpen()){stampedFor=mint;showStamp()}
 }
 
-/* ---------------- fresh single-coin wallets (uses the site RPC) ----------------
-   Sample = top 15 non-pool holders from RugCheck. A wallet is "fresh" when its
-   whole history is visible (under FRESH_SIGS transactions) and the first one is
-   under FRESH_DAYS old. "1 coin" = a fresh wallet that holds no other token
-   (wrapped SOL ignored). This is a heuristic on the biggest holders, not on
-   every buyer, and a clean result does not make a token safe. */
 const FRESH_DAYS=7,FRESH_SIGS=30,FRESH_SAMPLE=15;
 const freshCache=new Map();
 
@@ -364,7 +307,6 @@ function loadFresh(mint,rc){
   }).catch(()=>{if(freshBusy===mint)freshBusy='';if(mint===curMint)freshData={na:true}});
 }
 
-/* ---------------- live market data ---------------- */
 function mergeLive(sel,b){
   ['priceUsd','marketCap','fdv','liquidity','volume','priceChange','txns'].forEach(k=>{if(b[k]!=null)sel[k]=b[k]});
   if(!sel.pairAddress&&b.pairAddress)sel.pairAddress=b.pairAddress;
@@ -393,7 +335,6 @@ async function refreshSol(){
   }catch(e){}
 }
 
-/* Pump bonding-curve tokens: reuse tradepad.js's live socket (one connection only). */
 function isCurve(p){
   const base=Boolean(p&&((p.bonding&&!p.migrated)||p.dexId==='pumpfun'));
   return base&&!(live&&live.dexId&&live.dexId!=='pumpfun');
@@ -434,12 +375,11 @@ function syncStream(p){
   }catch(e){hooked=null;subMint=''}
 }
 
-/* ---------------- painting ---------------- */
 function metrics(p){
   let price=num(p.priceUsd),mc=num(p.marketCap)||num(p.fdv);
   if(stream&&solUsd&&isCurve(p)){
     const m=stream.mcSol*solUsd;
-    if(m>0){mc=m;price=m/1e9}   // Pump tokens have 1B supply
+    if(m>0){mc=m;price=m/1e9}
   }
   return {price,mc};
 }
@@ -456,6 +396,7 @@ function setLv(id,html,val){
   lastVal[id]=val;
 }
 function paintLive(){
+  if(!isOpen())return;
   const p=T.getState().selected;if(!p)return;
   const m=metrics(p);
   setLv('tmMc',fmUsd(m.mc),m.mc);
@@ -470,6 +411,7 @@ function paintLive(){
 }
 
 function paintStats(p){
+  if(!isOpen())return;
   const loading=!secData,rc=secData&&secData.rc;
   const pick=f=>loading?['…','']:rc?f(rc):['—','na','Security data unavailable right now'];
   const known=rc?.knownAccounts||{};
@@ -543,6 +485,7 @@ function paintStats(p){
 }
 
 function paintChart(p){
+  if(!isOpen())return;
   const pa=p.pairAddress||'',box=$('tmChart');
   if(pa===curPair&&box.firstChild)return;
   curPair=pa;
@@ -558,9 +501,6 @@ function paintStar(p){
   const b=$('tmStar');b.classList.toggle('on',on);b.textContent=on?'★':'☆';
 }
 
-/* Sell side: stop people from "selling" a token they don't hold,
-   and show the real token balance under the presets.
-   Buy side: block buying a token RugCheck marks as rugged. */
 let btnBlocked=false;
 function paintSell(){
   const st=T.getState(),p=st.selected,hint=$('tmSellHint'),btn=$('tradeExecuteButton');
@@ -599,6 +539,7 @@ function paintSell(){
 }
 
 function paint(){
+  if(!isOpen())return;
   const p=T.getState().selected;
   if(!p)return;
   const mint=p.baseToken?.address||'';
@@ -617,7 +558,6 @@ function paint(){
   paintStats(p);paintLive();paintChart(p);paintStar(p);paintSell();
 }
 
-/* ---------------- open / close ---------------- */
 function openModal(){
   curMint='';freshData=null;live=null;liveAt=0;lastVal={};
   stampedFor='';hideStamp();$('tmRug').style.display='none';
@@ -631,9 +571,9 @@ function openModal(){
   timer=setInterval(()=>{
     tick++;
     const p=T.getState().selected;if(!p)return;
-    if(tick%2===0)refreshLive();                              // market cap + price every ~2s
-    if(tick%10===0&&curMint)loadSec(curMint,true);            // status every ~10s
-    if(tick%10===1||(!solUsd&&tick%5===0))refreshSol();       // SOL price for curve market cap (~10s)
+    if(tick%2===0)refreshLive();
+    if(tick%10===0&&curMint)loadSec(curMint,true);
+    if(tick%10===1||(!solUsd&&tick%5===0))refreshSol();
     syncStream(p);
     paintStats(p);paintLive();paintChart(p);paintStar(p);paintSell();
   },1000);
@@ -644,9 +584,11 @@ function closeModal(){
   clearInterval(timer);timer=null;
   unhook();live=null;
   hideStamp();
+
+  curMint='';secData=null;freshData=null;freshBusy='';stampedFor='';
   $('tmChart').innerHTML='';curPair='';
 }
-$('tmX').onclick=closeModal;
+$('tmX').addEventListener('click',e=>{e.preventDefault();e.stopPropagation();closeModal()});
 modal.addEventListener('click',e=>{if(e.target===modal)closeModal()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal.classList.contains('on')&&!$$tx.classList.contains('on'))closeModal()});
 $('tmStar').onclick=()=>{Promise.resolve(window.tradeToggleWatch()).then(()=>paintStar(T.getState().selected))};
@@ -661,12 +603,11 @@ $('tmCopy').onclick=async()=>{
 };
 $('tmCA').onclick=()=>$('tmCopy').click();
 
-/* ---------------- hooks into tradepad.js ---------------- */
 const origSelect=window.tradeSelectByKey;
 window.tradeSelectByKey=async function(key){
   openModal();
   try{await origSelect(key)}catch(e){console.warn('Token select failed',e)}
-  paint();
+  if(isOpen())paint();   // skipped when the user already closed the popup
 };
 
 const origPreset=window.tradeSetPreset;
@@ -700,8 +641,6 @@ window.tradeExecute=function(){
   return origExec.apply(this,arguments);
 };
 
-/* Quick-buy buttons on the feed cards skip the popup, so check RugCheck first
-   (cached for 60s, so repeat taps are instant). */
 const origQuick=window.tradeQuickBuy;
 if(typeof origQuick==='function'){
   window.tradeQuickBuy=async function(key){
@@ -720,15 +659,11 @@ if(typeof origQuick==='function'){
 const amtBox=$('tradeAmount');
 if(amtBox)amtBox.addEventListener('input',paintSell);
 
-/* ============================================================
-   TRADE WINDOWS: confirm, progress, success, error
-   Used by executeTrade() in tradepad.js (see the patch notes).
-============================================================ */
 const tx=document.createElement('div');
 tx.className='tx-modal';
 tx.innerHTML='<div class="sticker tx-sheet" role="dialog" aria-modal="true"></div>';
 document.body.appendChild(tx);
-const $$tx=tx;                       // used by the Escape handler above
+const $$tx=tx;
 const sheet=tx.firstChild;
 let txResolve=null,txCanClose=false;
 
