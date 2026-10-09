@@ -256,11 +256,15 @@ setInterval(()=>{
  if(p)paintExtras(p);
 },1000);
 
+let wasOn=false;
 new MutationObserver(()=>{
  const on=modal.classList.contains('on');
+ if(on===wasOn)return;
+ wasOn=on;
  if(!on){
   clearInterval(vTimer);vTimer=null;view=null;viewRisk=null;viewChart='';
-  modal.classList.remove('tm-view');$('tmStar').style.display='';
+  if(modal.classList.contains('tm-view'))modal.classList.remove('tm-view');
+  $('tmStar').style.display='';
  }else if(!view){   // a Solana popup just opened: drop leftovers from the previous coin
   ageEl.textContent='';$('tmV1').textContent='…';soc.innerHTML='';soc.__h=null;$('tmSecB').textContent='';
  }
