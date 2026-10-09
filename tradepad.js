@@ -1,71 +1,15 @@
-/* ============================================================
-   FIJI TRADE PAD v5.2
-   Solana-only discovery + watchlist + trade router client.
-
-   Load AFTER the core script in index.html:
-     <script src="tradepad.js"></script>
-
-   Needs from index.html (window.FIJI_CORE):
-     CFG, $, toast, loadAssets,
-     getWallet, getProvider, getConnection, getSupabase
-
-   Talks to the Supabase Edge Function:
-     POST {TRADE_ROUTER_URL}/quote   (Jupiter routes only)
-     POST {TRADE_ROUTER_URL}/build   (Jupiter and Pump routes)
-     POST {TRADE_ROUTER_URL}/claim   (trade points)
-
-   v5.2 change (Mayhem Mode filter):
-     - Pump.fun "Mayhem Mode" tokens (AI agent trades the token) are
-       hidden from every feed: New, Trending, Bonding, Migrated,
-       Watchlist and search results.
-     - Detected two ways: the flag on the live PumpPortal create event,
-       and the flag stored in the token's on-chain bonding curve account.
-     - Once a mint is flagged it stays hidden, even after it migrates.
-     - Turn it off any time with HIDE_MAYHEM:false in TPCFG below.
-     - Nothing else in this file was changed.
-
-   v5.1 change (sell box works like Jupiter):
-     - In SELL mode the amount box is a real TOKEN amount, not a
-       percent. 10% / 25% / 50% / MAX fill in the actual number of
-       tokens you hold. You can also type your own amount.
-     - Balance label shows the token symbol next to your balance.
-     - Jupiter-route sells send the exact raw amount you entered.
-     - Pump bonding-curve sells go out in whole-percent steps (the
-       trade router only accepts percentages for Pump sells), and
-       the note under the box shows exactly what will be sold.
-
-   v5 changes (buy/sell reliability):
-     - Pump vs Jupiter route is decided from the on-chain bonding
-       curve account, so graduated tokens no longer go down the
-       Pump route and fail.
-     - Auto slippage is wider (Pump 20%, DEX 5%). 1% reverts on memes.
-     - Holdings are re-read from chain before every sell, so a token
-       that has not shown up in the portfolio yet can still be sold.
-     - SOL-for-fees check before selling (low SOL was a silent failure).
-     - Confirmation uses getSignatureStatuses polling, then portfolio
-       is refreshed with retries so balances reflect the trade.
-     - Portfolio auto-refreshes while the Trade tab is open.
-     - Pump sell estimate, live curve reserves and bonding progress.
-     - "Sell" quick button no longer fires a BUY.
-     - Friendly messages for slippage / graduated / low-SOL errors.
-
-   Never put private keys or seed phrases in this file.
-   ============================================================ */
 (function(){
 'use strict';
 
-/* ============================================================
-   1. CONFIG
-============================================================ */
 const TPCFG={
   TRADE_ROUTER_URL:'https://tmceqqciccnnlxjiobgc.supabase.co/functions/v1/trade-router',
-  PUMPPORTAL_KEY:'',          // optional; live feeds work without it
-  FEE_BPS:25,                 // display only. The router enforces the real fee.
-  SOL_RESERVE:0.005,          // SOL kept back for network fees when buying with MAX
-  SOL_MIN_SELL:0.0005,         // Jupiter sells can need ~0.0005 SOL temporary rent
-  SOL_MIN_PUMP_SELL:0.0003,    // Pump sells need fees + possible account rent
-  AUTO_SLIPPAGE_PUMP_BPS:2000,// 20% (router caps Pump slippage at 30%)
-  AUTO_SLIPPAGE_DEX_BPS:500,  // 5%
+  PUMPPORTAL_KEY:'',
+  FEE_BPS:25,
+  SOL_RESERVE:0.005,
+  SOL_MIN_SELL:0.0005,
+  SOL_MIN_PUMP_SELL:0.0003,
+  AUTO_SLIPPAGE_PUMP_BPS:2000,
+  AUTO_SLIPPAGE_DEX_BPS:500,
   QUICK_BUY_SOL:0.10,
   REFRESH_MS:8000,
   PORTFOLIO_MS:15000,
@@ -74,7 +18,7 @@ const TPCFG={
   DS_BATCH:30,
   TIMEOUT_MS:10000,
   ENRICH_EVERY_MS:2000,
-  HIDE_MAYHEM:true            // true = hide Pump.fun Mayhem Mode tokens everywhere
+  HIDE_MAYHEM:true
 };
 
 const CORE=window.FIJI_CORE||{};
@@ -86,19 +30,16 @@ const DS='https://api.dexscreener.com';
 const PUMP_WS='wss://pumpportal.fun/api/data';
 const SOL_MINT='So11111111111111111111111111111111111111112';
 const PUMP_PROGRAM='6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P';
-const PUMP_START_TOKENS=1073000000;  // virtual token reserve at launch
-const PUMP_GRAD_TOKENS=793100000;    // virtual token reserve at graduation
+const PUMP_START_TOKENS=1073000000;
+const PUMP_GRAD_TOKENS=793100000;
 
-/* ============================================================
-   2. STATE
-============================================================ */
 const TP={
   started:false,
   mode:'new',
   action:'buy',
   selected:null,
-  feed:[],          // what is on screen
-  base:[],          // last unfiltered feed (search filters this)
+  feed:[],
+  base:[],
   liveNew:[],
   liveMigrated:[],
   cache:new Map(),
@@ -119,9 +60,6 @@ const TP={
   error:''
 };
 
-/* ============================================================
-   3. SMALL HELPERS
-============================================================ */
 const num=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -164,9 +102,6 @@ const tokenKey=p=>(!p?.chainId||!p?.baseToken?.address)?'':p.chainId+':'+p.baseT
 function tokenKeyParts(key){const s=String(key||''),i=s.indexOf(':');return i<0?null:{chain:s.slice(0,i),mint:s.slice(i+1)}}
 const walletAddress=()=>CORE.getWallet?CORE.getWallet():(window.wallet||null);
 
-/* ---- Mayhem Mode filter ----
-   MAYHEM remembers every mint found to be a Mayhem Mode token, so it stays
-   hidden in every tab (and after it migrates off the bonding curve). */
 const MAYHEM=new Set();
 const mayhemFlag=e=>Boolean(e)&&[e.is_mayhem_mode,e.isMayhemMode,e.mayhem_mode,e.mayhemMode,e.mayhem]
   .some(v=>v===true||v===1||v==='true');
@@ -183,9 +118,6 @@ const isBlocked=p=>{
 };
 const hideBlocked=rows=>TPCFG.HIDE_MAYHEM?(rows||[]).filter(p=>!isBlocked(p)):rows;
 
-/* Exact token-amount math. Token balances are integers on chain ("raw"),
-   so the sell box converts between what you type and the raw amount
-   without floating point rounding. */
 function uiToRaw(str,dec){
   const s=String(str==null?'':str).trim();
   if(!/^\d*\.?\d*$/.test(s)||s===''||s==='.')return 0n;
@@ -200,12 +132,8 @@ function rawToUi(raw,dec){
   return frac?whole+'.'+frac:whole;
 }
 
-/* Could this token still be on the Pump bonding curve? (cheap, no network) */
 const maybePump=p=>Boolean(p&&(p.bonding||p.curveChecked||!p.dexId||['pumpfun','pump','launch'].includes(p.dexId)));
 
-/* Is the token trading on the Pump bonding curve RIGHT NOW?
-   The on-chain curve check (curveChecked) wins over everything else.
-   After graduation the token trades on a DEX and must go through Jupiter. */
 function isPumpCurve(p){
   if(!p)return false;
   if(p.curveChecked)return !p.curveComplete;
@@ -213,9 +141,6 @@ function isPumpCurve(p){
   return Boolean(p.bonding&&!p.migrated&&(!p.dexId||p.dexId==='pump'||p.dexId==='launch'));
 }
 
-/* ============================================================
-   4. NETWORK
-============================================================ */
 async function fetchJson(url,opt={}){
   const {timeout,...init}=opt;
   const ac=new AbortController();
@@ -247,8 +172,6 @@ function routerUrl(path){
   return TPCFG.TRADE_ROUTER_URL?TPCFG.TRADE_ROUTER_URL.replace(/\/$/,'')+path:'';
 }
 
-/* Sends the Supabase anon key so the function accepts the request
-   even when "Verify JWT" is turned on. */
 function routerPost(path,body){
   const url=routerUrl(path);
   if(!url)return Promise.reject(new Error('Trade router is not configured'));
@@ -260,9 +183,6 @@ function routerPost(path,body){
   return fetchJson(url,{method:'POST',headers,body:JSON.stringify(body),timeout:20000});
 }
 
-/* ============================================================
-   5. DEXSCREENER DATA
-============================================================ */
 async function fetchTokenPairs(mints){
   const unique=[...new Set((mints||[]).filter(Boolean))];
   if(!unique.length)return [];
@@ -313,10 +233,10 @@ async function fetchTrending(){
   return pairs
   .map(p=>({...p,discoveryType:'trending',boost:boostMap.get(p.baseToken.address)||null}))
   .filter(p=>
-    liquidity(p)>=10000 &&                    // rugs usually have liquidity pulled to ~0
-    volume24(p)>=5000 &&                      // needs real trading
-    tx24(p)>=50 &&                            // needs real activity
-    (num(p.priceChange?.h24)??0)>-70          // hides coins that already crashed
+    liquidity(p)>=10000 && 
+    volume24(p)>=5000 &&  
+    tx24(p)>=50 && 
+    (num(p.priceChange?.h24)??0)>-70
   )
   .sort((a,b)=>score(b)-score(a))
   .slice(0,TPCFG.MAX_FEED);
@@ -326,21 +246,13 @@ function mergeByMint(rows){
   const map=new Map();
   rows.forEach(p=>{
     const k=p?.baseToken?.address;
-    if(!k||isBlocked(p))return;               // Mayhem Mode tokens never enter a feed
+    if(!k||isBlocked(p))return;
     const cur=map.get(k);
     if(!cur||liquidity(p)>liquidity(cur))map.set(k,p);
   });
   return [...map.values()];
 }
 
-/* ============================================================
-   5b. PUMP BONDING CURVE (read straight from chain)
-   Account layout (after 8-byte discriminator):
-     u64 virtualTokenReserves, u64 virtualSolReserves,
-     u64 realTokenReserves, u64 realSolReserves,
-     u64 tokenTotalSupply, bool complete,
-     pubkey creator, bool isMayhemMode (byte 81)
-============================================================ */
 const curvePdaCache=new Map();
 
 function curvePda(mint){
@@ -357,10 +269,10 @@ function parseCurve(acc){
   if(!acc||!acc.data||acc.data.length<49)return null;
   const d=acc.data,dv=new DataView(d.buffer,d.byteOffset,d.byteLength);
   return {
-    vTokens:Number(dv.getBigUint64(8,true))/1e6,   // Pump tokens have 6 decimals
+    vTokens:Number(dv.getBigUint64(8,true))/1e6,
     vSol:Number(dv.getBigUint64(16,true))/1e9,
     complete:d[48]===1,
-    mayhem:d.length>=82&&d[81]===1                 // Mayhem Mode flag stored on the curve
+    mayhem:d.length>=82&&d[81]===1
   };
 }
 
@@ -387,7 +299,7 @@ function applyCurve(item,c){
   if(!item||!c)return;
   item.vTokensInBondingCurve=c.vTokens;
   item.vSolInBondingCurve=c.vSol;
-  if(c.vTokens>0)item.marketCapSol=c.vSol/c.vTokens*1e9; // 1B supply
+  if(c.vTokens>0)item.marketCapSol=c.vSol/c.vTokens*1e9;
   item.curveComplete=c.complete;
   item.curveChecked=true;
   if(c.complete)item.bonding=false;
@@ -414,9 +326,6 @@ async function ensureCurve(p,force){
   if(c)applyCurve(p,c);
 }
 
-/* ============================================================
-   6. LIVE PUMPPORTAL DATA
-============================================================ */
 function normalizeNewEvent(e){
   if(!e||!e.mint)return null;
   return {
@@ -452,7 +361,6 @@ function normalizeMigration(e){
   };
 }
 
-/* Merge fresh DexScreener market data into a live item, keeping live fields. */
 function applyPair(item,pair){
   if(!pair)return;
   const keep={
@@ -467,8 +375,7 @@ function applyPair(item,pair){
   const oldImage=item.info?.imageUrl||'';
   Object.assign(item,pair,keep);
   if(!item.info?.imageUrl&&oldImage)item.info={...(item.info||{}),imageUrl:oldImage};
-  /* The on-chain curve is the source of truth. Without it, a pair listed on a
-     real DEX (anything but "pumpfun") means the token has graduated. */
+
   if(item.curveChecked)item.bonding=!item.curveComplete;
   else if(pair.dexId&&pair.dexId!=='pumpfun')item.bonding=false;
 }
@@ -482,7 +389,6 @@ async function enrichLiveEvents(events){
   return events;
 }
 
-/* Token metadata links point to JSON, not an image. Read the real image from it. */
 async function loadPumpImage(item){
   if(item.info?.imageUrl||!item.metadataUri)return;
   try{
@@ -492,7 +398,6 @@ async function loadPumpImage(item){
   }catch(e){}
 }
 
-/* New tokens arrive fast. Enrich them in batches to stay under API limits. */
 function queueEnrich(item){
   TP.enrichQ.push(item);
   if(TP.enrichTimer)return;
@@ -514,7 +419,6 @@ function scheduleRender(){
   requestAnimationFrame(()=>{renderQueued=false;renderFeed()});
 }
 
-/* Add a live token to the on-screen feed right away. */
 function pushLive(item){
   if(TP.search)return;
   if(TP.mode==='new'||(TP.mode==='bonding'&&item.bonding)){
@@ -568,8 +472,8 @@ function openPumpSocket(){
     if(type==='create'){
       const item=normalizeNewEvent(d);
       if(!item)return;
-      if(item.mayhem)markMayhem(item);            // remember it so it stays hidden everywhere
-      if(isBlocked(item))return;                  // Mayhem Mode launch: drop it before it reaches any feed
+      if(item.mayhem)markMayhem(item);
+      if(isBlocked(item))return;
       TP.liveNew.unshift(item);
       TP.liveNew=TP.liveNew.slice(0,TPCFG.MAX_LIVE);
       pushLive(item);
@@ -577,7 +481,7 @@ function openPumpSocket(){
     }else if(type.includes('migrat')){
       const item=normalizeMigration(d);
       if(!item)return;
-      if(isBlocked(item))return;                  // already known as Mayhem Mode
+      if(isBlocked(item))return;
       TP.liveMigrated.unshift(item);
       TP.liveMigrated=TP.liveMigrated.slice(0,TPCFG.MAX_LIVE);
       pushLive(item);
@@ -592,9 +496,6 @@ function openPumpSocket(){
   };
 }
 
-/* ============================================================
-   7. WATCHLIST (Supabase)
-============================================================ */
 async function loadWatchlist(){
   const wallet=walletAddress();
   const db=CORE.getSupabase?CORE.getSupabase():null;
@@ -630,9 +531,6 @@ async function toggleWatch(p){
   }catch(e){console.error('Watchlist toggle error',e);toast('Watchlist error: '+(e.message||e))}
 }
 
-/* ============================================================
-   8. PORTFOLIO + DECIMALS
-============================================================ */
 const decCache=new Map([[SOL_MINT,9]]);
 
 function portfolioToken(mint){return (TP.portfolio.tokens||[]).find(t=>t?.mint===mint)}
@@ -641,12 +539,11 @@ function portfolioTokenAmount(mint){
   return num(t?.tokenAmount?.uiAmount||0)||0;
 }
 
-/* Exact raw balance (BigInt) of a token in the portfolio. */
 function heldRaw(mint){
   const t=portfolioToken(mint);
   try{return BigInt(t?.tokenAmount?.amount||'0')}catch(e){return 0n}
 }
-/* Decimals of a token: from the portfolio first, then the cache, else 6. */
+
 function tokenDecimals(mint){
   const t=portfolioToken(mint);
   const d=num(t?.tokenAmount?.decimals);
@@ -667,9 +564,6 @@ function updatePortfolioFromCore(payload){
   updateTradeBalances();
 }
 
-/* Read ONE token's balance straight from chain and merge it into the portfolio.
-   This is what makes a freshly bought token sellable before the full portfolio
-   scan catches up. Returns the raw amount (BigInt) or null if the lookup failed. */
 async function refreshHolding(mint){
   const conn=CORE.getConnection?CORE.getConnection():null;
   const owner=walletAddress();
@@ -715,7 +609,7 @@ async function getDecimals(mint){
       if(Number.isInteger(d)){decCache.set(mint,d);return d}
     }
   }catch(e){}
-  return 6; // common default for Solana meme tokens; not cached
+  return 6;
 }
 
 function updateTradeBalances(){
@@ -732,7 +626,6 @@ function updateTradeBalances(){
   }
 }
 
-/* SOL needed on top of the sold tokens: fees, plus temporary account rent. */
 function solNeededToSell(){
   return isPumpCurve(TP.selected)?TPCFG.SOL_MIN_PUMP_SELL:TPCFG.SOL_MIN_SELL;
 }
@@ -744,9 +637,6 @@ function solWarn(){
     :'';
 }
 
-/* ============================================================
-   9. FEEDS
-============================================================ */
 async function getFeed(){
   if(TP.mode==='new'){
     let fallback=[];
@@ -763,7 +653,7 @@ async function getFeed(){
       .filter(i=>!i.curveComplete&&!isBlocked(i))
       .sort((a,b)=>{
         const am=num(a.marketCapSol),bm=num(b.marketCapSol);
-        if(am!==null&&bm!==null)return bm-am; // closest to graduating first
+        if(am!==null&&bm!==null)return bm-am;
         return Number(b.pairCreatedAt||0)-Number(a.pairCreatedAt||0);
       })
       .slice(0,TPCFG.MAX_FEED);
@@ -787,9 +677,6 @@ async function getFeed(){
   return withCurves(await fetchTrending());
 }
 
-/* ============================================================
-   10. FEED RENDERING
-============================================================ */
 function bondingProgress(p){
   const v=num(p?.vTokensInBondingCurve);
   if(v===null||v<=0)return null;
@@ -879,9 +766,6 @@ function updateLiveStatus(){
   if(TP.updatedAt)setText('tradeUpdated','Updated '+formatAge(TP.updatedAt)+' ago');
 }
 
-/* ============================================================
-   11. SELECTED TOKEN
-============================================================ */
 function findByKey(key){
   return TP.feed.find(p=>tokenKey(p)===key)||TP.base.find(p=>tokenKey(p)===key)||
     TP.liveNew.find(p=>tokenKey(p)===key)||TP.liveMigrated.find(p=>tokenKey(p)===key)||null;
@@ -959,7 +843,7 @@ async function selectByKey(key){
   const p=findByKey(key);
   if(!p)return;
   TP.selected=p;
-  updateSelectedUI(); // instant feedback; details fill in below
+  updateSelectedUI();
   const mint=p.baseToken?.address;
   const jobs=[refreshSelectedToken(),ensureCurve(p,true)];
   if(walletAddress()&&mint)jobs.push(refreshHolding(mint));
@@ -980,17 +864,13 @@ async function refreshSelectedToken(){
   }catch(e){console.debug('Selected token refresh unavailable',e)}
 }
 
-/* ============================================================
-   12. BUY / SELL CONTROLS
-============================================================ */
 function updateTradeActionUI(){
   const buy=$('buyTab'),sell=$('sellTab');
   if(buy){buy.classList.toggle('on',TP.action==='buy');buy.classList.toggle('buy',TP.action==='buy')}
   if(sell){sell.classList.toggle('on',TP.action==='sell');sell.classList.toggle('sell',TP.action==='sell')}
   const symbol=TP.selected?.baseToken?.symbol||'TOKEN';
   setText('tradePayAsset',TP.action==='buy'?'SOL':symbol);
-  /* Sell mode: the box is a token amount and the token name is already shown
-     on the left, so no extra unit label is needed. */
+
   setText('tradeAmountUnit',TP.action==='buy'?'SOL':'');
   setText('tradeReceiveAsset',TP.action==='buy'?symbol:'SOL');
   setText('tradeExecuteButton',TP.selected?(TP.action==='buy'?'BUY NOW':'SELL NOW'):'Select a token');
@@ -1010,10 +890,6 @@ function setAction(action){
 
 function getAvailableSol(){return Math.max(0,(TP.portfolio.sol||0)-TPCFG.SOL_RESERVE)}
 
-/* Preset buttons.
-   BUY : fills in that share of your available SOL.
-   SELL: fills in that share of your token balance as an actual token
-         amount (MAX = your whole balance, exact). */
 function setPreset(percent){
   if(!TP.selected)return toast('Select a token first');
   const pct=clamp(Number(percent)||0,0,100),amt=$('tradeAmount');
@@ -1035,7 +911,6 @@ function setPreset(percent){
   schedulePreview();
 }
 
-/* Auto slippage: Pump curve tokens move fast, 1% reverts almost every time. */
 function getSlippageBps(){
   const v=$('tradeSlippage')?.value||'auto';
   if(v==='auto')return isPumpCurve(TP.selected)?TPCFG.AUTO_SLIPPAGE_PUMP_BPS:TPCFG.AUTO_SLIPPAGE_DEX_BPS;
@@ -1044,10 +919,6 @@ function getSlippageBps(){
 
 function currentAmount(){return num($('tradeAmount')?.value)}
 
-/* SELL plan: what will actually be sold, worked out in exact raw units.
-   - Jupiter routes sell exactly the amount typed (never more than held).
-   - Pump curve sells can only be sent as a whole percent of your holding,
-     so the amount is rounded to the nearest whole percent. */
 function sellPlan(){
   const p=TP.selected,mint=p?.baseToken?.address;
   if(!mint)return null;
@@ -1073,9 +944,6 @@ function amountValid(){
   return typed>0n&&typed<=heldRaw(mint);
 }
 
-/* ============================================================
-   13. REQUEST BUILDER (matches the trade-router function)
-============================================================ */
 function buildTradeBody(){
   const p=TP.selected;
   if(!p?.baseToken?.address)throw new Error('Select a token first');
@@ -1091,7 +959,6 @@ function buildTradeBody(){
       :{...base,inputMint:SOL_MINT,outputMint:mint,amount:String(Math.round(v*1e9))};
   }
 
-  /* SELL */
   const plan=sellPlan();
   if(!plan||plan.held<=0n)throw new Error('You do not hold this token');
   if(plan.raw<=0n)throw new Error('Amount is too small');
@@ -1102,9 +969,6 @@ function buildTradeBody(){
   return {...base,inputMint:mint,outputMint:SOL_MINT,amount:plan.raw.toString()};
 }
 
-/* ============================================================
-   14. QUOTE PREVIEW
-============================================================ */
 let previewSeq=0,previewTimer=null;
 
 function schedulePreview(){
@@ -1119,12 +983,11 @@ function clearPreview(route){
   setText('summaryRoute',route||'—');
 }
 
-/* Constant-product estimate from the live on-chain curve reserves. */
 function pumpEstimate(p,amount,buy){
   const vs=num(p.vSolInBondingCurve),vt=num(p.vTokensInBondingCurve);
   if(!vs||!vt||!(amount>0))return null;
   if(buy){
-    const dx=amount*0.99; // approx. 1% curve fee
+    const dx=amount*0.99;
     return vt-(vs*vt)/(vs+dx);
   }
   return (vs-(vs*vt)/(vt+amount))*0.99;
@@ -1133,7 +996,7 @@ function pumpEstimate(p,amount,buy){
 async function updateTradePreview(){
   const seq=++previewSeq,p=TP.selected;
   if(!p)return;
-  await ensureCurve(p);            // keeps route + reserves honest
+  await ensureCurve(p);
   if(seq!==previewSeq)return;
   const pump=isPumpCurve(p);
   const mint=p.baseToken?.address;
@@ -1144,7 +1007,6 @@ async function updateTradePreview(){
     return;
   }
 
-  /* Pump curve: the router builds the exact transaction at signing time. */
   if(pump){
     clearPreview('Pump bonding curve');
     const recv=$('tradeReceiveAmount');
@@ -1194,9 +1056,6 @@ async function updateTradePreview(){
   }
 }
 
-/* ============================================================
-   15. SIGNING + EXECUTION
-============================================================ */
 function decodeBase64(value){
   const bin=atob(value),bytes=new Uint8Array(bin.length);
   for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
@@ -1238,7 +1097,6 @@ async function signAndSend(encoded){
   try{tx=solanaWeb3.VersionedTransaction.deserialize(bytes)}catch(e){tx=null}
   const opts={maxRetries:3,skipPreflight:false};
 
-  /* Injected wallets (Phantom, Solflare, Backpack) */
   if(typeof provider.signTransaction==='function'){
     const toSign=tx||solanaWeb3.Transaction.from(bytes);
     const signed=await provider.signTransaction(toSign);
@@ -1258,8 +1116,6 @@ async function signAndSend(encoded){
   throw new Error('This wallet cannot sign transactions through FIJI yet');
 }
 
-/* Poll for the result instead of connection.confirmTransaction(sig),
-   which is deprecated and can hang on some RPC websockets. */
 async function waitForConfirmation(sig,ms=60000){
   const conn=CORE.getConnection?CORE.getConnection():null;
   if(!conn)return {status:'unknown'};
@@ -1278,7 +1134,6 @@ async function waitForConfirmation(sig,ms=60000){
   return {status:'unknown'};
 }
 
-/* After a trade the RPC can lag behind. Refresh balances a few times. */
 async function refreshPortfolioSoon(mint){
   for(const wait of [800,2500,5000]){
     await sleep(wait);
@@ -1311,7 +1166,7 @@ async function claimTradePoints(sig,mint){
 }
 
 async function executeTrade(){
-  const UI=window.FIJI_TRADE_UI;   // styled windows from tradepad-popup.js (v2)
+  const UI=window.FIJI_TRADE_UI; 
   if(!walletAddress())return toast('Connect your wallet first');
   if(!TP.selected)return toast('Select a token first');
 
@@ -1322,7 +1177,7 @@ async function executeTrade(){
     const p=TP.selected,mint=p.baseToken?.address,symbol=p.baseToken?.symbol||'TOKEN';
     const buy=TP.action==='buy';
 
-    /* Fresh data first: SOL balance, route (Pump vs Jupiter) and holdings. */
+
     try{if(CORE.loadAssets)await CORE.loadAssets()}catch(e){}
     await ensureCurve(p,true);
     let held=null;
@@ -1388,7 +1243,6 @@ async function executeTrade(){
       await claimTradePoints(sig,mint);
     }
 
-    /* Balances: refresh now, then retry in the background in case the RPC lags. */
     try{if(CORE.loadAssets)await CORE.loadAssets()}catch(e){}
     if(mint)await refreshHolding(mint);
     refreshPortfolioSoon(mint);
@@ -1408,7 +1262,6 @@ async function quickBuyByKey(key){
   const p=findByKey(key);
   if(!p)return toast('Token data is no longer available');
 
-  /* In SELL mode this button only selects the token. It never fires a buy. */
   if(TP.action==='sell'){
     await selectByKey(key);
     return toast('Choose an amount, then tap SELL NOW');
@@ -1417,16 +1270,13 @@ async function quickBuyByKey(key){
   TP.selected=p;
   TP.action='buy';
   updateSelectedUI();
-  await refreshHolding(p.baseToken?.address); // keeps portfolio in sync, harmless on buys
+  await refreshHolding(p.baseToken?.address);
   if(getAvailableSol()<TPCFG.QUICK_BUY_SOL)
     return toast('You need at least '+TPCFG.QUICK_BUY_SOL.toFixed(2)+' SOL available');
   const amt=$('tradeAmount');if(amt)amt.value=TPCFG.QUICK_BUY_SOL.toFixed(2);
   await executeTrade();
 }
 
-/* ============================================================
-   16. SEARCH
-============================================================ */
 let searchTimer=null;
 
 function matchesSearch(p,q){
@@ -1442,16 +1292,13 @@ async function applySearch(){
   if(loaded.length){TP.feed=loaded.slice(0,TPCFG.MAX_FEED);renderFeed();return}
   try{
     const data=await ds('/latest/dex/search?q='+encodeURIComponent(q),4000);
-    if(q!==TP.search)return; // a newer search started
+    if(q!==TP.search)return;
     const pairs=(data?.pairs||[]).filter(p=>p?.chainId==='solana');
     TP.feed=mergeByMint(pairs).slice(0,TPCFG.MAX_FEED);
   }catch(e){console.warn('Search failed',e);TP.feed=[]}
   renderFeed();
 }
 
-/* ============================================================
-   17. REFRESH + TIMERS
-============================================================ */
 async function refresh(forced=false){
   if(TP.loading&&!forced)return;
   const mode=TP.mode;
@@ -1459,7 +1306,7 @@ async function refresh(forced=false){
   if(!TP.feed.length)renderFeed();
   try{
     const rows=await getFeed();
-    if(mode!==TP.mode)return; // user switched tabs while this was loading
+    if(mode!==TP.mode)return;
     TP.base=mergeByMint(rows).slice(0,TPCFG.MAX_FEED);
     TP.feed=TP.search?TP.feed:TP.base.slice();
     TP.updatedAt=Date.now();
@@ -1496,9 +1343,6 @@ function stopTimers(){
   TP.refreshTimer=null;TP.ageTimer=null;TP.portfolioTimer=null;
 }
 
-/* ============================================================
-   18. PUBLIC METHODS
-============================================================ */
 function renderModeTabs(){
   document.querySelectorAll('.discovery-tab').forEach(b=>b.classList.toggle('on',b.dataset.mode===TP.mode));
 }
@@ -1506,7 +1350,7 @@ function renderModeTabs(){
 function start(){
   if(TP.started){
     updatePortfolioFromCore({sol:TP.portfolio.sol,tokens:TP.portfolio.tokens});
-    if(walletAddress()&&CORE.loadAssets)CORE.loadAssets(); // fresh balances every time the tab opens
+    if(walletAddress()&&CORE.loadAssets)CORE.loadAssets();
     return;
   }
   TP.started=true;TP.error='';
@@ -1557,9 +1401,6 @@ async function copyContract(){
 
 function flipSide(){setAction(TP.action==='buy'?'sell':'buy')}
 
-/* ============================================================
-   19. EXPOSE API + DOM HOOKS
-============================================================ */
 window.FIJI_TRADE={
   start,stop,setMode,
   refresh:f=>refresh(Boolean(f)),
@@ -1573,7 +1414,6 @@ window.FIJI_TRADE={
   getState:()=>TP
 };
 
-/* Names used by the onclick handlers in index.html */
 window.tradeSetMode=setMode;
 window.tradeRefresh=f=>refresh(Boolean(f));
 window.tradeToggleWatch=window.FIJI_TRADE.toggleWatch;
