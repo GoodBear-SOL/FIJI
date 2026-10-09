@@ -11,9 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
 
 <style>
-/* ===================================================================
-   1. BASE: variables, reset, typography, layout
-=================================================================== */
+
 :root{--bg:#FFF3C4;--ink:#12305C;--blue:#2E8BFF;--teal:#3FB6C9;--sun:#FFD21F;--card:#fff;--r:26px;
  --up:#2FCB7B;--upi:#0E8F52;--dn:#FF5C7A;--dni:#D6304F;--line:#CFD9EA;--soft:#F7FAFF;--sb:#EAF6FF}
 *{box-sizing:border-box;margin:0}
@@ -37,9 +35,6 @@ footer{text-align:center;padding:30px 20px 50px}
 sub{font-size:.62em;line-height:0}
 .ic{display:none}
 
-/* ===================================================================
-   2. COMPONENTS: nav, buttons, forms, pills, tables, toast
-=================================================================== */
 .nav{position:sticky;top:12px;z-index:10;margin:12px auto 0;max-width:1040px;padding:0 20px}
 .nav .sticker{display:flex;align-items:center;gap:6px;padding:8px 10px 8px 16px;border-radius:99px;flex-wrap:wrap}
 .logo{font-size:24px;font-weight:700;display:flex;align-items:center;gap:8px;margin-right:auto}
@@ -73,9 +68,6 @@ th{font-family:Fredoka}
 .soc a:hover{background:var(--sun)}
 .soc svg{width:17px;height:17px;fill:var(--ink)}
 
-/* ===================================================================
-   3. HOME + EARN
-=================================================================== */
 .hero{display:grid;grid-template-columns:1.1fr .9fr;gap:30px;align-items:center;padding:56px 0 30px}
 .eyebrow{display:inline-block;background:#fff;border:2.5px solid var(--ink);border-radius:99px;padding:3px 14px;font:600 15px Fredoka;transform:rotate(-2deg)}
 .hero h1{font-size:clamp(38px,6vw,68px);line-height:1.02;margin:16px 0;letter-spacing:-1px}
@@ -95,9 +87,6 @@ th{font-family:Fredoka}
 #pad.hurt{animation:ouch .35s;filter:sepia(1) saturate(6) hue-rotate(-30deg)}
 @keyframes ouch{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px) rotate(-8deg)}40%{transform:translateX(10px) rotate(8deg)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
 
-/* ===================================================================
-   4. MARKET TAB (DexScreener)
-=================================================================== */
 .mk-live{display:flex;align-items:center;gap:12px;margin:0 0 16px}
 .live{font:600 14px Fredoka;display:flex;align-items:center;gap:8px}
 .live i{width:11px;height:11px;border-radius:50%;background:var(--up);border:2px solid var(--ink);animation:pulse 1.6s infinite}
@@ -158,9 +147,6 @@ th{font-family:Fredoka}
 .mk-frame{width:100%;height:380px;border:3px solid var(--ink);border-radius:18px;margin:12px 0;background:#fff}
 .mk-acts{display:flex;gap:10px;flex-wrap:wrap}
 
-/* ===================================================================
-   5. TRADE TAB (works with tradepad.js)
-=================================================================== */
 .trade-head{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:14px}
 .trade-head h1{font-size:clamp(32px,6vw,52px);line-height:1;margin:4px 0 7px}
 .twallet{display:flex;align-items:center;gap:7px;background:#fff;border:3px solid var(--ink);border-radius:18px;padding:9px 12px;box-shadow:0 4px 0 var(--ink);white-space:nowrap}
@@ -257,9 +243,6 @@ th{font-family:Fredoka}
 .advanced-card summary::-webkit-details-marker{display:none}
 .advanced-content{padding:0 15px 14px}
 
-/* ===================================================================
-   6. MOBILE + REDUCED MOTION
-=================================================================== */
 @media(max-width:760px){
  body{font-size:16px;padding-bottom:calc(96px + env(safe-area-inset-bottom))}
  .wrap{padding:0 14px}
@@ -331,7 +314,6 @@ th{font-family:Fredoka}
  .disc{display:none}
  .live-strip{margin-bottom:8px}
 
- /* Smaller everything else */
  body{font-size:15px}
  h2{font-size:26px;margin:4px 0 10px}
  .tag{font-size:12px;margin-top:26px}
@@ -360,9 +342,6 @@ th{font-family:Fredoka}
 
 <body>
 
-<!-- ===================================================================
-     NAVIGATION (links are built by JS)
-=================================================================== -->
 <div class="nav"><div class="sticker">
  <div class="brand">
  <div class="logo"><img src="fiji.png" alt="">fiji</div>
@@ -379,9 +358,6 @@ th{font-family:Fredoka}
 
 <main class="wrap">
 
-<!-- ===================================================================
-     HOME
-=================================================================== -->
 <section class="pg on" id="home">
  <div class="hero">
   <div>
@@ -423,9 +399,6 @@ th{font-family:Fredoka}
  <div class="sticker quote"><p id="line"></p><button class="btn sm" onclick="say()">Say something else</button></div>
 </section>
 
-<!-- ===================================================================
-     BURROW (nav label "Burrow", page id "wallet")
-=================================================================== -->
 <section class="pg" id="wallet">
  <div class="tag">Fiji status</div>
  <h2>How is Fiji doing?</h2>
@@ -443,9 +416,6 @@ th{font-family:Fredoka}
  </div>
 </section>
 
-<!-- ===================================================================
-     EARN
-=================================================================== -->
 <section class="pg" id="earn">
  <div class="tag">Earn BUN</div>
  <h2>Play around, collect BUN🐰</h2>
@@ -458,9 +428,6 @@ th{font-family:Fredoka}
  </div>
 </section>
 
-<!-- ===================================================================
-     TRADE PAD (ids below are required by tradepad.js)
-=================================================================== -->
 <section class="pg" id="trade">
  <div class="trade-head">
   <div>
@@ -503,7 +470,6 @@ th{font-family:Fredoka}
   <span class="small" id="tradeUpdated"></span>
  </div>
 
- <!-- ALL COINS: every chain, view-only except Solana (driven by the market code below + trade-all.js) -->
  <div id="allCoins">
   <div class="mk-live small"><span class="live"><i></i><span id="acAgo">loading…</span></span><button class="btn sm alt" onclick="refreshMarket(true)">Refresh</button></div>
   <div class="mk-majors" id="mkMajors"></div>
@@ -515,7 +481,7 @@ th{font-family:Fredoka}
  </div>
 
  <div class="tlayout">
-  <!-- LEFT: discovery feed + selected token -->
+
   <div>
    <div id="tradeList" class="feed">
     <div class="empty-state"><div class="empty-icon">🌊</div><h3>Loading live Solana tokens</h3><p class="small">New discoveries will appear here.</p></div>
@@ -544,7 +510,7 @@ th{font-family:Fredoka}
    </div>
   </div>
 
-  <!-- RIGHT: swap + token check -->
+ 
   <aside>
    <div class="sticker swap-card">
     <div class="swap-head"><h3>Swap</h3><span class="balance-chip" id="swapWalletBalance">🟣—SOL</span></div>
@@ -616,9 +582,6 @@ th{font-family:Fredoka}
  </div>
 </section>
 
-<!-- ===================================================================
-     BOARD
-=================================================================== -->
 <section class="pg" id="board">
  <div class="tag">leaderboard</div>
  <h2>The FIJI Hall of Hops🐰</h2>
@@ -630,22 +593,16 @@ th{font-family:Fredoka}
 <footer class="small">Fiji is a community character for entertainment. Not financial advice. Crypto assets are risky. © 2026 Fiji_labs.</footer>
 <div id="toast"></div>
 
-<!-- ===================================================================
-     LIBRARIES
-=================================================================== -->
 <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<!-- ===================================================================
-     FIJI CORE (everything lives inside this one script tag)
-=================================================================== -->
 <script>
-/* ---------------- 1. CONFIG + STATE ---------------- */
+
 const CFG={
  SUPABASE_URL:'https://tmceqqciccnnlxjiobgc.supabase.co',
  SUPABASE_KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtY2VxcWNpY2Nubmx4amlvYmdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxMjQ0MDEsImV4cCI6MjA5OTcwMDQwMX0.D63RvW8nmKtqYDhS49d0zvahBmL7Lg8Pt96w19U90Bo',
  FIJI_MINT:'So11111111111111111111111111111111111111112',
- /* SECURITY: this key is public in page source. Restrict it to your domain in the Helius dashboard, then replace it. */
+
  RPC:'https://mainnet.helius-rpc.com/?api-key=07f67b95-071b-4f9b-b265-762840342209'
 };
 const $=i=>document.getElementById(i);
@@ -655,11 +612,9 @@ const conn=new solanaWeb3.Connection(CFG.RPC,'confirmed');
 const TOKEN='TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',TOKEN22='TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
 let wallet=null,provider=null,cur=null,taps=0;
 
-/* ---------------- 2. BRIDGE FOR tradepad.js ---------------- */
 window.FIJI_CORE={CFG,$,toast,go,loadAssets,setProfile,
  getWallet:()=>wallet,getProvider:()=>provider,getConnection:()=>conn,getSupabase:()=>db};
 
-/* ---------------- 3. NAVIGATION ---------------- */
 const pages=['home','wallet','earn','trade','board'];
 const ico={home:'🏠',wallet:'🐰',earn:'⭐',trade:'⚡',board:'🏆'};
 const label={home:'Home',wallet:'Burrow',earn:'Earn',trade:'Trade',board:'Board'};
@@ -676,7 +631,6 @@ function go(p){
  if(p=='trade')window.FIJI_TRADE?.start?.();else window.FIJI_TRADE?.stop?.();
 }
 
-/* ---------------- 4. SMALL HELPERS ---------------- */
 function toast(m){const t=$('toast');t.textContent=String(m||'');t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display='none',2600)}
 const short=a=>{const s=String(a||'');return s.length<=10?s:s.slice(0,4)+'…'+s.slice(-4)};
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -689,7 +643,6 @@ function copyReferral(){if(!$('ref').value)return toast('Connect your wallet fir
 const lines=["you opened the Trade Pad. nice choice.","new tokens move fast. keep your eyes open.","check the contract before you chase the splash.","find it. check it. then decide.","drink some water. then check the chart."];
 let li=0;function say(){$('line').textContent='“'+lines[li++%lines.length]+'”'}say();
 
-/* ---------------- 5. WALLET DETECTION ---------------- */
 const WS=[];
 (function(){
  const api={register:(...w)=>{w.forEach(x=>{if(x&&!WS.includes(x))WS.push(x)});return()=>{}}};
@@ -731,7 +684,6 @@ function waitForWallets(ms=3000){
  });
 }
 
-/* ---------------- 6. CONNECT / DISCONNECT ---------------- */
 function clearWallet(){
  wallet=null;provider=null;cur=null;
  $('cbtn').textContent='Connect wallet';
@@ -883,7 +835,6 @@ window.addEventListener('load',async()=>{
  try{await afterConnect(o,await connectWallet(o,{silent:true}))}catch(e){}
 });
 
-/* ---------------- 7. BALANCES ---------------- */
 async function loadAssets(){
  if(!wallet)return;
  let pk;try{pk=new solanaWeb3.PublicKey(wallet)}catch(e){return toast('Invalid wallet address')}
@@ -904,7 +855,6 @@ async function loadAssets(){
  }catch(e){console.error(e);toast('Could not load assets: '+(e.message||e))}
 }
 
-/* ---------------- 8. EARN + BOARD ---------------- */
 async function doEarn(t){
  if(!wallet)return toast('Connect your wallet first');
  if(!db)return toast('Supabase not set up yet');
@@ -927,7 +877,6 @@ async function loadBoard(){
   (data||[]).map((p,i)=>`<tr><td>${['🥇','🥈','🥉'][i]||i+1}</td><td>${short(p.wallet)}</td><td>${p.points}</td><td>🔥 ${p.streak}</td></tr>`).join('');
 }
 
-/* ---------------- 9. MARKET (DexScreener) ---------------- */
 const DS='https://api.dexscreener.com';
 const MK={all:false,chain:'solana',tf:'h24',sort:'chg',cache:{},last:{},pairs:{},list:[],maj:null,err:'',timer:null,tick:null,at:0,busy:false};
 const OOPS='Couldn’t reach DexScreener right now. Trying again in a moment🔌';
@@ -1088,7 +1037,7 @@ async function refreshList(loading){
 }
 async function refreshMarket(manual){
  if(MK.busy)return;MK.busy=true;if(manual)MK.cache={};
- const wantFiji=$('wallet').classList.contains('on'),wantAll=false;   // Burrow shows FIJI, Trade > All coins shows the grid
+ const wantFiji=$('wallet').classList.contains('on'),wantAll=false;
  const [f,m]=await Promise.allSettled([
   wantFiji?loadFiji():Promise.resolve(null),
   wantAll?Promise.all(MAJORS.map(x=>findPair(x.q,x.chain,x.match).catch(()=>null))):Promise.resolve(null),
@@ -1141,9 +1090,7 @@ function openPair(k){
  document.body.appendChild(d);
 }
 
-/* ---------------- 10. TRADE TAB FALLBACKS ----------------
-   tradepad.js replaces these with real handlers when it loads.
-   They only show a friendly message if the file is missing. */
+
 ['tradeSetMode','tradeRefresh','tradeSetAction','tradeSetPreset','tradeFlipSide','tradeToggleWatch','tradeExecute'].forEach(n=>{
  window[n]=function(){toast('Trade Pad is still loading. Check that tradepad.js is in the same folder.')};
 });
@@ -1152,7 +1099,7 @@ window.tradeCopyContract=function(){
  if(!v||v.startsWith('Contract'))return toast('Select a token first');
  safeCopy(v);toast('Contract copied 🗐');
 };
-/* ---------------- 10b. SEARCH BAR: Paste / Clear button ---------------- */
+
 (function(){
  const box=$('tradeSearch'),btn=$('tradeSearchBtn');
  if(!box||!btn)return;
@@ -1185,7 +1132,7 @@ function trRefresh(){
  if($('trade').classList.contains('ac-on'))refreshMarket(true);
  else tradeRefresh(true);
 }
-/* ---------------- 10c. MODE DROPDOWN (mobile) ---------------- */
+
 (function(){
  const dd=$('modeDd'),btn=$('modeDdBtn'),list=$('modeDdList'),label=$('modeDdLabel');
  if(!dd||!btn||!list)return;
@@ -1210,26 +1157,25 @@ function trRefresh(){
   if(!b)return;
   e.stopPropagation();
   close();
-  tradeSetMode(b.dataset.mode);   // calls the live handler at click time
+  tradeSetMode(b.dataset.mode);
  });
 
  document.addEventListener('click',e=>{if(!dd.contains(e.target))close()});
  document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
 
- /* Keep the dropdown label and highlight in sync when the mode changes
-    from anywhere (desktop tabs, All coins link in the Burrow, etc.) */
+
  const wrap=fn=>function(m){syncDropdown(m);return fn.apply(this,arguments)};
  window.addEventListener('load',()=>{
   if(typeof window.tradeSetMode==='function')window.tradeSetMode=wrap(window.tradeSetMode);
   syncDropdown(window.FIJI_TRADE?.getState?.().mode||'new');
  });
 })();
-/* ---------------- 11. START ----------- */
+
 $('mint').textContent='Not Yet Available';
 go('home');
 </script>
 
-<!-- Trade Pad engine: must load AFTER the core script above -->
+
 <script src="tradepad.js?v=2"></script>
 <script src="tradepad-popup.js?v=2"></script>
 <script src="popup-unify.js?v=2"></script>
