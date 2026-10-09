@@ -155,6 +155,28 @@ th{font-family:Fredoka}
 .trade-head{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:14px}
 .trade-head h1{font-size:clamp(32px,6vw,52px);line-height:1;margin:4px 0 7px}
 .twallet{display:flex;align-items:center;gap:7px;background:#fff;border:3px solid var(--ink);border-radius:18px;padding:9px 12px;box-shadow:0 4px 0 var(--ink);white-space:nowrap}
+.solana-icon {
+  width: 22px;
+  height: 22px;
+  display: inline-block;
+  object-fit: contain;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.solana-dot {
+  background: #fff;
+}
+
+.solana-dot .solana-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.balance-chip .solana-icon {
+  width: 16px;
+  height: 16px;
+}
 .twallet b{font:700 20px Fredoka}
 .mode-sel{display:none}
 .mode-dd{display:none;position:relative}
@@ -441,9 +463,22 @@ th{font-family:Fredoka}
    <p class="small">Stay on the hop with live New, Trending, Bonding, and Migrated Solana tokens — fresh discoveries, updated in real time. 🐰</p>
   </div>
    
-  <div class="twallet"><span>🟣</span><b id="tradeSolBalance">—</b><span class="small">SOL</span></div>
-  <button type="button" class="tr-ref" id="tradeRefIcon" aria-label="Refresh" onclick="trRefresh()">↻</button>
- </div>
+
+<div class="twallet">
+  <span class="sol-icon">
+    <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/solana/default.svg"
+         alt="Solana"
+         width="22"
+         height="22">
+  </span>
+  <b id="tradeSolBalance">—</b>
+  <span class="small">SOL</span>
+</div>
+
+<button type="button" class="tr-ref" id="tradeRefIcon"
+        aria-label="Refresh" onclick="trRefresh()">↻</button>
+</div>
+
 
  <div class="sticker disc"><div class="disc-row">
   <button class="discovery-tab" data-mode="all" onclick="tradeSetMode('all')">🌍 All coins</button>
@@ -518,7 +553,10 @@ th{font-family:Fredoka}
  
   <aside>
    <div class="sticker swap-card">
-    <div class="swap-head"><h3>Swap</h3><span class="balance-chip" id="swapWalletBalance">🟣—SOL</span></div>
+    <div class="swap-head"><h3>Swap</h3><span class="balance-chip" id="swapWalletBalance">
+  <img class="solana-icon" src="./solana.svg" alt="Solana">
+  <span id="swapSolBalanceText">—SOL</span>
+  </span></div>
     <div class="swap-tabs">
      <button class="swap-tab on buy" id="buyTab" onclick="tradeSetAction('buy')">BUY</button>
      <button class="swap-tab" id="sellTab" onclick="tradeSetAction('sell')">SELL</button>
@@ -527,7 +565,12 @@ th{font-family:Fredoka}
     <div class="swap-box">
      <div class="swap-box-top"><span class="swap-label">You pay</span><span class="swap-label" id="tradePayBalance">Balance: —</span></div>
      <div class="swap-input-row">
-      <div class="swap-asset"><span class="swap-dot">🟣</span><span id="tradePayAsset">SOL</span></div>
+      <div class="swap-asset">
+        <span class="swap-dot solana-dot">
+          <img class="solana-icon" src="./solana.svg" alt="Solana">
+        </span>
+        <span id="tradePayAsset">SOL</span>
+       </div>
       <input id="tradeAmount" type="number" min="0" step="any" placeholder="0.00" inputmode="decimal">
       <span class="unit" id="tradeAmountUnit">SOL</span>
      </div>
