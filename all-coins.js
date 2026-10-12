@@ -1,25 +1,3 @@
-/* ============================================================
-   FIJI ALL COINS v2.2  (replaces the All coins UI)
-
-   Load AFTER trade-all.js and popup-unify.js:
-     <script src="trade-all.js"></script>
-     <script src="all-coins.js"></script>
-
-   v2.2 change (one popup for every coin):
-   - Non-Solana coins (ETH, BNB, Base, ...) now open in the SAME
-     popup as every other coin, through window.FIJI_OPEN_VIEW
-     (provided by popup-unify.js). The old separate "detail sheet"
-     is kept only as a fallback if popup-unify.js is missing.
-   - Nothing else in this file was changed.
-
-   - Filters: Chain, Time, Trending, Platform (+ the shared search bar)
-   - Every coin (big or new) uses the same card with a risk badge
-     and its linked X account / post / community
-   - Tap a card for the full risk check, socials, chart
-   - No extra Refresh button: the header refresh icon (mobile) and
-     the normal Refresh button (desktop) refresh this view
-   Needs window.FIJI_CORE from index.html (getConnection, getSupabase).
-   ============================================================ */
 (function(){
 'use strict';
 const CORE=window.FIJI_CORE||{};
@@ -27,9 +5,6 @@ const $=CORE.$||(id=>document.getElementById(id));
 const toast=CORE.toast||(m=>console.log('[FIJI]',m));
 const DS='https://api.dexscreener.com';
 
-/* ---------- CONFIG ----------
-   Chain ids must match DexScreener's. Add more chains here (e.g. 'robinhood'
-   if DexScreener lists it). Bitcoin is not a DexScreener chain. */
 const CHAINS=[
  {id:'all',name:'All chains',em:'🌍'},
  {id:'solana',name:'Solana',em:'◎',quote:'SOL',list:['BONK','WIF','POPCAT','FARTCOIN','PNUT','MEW','GOAT','MOODENG']},
@@ -49,7 +24,6 @@ const PAGE=24, REFRESH_MS=30000;
 const S={chain:'all',tf:'h24',trend:'gain',dex:'all',q:'',limit:PAGE,list:[],found:[],shown:[],
  busy:false,at:0,on:false,err:'',curated:{},cache:new Map(),auth:new Map(),pairs:new Map(),timer:null,tick:null,qTimer:null};
 
-/* ---------- helpers ---------- */
 const num=v=>{const n=parseFloat(v);return Number.isFinite(n)?n:null};
 const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const arr=a=>Array.isArray(a)?a:[];
@@ -74,7 +48,6 @@ const chainOf=id=>CHAINS.find(c=>c.id===id)||{name:id,em:'🔗'};
 const dexName=id=>DEXNAMES[id]||(id?id.charAt(0).toUpperCase()+id.slice(1):'—');
 const tx24=p=>(num(p.txns?.h24?.buys)||0)+(num(p.txns?.h24?.sells)||0);
 
-/* ---------- network ---------- */
 async function ds(path,ttl=20000){
  const c=S.cache.get(path);if(c&&Date.now()-c.t<ttl)return c.d;
  const ac=new AbortController(),to=setTimeout(()=>ac.abort(),10000);
@@ -103,7 +76,6 @@ async function tokensFor(rows,wanted,map){
   try{addPairs(map,await ds('/tokens/v1/'+c+'/'+addrs.map(encodeURIComponent).join(',')))}catch(e){}
  }));
 }
-/* Well-known coins: find their pair once, then refresh by pair address. */
 async function resolveSym(sym,c){
  for(const q of [sym+'/'+c.quote,sym]){
   try{
@@ -148,7 +120,6 @@ async function load(manual){
  render();checkAuthorities();
 }
 
-/* ---------- socials ---------- */
 function social(p){
  const s=arr(p.info?.socials),w=arr(p.info?.websites);
  const get=t=>s.find(x=>String(x.type).toLowerCase()===t)?.url||'';
@@ -160,10 +131,6 @@ function social(p){
  return {x,label,tg:safeUrl(get('telegram')),web:safeUrl(w[0]?.url)};
 }
 
-/* ---------- risk ----------
-   Built only from data we really have: DexScreener market data plus, on
-   Solana, the token's on-chain mint / freeze authority. It is a warning
-   system, never a safety guarantee. */
 function risk(p){
  const why=[],good=[];let s=0;
  const l=liq(p),h=ageH(p),tx=tx24(p),mc=num(p.marketCap||p.fdv),ch=num(p.priceChange?.h24);
@@ -204,7 +171,6 @@ async function checkAuthorities(){
  }catch(e){console.debug('Authority check failed',e)}
 }
 
-/* ---------- filtering + sorting ---------- */
 const matches=(p,q)=>[p.baseToken.symbol,p.baseToken.name,p.baseToken.address].some(v=>String(v||'').toLowerCase().includes(q));
 function baseRows(){
  let rows=S.list;
@@ -232,7 +198,6 @@ function view(rows){
  return rows.slice().sort((a,b)=>v(b)-v(a));
 }
 
-/* ---------- UI ---------- */
 const CSS=`
 #allCoins{display:none!important}
 #trade.ac-on .tlayout,#trade.ac-on .live-strip{display:none!important}
@@ -322,7 +287,6 @@ function render(keepScroll){
  build();
  const grid=$('acGrid');if(!grid)return;
  const base=baseRows();
- /* Platform dropdown is built from what is actually on screen */
  const counts={};base.forEach(p=>{if(p.dexId)counts[p.dexId]=(counts[p.dexId]||0)+1});
  if(S.dex!=='all'&&!counts[S.dex])counts[S.dex]=0;
  const dexOpts={all:'All platforms'};
@@ -344,7 +308,6 @@ function tickLive(n){
  el.textContent=S.at?'live · updated '+Math.round((Date.now()-S.at)/1000)+'s ago · '+(tickLive.n||0)+' coins':'loading…';
 }
 
-/* ---------- shared search bar ---------- */
 function remoteSearch(){
  const q=S.q;
  if(q.length<2){S.found=[];render();return}
@@ -364,21 +327,14 @@ function bindSearch(){
  });
 }
 
-/* ---------- detail sheet (fallback only) ---------- */
 function closeSheet(){document.querySelectorAll('.ac-sheet').forEach(m=>m.remove())}
 const SOL_MINT='So11111111111111111111111111111111111111112';
 
-/* EVERY coin opens the same popup:
-   - Solana coins (not SOL itself): the full Trade Pad popup (RugCheck stats,
-     holders, fresh wallets, RUGGED! stamp, swap box).
-   - Everything else (ETH, BNB, Base, SOL...): the same popup in view-only mode,
-     through window.FIJI_OPEN_VIEW from popup-unify.js, with this file's risk flags.
-   The old separate sheet below is used only if popup-unify.js is not loaded. */
 function openCoin(k){
  const p=S.pairs.get(k);if(!p)return;
  const mint=p.baseToken.address,st=window.FIJI_TRADE?.getState?.();
  if(p.chainId==='solana'&&mint!==SOL_MINT&&st&&typeof window.tradeSelectByKey==='function'){
-  st.base=[{...p},...st.base.filter(x=>x?.baseToken?.address!==mint)];   // lets the Trade Pad find this coin
+  st.base=[{...p},...st.base.filter(x=>x?.baseToken?.address!==mint)];
   window.tradeSelectByKey(k);
   return;
  }
@@ -430,7 +386,6 @@ async function openDetail(k){
  document.body.appendChild(d);
  loadChanges(p,d);
 }
-/* Optional: shows "X changes" once you add a tracker (see notes). Hidden otherwise. */
 async function loadChanges(p,d){
  const db=CORE.getSupabase?CORE.getSupabase():null;if(!db)return;
  try{
@@ -442,7 +397,6 @@ async function loadChanges(p,d){
  }catch(e){}
 }
 
-/* ---------- start / stop + hooks ---------- */
 function start(){
  build();
  if(S.on)return;
@@ -458,13 +412,10 @@ function start(){
 }
 function stop(){S.on=false;clearInterval(S.timer);clearInterval(S.tick);closeSheet()}
 
-/* trade-all.js toggles the "ac-on" class on #trade when All coins is open
-   (and the holder gate / tab changes clear it), so just follow that class. */
 const sec=$('trade');
 const syncMode=()=>{const on=Boolean(sec&&sec.classList.contains('ac-on'));if(on!==S.on)on?start():stop()};
 if(sec)new MutationObserver(syncMode).observe(sec,{attributes:true,attributeFilter:['class']});
 
-/* Keep the old All coins grid (market code in index.html) switched off */
 try{if(typeof MK!=='undefined')Object.defineProperty(MK,'all',{get:()=>false,set:()=>{},configurable:true})}catch(e){}
 
 const origTr=window.trRefresh;
