@@ -1,15 +1,3 @@
-/* ============================================================
-   FIJI EARN TAB LAYOUT  v1
-   Load LAST in index.html (after chat.js):
-     <script src="earn-tab.js"></script>
-
-   - Gives all Earn blocks the same size, alignment and spacing
-     (4 per row on desktop, 2 on tablet, 1 on phones).
-   - Pins buttons / progress bar to the bottom of each block.
-   - Adds four "Coming soon" blocks.
-   Existing blocks keep their ids, so splash-tap.js, gifts.js and
-   the daily check-in keep working untouched.
-   ============================================================ */
 (function(){
 'use strict';
 
@@ -18,7 +6,6 @@ const grid=sec&&sec.querySelector('.grid');
 if(!grid||grid.dataset.es)return;
 grid.dataset.es='1';
 
-/* ---------------- styles ---------------- */
 const css=document.createElement('style');
 css.textContent=`
 #earn .grid{grid-template-columns:repeat(4,1fr);align-items:stretch;gap:18px}
@@ -45,8 +32,6 @@ css.textContent=`
 `;
 document.head.appendChild(css);
 
-/* ---------------- tidy the existing blocks ---------------- */
-/* Some blocks have the emoji inline in the title. Move it up so every block has the same header. */
 const EMO=/^\s*(\p{Extended_Pictographic}[\uFE0F\u200D\p{Extended_Pictographic}]*)\s*/u;
 grid.querySelectorAll(':scope > .card').forEach(card=>{
   if(card.querySelector('.em'))return;
@@ -59,10 +44,8 @@ grid.querySelectorAll(':scope > .card').forEach(card=>{
   h.textContent=h.textContent.replace(EMO,'');
   card.insertBefore(em,h);
 });
-/* Inline style on the Splash Tap block is no longer needed */
 grid.querySelectorAll(':scope > .card[style]').forEach(c=>c.style.removeProperty('text-align'));
 
-/* ---------------- coming soon blocks (edit freely) ---------------- */
 const SOON=[
   {em:'🎯',t:'Weekly Quests',d:'Simple community goals that earn bonus BUN.'},
   {em:'🏅',t:'Bunny Badges',d:'Collect badges for streaks, trades and referrals.'},
