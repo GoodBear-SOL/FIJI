@@ -1,29 +1,3 @@
-/* ============================================================
-   FIJI TRADE PAD · UNIFIED COIN POPUP  v1
-   Load RIGHT AFTER tradepad-popup.js (before tradepad-gate.js):
-     <script src="tradepad.js"></script>
-     <script src="tradepad-popup.js"></script>
-     <script src="popup-unify.js"></script>
-     <script src="tradepad-gate.js"></script>
-
-   Gives EVERY coin the same popup (New, Trending, Bonding,
-   Migrated, Watchlist and All coins):
-
-     Logo | Ticker · Age                  ☆ | ✕
-     Contract address  [Copy]
-     Market cap | Price | 1h volume
-     DexScreener chart
-     Risk status (cells + flags)
-     X | Telegram | Website
-
-   - Solana coins keep the full RugCheck cells, the RUGGED! stamp
-     and the swap box from tradepad-popup.js. This file only
-     re-orders them and adds age, 1h volume and the social links.
-   - Other chains (ETH, BNB, Base...) open in the same popup, view
-     only, with the market-data risk flags. window.FIJI_OPEN_VIEW
-     is what all-coins.js calls for them.
-   Nothing in tradepad-popup.js is changed.
-   ============================================================ */
 (function(){
 'use strict';
 const C=window.FIJI_CORE||{},T=window.FIJI_TRADE;
@@ -54,9 +28,8 @@ const cls=v=>{const n=num(v);return n===null||Math.abs(n)<0.05?'flat':n>0?'up':'
 const DEX={pumpfun:'Pump.fun',pumpswap:'PumpSwap',raydium:'Raydium',meteora:'Meteora',orca:'Orca',uniswap:'Uniswap',pancakeswap:'PancakeSwap',aerodrome:'Aerodrome'};
 const dexName=id=>DEX[id]||(id?id.charAt(0).toUpperCase()+id.slice(1):'—');
 const CHAIN_NAMES={solana:'Solana',ethereum:'Ethereum',bsc:'BNB Chain',base:'Base',arbitrum:'Arbitrum',polygon:'Polygon',avalanche:'Avalanche'};
-const WATCH_CHAINS=['solana','ethereum','bsc','base'];   // chains the watchlist SQL accepts
+const WATCH_CHAINS=['solana','ethereum','bsc','base'];
 
-/* ---------------- styles ---------------- */
 const css=document.createElement('style');
 css.textContent=`
 .tm-live{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important}
@@ -80,7 +53,6 @@ css.textContent=`
 `;
 document.head.appendChild(css);
 
-/* ---------------- re-order + add pieces ---------------- */
 const sym=$('tmSym'),chart=$('tmChart'),stats=$('tmStats'),risks=$('tmRisks');
 const row=document.createElement('div');row.className='tm-trow';
 sym.parentNode.insertBefore(row,sym);row.appendChild(sym);
@@ -92,15 +64,14 @@ document.querySelector('.tm-live').appendChild(vol1);
 
 const sec=document.createElement('div');sec.className='tm-sec';
 sec.innerHTML='<span>🛡 Risk status</span><span class="tm-secb" id="tmSecB"></span>';
-stats.before(chart);          // chart first
-chart.after(sec);             // then Risk status
+stats.before(chart);
+chart.after(sec);
 const soc=document.createElement('div');soc.className='tm-soc';soc.id='tmSoc';
-risks.after(soc);             // then X | TG | Website
+risks.after(soc);
 const vnote=document.createElement('p');vnote.className='tm-vnote';
 vnote.textContent='Trading and the holder, bundle and fresh-wallet checks are Solana-only, so this coin is view-only here. Flags come from DexScreener market data and are not a guarantee.';
 soc.after(vnote);
 
-/* ---------------- socials ---------------- */
 const meta=new Map();
 function ensureMeta(p){
  const m=p.baseToken&&p.baseToken.address,u=p.metadataUri;
@@ -128,14 +99,13 @@ function paintSoc(p){
  if(soc.__h!==html){soc.innerHTML=html;soc.__h=html}
 }
 
-/* ---------------- shared painting (age, 1h volume, risk badge, socials) ---------------- */
 let view=null,viewRisk=null,viewChart='';
 function paintExtras(p){
  ageEl.textContent=fmtAge(p.pairCreatedAt);
  const v=fmUsd(p.volume&&p.volume.h1);
  if($('tmV1').textContent!==v)$('tmV1').textContent=v;
  paintSoc(p);
- if(!view){   // Solana: mirror the Risk cell into the heading badge
+ if(!view){
   const c=[...stats.querySelectorAll('.tm-c')].find(e=>e.lastElementChild&&e.lastElementChild.textContent==='Risk');
   const b=$('tmSecB');
   if(c){b.textContent=c.firstElementChild.textContent;b.className='tm-secb '+(['good','warn','bad'].find(t=>c.classList.contains(t))||'')}
@@ -143,7 +113,6 @@ function paintExtras(p){
  }
 }
 
-/* ---------------- view-only popup (other chains) ---------------- */
 let vTimer=null,vTick=0;
 const cell=(label,val,tone,tip)=>`<div class="tm-c ${tone||''}"${tip?` title="${esc(tip)}"`:''}><b>${esc(val)}</b><span>${label}</span></div>`;
 function setHtml(el,html){if(el.__h!==html){el.innerHTML=html;el.__h=html}}
@@ -202,7 +171,7 @@ async function refreshView(){
 }
 function openView(p,riskObj){
  if(!p||!p.baseToken||!p.baseToken.address)return;
- if(modal.classList.contains('on'))$('tmX').click();   // lets tradepad-popup.js clean up first
+ if(modal.classList.contains('on'))$('tmX').click();
  view=p;viewRisk=riskObj||null;viewChart='';vTick=0;
  modal.classList.add('tm-view','on');
  document.body.style.overflow='hidden';
@@ -215,7 +184,6 @@ function openView(p,riskObj){
 }
 window.FIJI_OPEN_VIEW=openView;
 
-/* ---------------- button overrides that must know about view mode ---------------- */
 const star=$('tmStar'),origStar=star.onclick;
 star.onclick=async function(){
  if(!view)return origStar&&origStar.apply(this,arguments);
@@ -242,14 +210,12 @@ copyBtn.onclick=async()=>{
  if(ok){copyBtn.textContent='Copied ✓';setTimeout(()=>copyBtn.textContent='Copy',1400)}
 };
 
-/* normal (Solana) selections leave view mode */
 const origSelect=window.tradeSelectByKey;
 window.tradeSelectByKey=function(){
  if(view){view=null;viewRisk=null;clearInterval(vTimer);modal.classList.remove('tm-view');$('tmStar').style.display=''}
  return origSelect.apply(this,arguments);
 };
 
-/* ---------------- one timer for Solana popups + clean-up on close ---------------- */
 setInterval(()=>{
  if(!modal.classList.contains('on')||view)return;
  const p=T.getState().selected;
@@ -265,7 +231,7 @@ new MutationObserver(()=>{
   clearInterval(vTimer);vTimer=null;view=null;viewRisk=null;viewChart='';
   if(modal.classList.contains('tm-view'))modal.classList.remove('tm-view');
   $('tmStar').style.display='';
- }else if(!view){   // a Solana popup just opened: drop leftovers from the previous coin
+ }else if(!view){
   ageEl.textContent='';$('tmV1').textContent='…';soc.innerHTML='';soc.__h=null;$('tmSecB').textContent='';
  }
 }).observe(modal,{attributes:true,attributeFilter:['class']});
