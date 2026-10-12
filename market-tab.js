@@ -21,7 +21,7 @@ css.textContent=`
 .cs-tile span{display:block;font-size:30px;margin-bottom:2px}
 
 /* wallet table */
-table.wt{min-width:560px}
+table.wt{min-width:680px}
 .wt th,.wt td{white-space:nowrap;word-break:normal;text-align:right;padding:10px 8px;vertical-align:middle}
 .wt th:first-child,.wt td:first-child{text-align:left}
 .wt th{font-size:13px;letter-spacing:.06em;text-transform:uppercase;opacity:.75}
@@ -36,6 +36,10 @@ table.wt{min-width:560px}
 .wt .st.dn{background:#FFD0D8}
 .wt .st.flat{background:var(--sb)}
 .wt tr.tot td{border-top:3px solid var(--ink);border-bottom:0;font:600 16px Fredoka}
+.wt tr.clk{cursor:pointer}
+.wt tr.clk:hover td{background:#FFF6CF}
+.wt-act{display:flex;gap:6px;justify-content:flex-end}
+.wt-act .btn{padding:4px 12px;font-size:14px;min-height:0}
 `;
 document.head.appendChild(css);
 
@@ -138,19 +142,24 @@ function paint(rows,pairs){
     const k=dir(r.pnl),s=dir(r.chg);
     const fb=FALLBACK[r.mint]||'🪙';
     const pic=r.img?`<img src="${esc(r.img)}" alt="" loading="lazy" data-fb="${fb}">`:`<span class="wt-ph">${fb}</span>`;
-    return `<tr>
+    const canTrade=r.mint!==SOL;
+    const acts=canTrade
+      ?`<div class="wt-act"><button class="btn sm" type="button" data-wa="buy">Buy</button>${r.amt>0?'<button class="btn sm alt" type="button" data-wa="sell">Sell</button>':''}</div>`
+      :'<span class="small">—</span>';
+    return `<tr class="wt-row${canTrade?' clk':''}" data-mint="${esc(r.mint)}">
       <td><div class="wt-tok">${pic}<div><b>${esc(r.sym)}</b><span class="n">${esc(r.name)}</span></div></div></td>
       <td>${r.amt>0?amount(r.amt):'0'}</td>
       <td>${r.val===null?'—':money(r.val)}</td>
       <td class="${k}">${pnlText(r.pnl)}</td>
       <td><span class="st ${s}">${pctText(r.chg)}</span></td>
+      <td>${acts}</td>
     </tr>`;
   }).join('');
 
   const tk=dir(totPnl);
-  tbl.innerHTML=`<thead><tr><th>Ticker</th><th>Hold</th><th>Balance</th><th>PNL (24h)</th><th>Status</th></tr></thead>
+  tbl.innerHTML=`<thead><tr><th>Ticker</th><th>Hold</th><th>Balance</th><th>PNL (24h)</th><th>Status</th><th>Trade</th></tr></thead>
     <tbody>${body}
-    <tr class="tot"><td>Total</td><td></td><td>${money(totVal)}</td><td class="${tk}">${pnlText(totPnl)}</td><td><span class="st ${dir(totPct)}">${pctText(totPct)}</span></td></tr></tbody>`;
+    <tr class="tot"><td>Total</td><td></td><td>${money(totVal)}</td><td class="${tk}">${pnlText(totPnl)}</td><td><span class="st ${dir(totPct)}">${pctText(totPct)}</span></td><td></td></tr></tbody>`;
 
   tbl.querySelectorAll('img[data-fb]').forEach(i=>{
     i.addEventListener('error',()=>{
@@ -162,6 +171,28 @@ function paint(rows,pairs){
 }
 
 let seq=0;
+async function openAsset(mint,action){
+  if(mint===SOL)return C.toast('SOL is what you pay with. Pick a token to trade.');
+  if(!T||typeof window.tradeSelectByKey!=='function')return C.toast('Trade Pad is still loading');
+  try{
+    const pair=(await getPairs([mint]))[mint];
+    if(!pair)return C.toast('No market found for this token yet 💧');
+    const st=T.getState();
+    st.base=[{...pair},...st.base.filter(x=>x?.baseToken?.address!==mint)];
+    await window.tradeSelectByKey('solana:'+mint);
+    window.tradeSetAction(action);
+  }catch(e){
+    console.warn('Open asset failed',e);
+    C.toast('Could not open this token right now 💧');
+  }
+}
+if(tbl){
+  tbl.addEventListener('click',e=>{
+    const tr=e.target.closest('tr[data-mint]');if(!tr)return;
+    const b=e.target.closest('[data-wa]');
+    openAsset(tr.dataset.mint,b?b.dataset.wa:'buy');
+  });
+}
 async function draw(p){
   if(!tbl)return;
   if(!(C.getWallet&&C.getWallet())){tbl.innerHTML='';return}
