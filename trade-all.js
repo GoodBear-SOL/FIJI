@@ -1,25 +1,3 @@
-/* ============================================================
-   FIJI TRADE PAD · "ALL COINS" MODE
-   Load AFTER tradepad.js, tradepad-popup.js, tradepad-gate.js
-   and market-tab.js (replaces market-trade.js):
-     <script src="tradepad.js"></script>
-     <script src="tradepad-popup.js"></script>
-     <script src="tradepad-gate.js"></script>
-     <script src="market-tab.js"></script>
-     <script src="trade-all.js"></script>
-
-   What it does:
-   - Adds a "🌍 All coins" tab to the Trade Pad. It shows the coin
-     market (SOL / ETH / BNB, Solana, Ethereum, BNB Chain, Base, Hot)
-     that used to live on the Market tab. The markup and market
-     code stay in index.html, this file only wires it into Trade.
-   - Solana coins open in the normal Trade Pad popup (stats, swap).
-   - Coins on other chains open the view-only chart sheet with a
-     "Solana trading only" note, because the trade router only
-     builds Solana swaps.
-   - The coin feed only refreshes while All coins is visible.
-   Nothing else in the other files is changed.
-   ============================================================ */
 (function(){
 'use strict';
 
@@ -30,10 +8,9 @@ if(!T||!sec||!panel||typeof MK==='undefined'||typeof window.openPair!=='function
 }
 
 const SOL_MINT='So11111111111111111111111111111111111111112';
-let mode='';          // '' = a normal Trade Pad feed, 'all' = All coins
+let mode='';
 let wasActive=false;
 
-/* ---------------- styles ---------------- */
 const css=document.createElement('style');
 css.textContent=`
 #allCoins{display:none}
@@ -45,7 +22,6 @@ css.textContent=`
 `;
 document.head.appendChild(css);
 
-/* ---------------- show / hide the panel ---------------- */
 function highlight(){
   if(mode!=='all')return;
   document.querySelectorAll('#trade .discovery-tab').forEach(b=>b.classList.toggle('on',b.dataset.mode==='all'));
@@ -73,31 +49,26 @@ window.tradeSetMode=function(m){
   return r;
 };
 
-/* tradepad.js repaints the mode tabs when it starts, so re-apply ours afterwards */
 const origStart=T.start;
 T.start=function(){const r=origStart.apply(this,arguments);sync();return r};
 
-/* Runs when the user opens or leaves the Trade tab */
 new MutationObserver(sync).observe(sec,{attributes:true,attributeFilter:['class']});
 
-/* ---------------- coin click ---------------- */
 const origOpen=window.openPair;
 window.openPair=function(k){
   const p=MK.pairs[k];
   if(!p)return;
   const mint=p.baseToken&&p.baseToken.address;
 
-  /* Solana coins (not SOL itself): straight into the Trade Pad popup */
   if(p.chainId==='solana'&&mint&&mint!==SOL_MINT&&typeof window.tradeSelectByKey==='function'){
     const st=T.getState&&T.getState();
     if(st){
-      st.base=[{...p},...st.base.filter(x=>!x.baseToken||x.baseToken.address!==mint)];   // lets the Trade Pad find this coin
+      st.base=[{...p},...st.base.filter(x=>!x.baseToken||x.baseToken.address!==mint)];
       window.tradeSelectByKey('solana:'+mint);
       return;
     }
   }
 
-  /* Everything else: the view-only chart sheet plus a short note */
   const r=origOpen.apply(this,arguments);
   try{
     const sheet=document.querySelector('.mk-modal .mk-sheet');
