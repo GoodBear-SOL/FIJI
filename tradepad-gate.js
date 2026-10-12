@@ -1,27 +1,11 @@
-/* ============================================================
-   FIJI TRADE PAD · HOLDER GATE
-   Load AFTER tradepad.js and tradepad-popup.js:
-     <script src="tradepad.js"></script>
-     <script src="tradepad-popup.js"></script>
-     <script src="tradepad-gate.js"></script>
-
-   What it does:
-   - Blocks the Trade tab with a popup until the connected wallet
-     holds at least MIN_FIJI of the FIJI token.
-   - Stops the live token feeds while locked, hides the feed UI.
-   - Re-checks the balance every 20s, so selling below the
-     minimum locks the tab again.
-   Nothing in index.html or tradepad.js is changed.
-   ============================================================ */
 (function(){
 'use strict';
 
 const C=window.FIJI_CORE||{},T=window.FIJI_TRADE;
 if(!T||!C.CFG){console.warn('tradepad-gate: load it after tradepad.js');return}
 
-/* ---------------- settings ---------------- */
-const MIN_FIJI=500000;           // required FIJI balance
-const RECHECK_MS=20000;          // balance re-check while on the Trade tab
+const MIN_FIJI=1000000;
+const RECHECK_MS=20000;
 const MINT=C.CFG.FIJI_MINT;
 const BUY_URL='https://jup.ag/swap/SOL-'+MINT;
 
@@ -29,10 +13,9 @@ const $=id=>document.getElementById(id);
 const section=$('trade');
 if(!section)return;
 
-let checked=false;   // true once a balance has been loaded for the connected wallet
+let checked=false;
 let balance=0;
 
-/* ---------------- styles ---------------- */
 const css=document.createElement('style');
 css.textContent=`
 #trade.fg-locked .disc,
@@ -52,7 +35,6 @@ css.textContent=`
 `;
 document.head.appendChild(css);
 
-/* ---------------- popup ---------------- */
 const modal=document.createElement('div');
 modal.className='fg-modal';
 modal.innerHTML='<div class="sticker fg-sheet" role="alertdialog" aria-modal="true" aria-label="FIJI holders only"></div>';
@@ -90,7 +72,6 @@ sheet.addEventListener('click',e=>{
   else if(a==='home')C.go&&C.go('home');
 });
 
-/* ---------------- balance + decision ---------------- */
 function holdings(){
   const toks=(T.getState().portfolio&&T.getState().portfolio.tokens)||[];
   return toks.filter(t=>t&&t.mint===MINT).reduce((s,t)=>s+(Number(t.tokenAmount&&t.tokenAmount.uiAmount)||0),0);
@@ -116,7 +97,6 @@ function evaluate(){
   }
 }
 
-/* ---------------- hooks ---------------- */
 const origPortfolio=T.portfolioUpdated,origWallet=T.walletChanged;
 
 T.portfolioUpdated=function(){
@@ -130,14 +110,12 @@ T.walletChanged=function(address){
   checked=false;
   const r=origWallet.apply(T,arguments);
   evaluate();
-  if(address&&C.loadAssets)C.loadAssets();   // guarantees a fresh balance after connect
+  if(address&&C.loadAssets)C.loadAssets();
   return r;
 };
 
-/* Runs when the user opens or leaves the Trade tab */
 new MutationObserver(evaluate).observe(section,{attributes:true,attributeFilter:['class']});
 
-/* Re-check while the tab is open */
 setInterval(()=>{
   if(section.classList.contains('on')&&!document.hidden&&C.getWallet&&C.getWallet()&&C.loadAssets)C.loadAssets();
 },RECHECK_MS);
