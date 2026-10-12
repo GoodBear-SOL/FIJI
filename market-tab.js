@@ -1,23 +1,3 @@
-/* ============================================================
-   FIJI BURROW TAB LAYOUT  v3  (page id "wallet", nav label "Burrow")
-   Load AFTER tradepad-gate.js:
-     <script src="tradepad.js"></script>
-     <script src="tradepad-popup.js"></script>
-     <script src="tradepad-gate.js"></script>
-     <script src="market-tab.js"></script>
-
-   Burrow tab order:
-     1. Your wallet: TICKER | HOLD | BALANCE | PNL (24h) | STATUS
-     2. FIJI token status with Buy and Sell buttons
-     3. COMING SOON: Shop, Mining, NFTs
-   The all-chain coin market now lives in Trade > All coins
-   (see trade-all.js).
-
-   New in v2:
-   - Wallet table with the real token image, USD balance, 24h PNL
-     and a % status chip. SOL, USDC and FIJI are always listed.
-   - Prices and images come from DexScreener (cached 25s).
-   ============================================================ */
 (function(){
 'use strict';
 
@@ -26,7 +6,6 @@ const $=id=>document.getElementById(id);
 const sec=$('wallet'),hero=$('mkHero');
 if(!sec||!hero||!C.CFG){console.warn('market-tab: page not ready');return}
 
-/* ---------------- styles ---------------- */
 const css=document.createElement('style');
 css.textContent=`
 .fj-act{margin-top:14px}
@@ -60,7 +39,6 @@ table.wt{min-width:560px}
 `;
 document.head.appendChild(css);
 
-/* ---------------- 1. wallet moves to the top ---------------- */
 const tags=sec.querySelectorAll(':scope > .tag');
 const walletTag=tags[1];
 if(walletTag){
@@ -68,7 +46,6 @@ if(walletTag){
   if(wH2&&wCard)sec.prepend(walletTag,wH2,wCard);
 }
 
-/* ---------------- 1b. wallet table ---------------- */
 const SOL='So11111111111111111111111111111111111111112';
 const USDC='EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 const FIJI=C.CFG.FIJI_MINT;
@@ -101,7 +78,6 @@ function pctText(v){
   return (v>0?'+':'')+v.toFixed(Math.abs(v)>=100?0:1)+'%';
 }
 
-/* DexScreener lookup, cached per mint */
 const cache=new Map();
 async function getPairs(mints){
   const need=mints.filter(m=>{const c=cache.get(m);return !c||Date.now()-c.t>25000});
@@ -202,13 +178,12 @@ async function draw(p){
   const mints=PINNED.concat(extra);
   const rows=mints.map(m=>({mint:m,amt:m===SOL?solAmt:(hold.get(m)||0)}));
 
-  paint(rows,{});                       // show balances right away
-  const pairs=await getPairs(mints);    // then fill in price, PNL and images
+  paint(rows,{});
+  const pairs=await getPairs(mints);
   if(my!==seq)return;
   paint(rows,pairs);
 }
 
-/* Runs every time index.html reports fresh balances (connect, refresh, disconnect) */
 if(T){
   const prevPortfolio=T.portfolioUpdated;
   T.portfolioUpdated=function(p){
@@ -220,7 +195,6 @@ if(T){
   console.warn('market-tab: tradepad.js not loaded, wallet table will not update');
 }
 
-/* ---------------- 2. Buy / Sell on the FIJI status card ---------------- */
 function addActs(){
   if(hero.querySelector('.fj-act')||!hero.querySelector('.mk-hp'))return;
   const row=document.createElement('div');
@@ -241,7 +215,7 @@ async function tradeFiji(action){
     const pair=(Array.isArray(pairs)?pairs:[]).reduce((m,p)=>!m||(+(p.liquidity&&p.liquidity.usd)||0)>(+(m.liquidity&&m.liquidity.usd)||0)?p:m,null);
     if(!pair)return C.toast('FIJI is not listed on DexScreener yet');
     const st=window.FIJI_TRADE.getState();
-    st.base=[pair,...st.base.filter(x=>x.baseToken?.address!==mint)];   // lets the Trade Pad find FIJI
+    st.base=[pair,...st.base.filter(x=>x.baseToken?.address!==mint)];
     await window.tradeSelectByKey('solana:'+mint);
     window.tradeSetAction(action);
   }catch(e){
@@ -254,7 +228,6 @@ hero.addEventListener('click',e=>{
   if(b)tradeFiji(b.dataset.a);
 });
 
-/* ---------------- 3. COMING SOON: Shop, Mining, NFTs ---------------- */
 const soon=document.createElement('div');
 soon.innerHTML=`<div class="tag">coming soon to the burrow</div>
  <h2>More to dig up.</h2>
