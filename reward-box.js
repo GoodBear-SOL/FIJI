@@ -1,28 +1,3 @@
-/* ============================================================
-   FIJI REWARD BOX  v2   (admin gifts + inventory in the Burrow tab)
-
-   Load AFTER market-tab.js (it uses the Burrow page layout):
-     <script src="market-tab.js"></script>
-     <script src="reward-box.js"></script>
-
-   Needs rewards.sql to be run once in Supabase.
-
-   What it does:
-   - When a connected wallet has gifts you added, the Burrow tab
-     shows a "gift waiting" button and opens a gift box popup.
-   - The player taps Open gift. The server rolls / confirms the
-     reward and adds it in one step.
-   - The reward is shown ONLY after the server confirms it was
-     added. If anything fails, the gift stays closed and nothing
-     is added. They can try again.
-   - Points update the Earn tab right away. Carrots go into the
-     INVENTORY section of the Burrow tab (10 game-style slots, the
-     carrot icon with its number in the slot's bottom corner).
-   - Checks for new gifts when the Burrow tab opens, when the
-     wallet changes, and every 60 seconds while Burrow is open.
-
-   Does not touch gifts.js (referral gift boxes).
-   ============================================================ */
 (function(){
 'use strict';
 
@@ -37,23 +12,22 @@ const toast=C.toast||(m=>console.log('[FIJI]',m));
 const POLL_MS=60000;
 
 /* ---------------- state ---------------- */
-let gifts=[];            // unopened gifts: [{id,created_at}]
+let gifts=[];
 let carrots=0;
 let lastWallet=null;
-let dismissed=false;     // player pressed Later for this wallet
+let dismissed=false;
 let busy=false;
-let state='closed';      // closed | opening | revealed | error
+let state='closed';
 let result=null;
 let errMsg='';
 let loadSeq=0;
-let pendingPop='';       // item to animate once the gift popup closes
-let popId='';            // item currently playing the "new item" animation
+let pendingPop='';
+let popId='';
 
 const wallet=()=>C.getWallet?C.getWallet():null;
 const db=()=>C.getSupabase?C.getSupabase():null;
 const onBurrow=()=>sec.classList.contains('on');
 
-/* ---------------- styles ---------------- */
 const css=document.createElement('style');
 css.textContent=`
 .rw-bar{display:none;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0 0}
@@ -88,16 +62,11 @@ css.textContent=`
 `;
 document.head.appendChild(css);
 
-/* ---------------- Burrow bar (gift button + carrots) ---------------- */
 const bar=document.createElement('div');
 bar.className='rw-bar';
 bar.id='rwBar';
 sec.prepend(bar);
 
-/* ---------------- Inventory (10 game-style slots) ----------------
-   Sits right under the wallet card in the Burrow tab. Each item takes one
-   slot: the icon in the middle and its number in the bottom-right corner.
-   Add more item types later by pushing them in items(). */
 const SLOTS=10;
 const inv=document.createElement('div');
 inv.id='rwInv';
@@ -166,7 +135,6 @@ bar.addEventListener('click',e=>{
   }
 });
 
-/* ---------------- popup ---------------- */
 const modal=document.createElement('div');
 modal.className='rw-modal';
 modal.innerHTML='<div class="sticker rw-sheet" role="dialog" aria-modal="true" aria-label="Gift box"></div>';
@@ -224,7 +192,7 @@ function closeModal(){
   if(busy)return;
   modal.classList.remove('on');
   state='closed';result=null;errMsg='';
-  if(pendingPop){popId=pendingPop;pendingPop='';paintInventory()}   // the new item pops into its slot
+  if(pendingPop){popId=pendingPop;pendingPop='';paintInventory()}
 }
 
 sheet.addEventListener('click',e=>{
@@ -240,7 +208,6 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&modal.classList.contains('on')&&state!=='opening'){if(state==='closed')dismissed=true;closeModal()}
 });
 
-/* ---------------- claim ---------------- */
 async function claim(){
   if(busy)return;
   const w=wallet(),client=db(),g=gifts[0];
@@ -254,7 +221,6 @@ async function claim(){
     const amt=Number(data&&data.amount);
     if(!data||!Number.isFinite(amt)||amt<=0)throw new Error('The gift was not confirmed');
 
-    /* Only now is it real: remove it, update the numbers, then reveal. */
     gifts=gifts.filter(x=>x.id!==g.id);
     if(data.profile){
       if(C.setProfile)C.setProfile(data.profile);
@@ -279,7 +245,6 @@ async function claim(){
   paintBar();render();
 }
 
-/* ---------------- loading ---------------- */
 async function loadCarrots(w,seq){
   const client=db();if(!client)return;
   try{
@@ -311,7 +276,6 @@ async function loadGifts(auto){
   }
 }
 
-/* ---------------- triggers ---------------- */
 new MutationObserver(()=>{if(onBurrow())loadGifts(true)}).observe(sec,{attributes:true,attributeFilter:['class']});
 
 setInterval(()=>{
@@ -328,7 +292,7 @@ setInterval(()=>{
   if(onBurrow()&&!document.hidden&&wallet()&&!busy)loadGifts(true);
 },POLL_MS);
 
-paintBar();   // shows the 10 empty slots right away
+paintBar();
 if(onBurrow()&&wallet())loadGifts(true);
 window.FIJI_REWARDS={refresh:()=>loadGifts(true)};
 })();
