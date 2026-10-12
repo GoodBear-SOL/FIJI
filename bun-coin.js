@@ -1,29 +1,3 @@
-/* ============================================================
-   FIJI BUN COIN  v1   (total BUN on top of the Burrow inventory)
-
-   Load AFTER reward-box.js (it adds itself to the Inventory card):
-     <script src="reward-box.js"></script>
-     <script src="bun-coin.js"></script>
-
-   Put your coin picture in the same folder as fiji.png:
-     BUN COIN.png     gold coin with the navy bunny
-   If that file is missing, a matching gold coin with a navy bunny
-   is drawn instead, so the panel always looks right.
-
-   What it does:
-   - Shows the connected wallet's total BUN at the TOP of the
-     Inventory card in the Burrow tab (same number as the Earn tab).
-   - Coin effects:
-       * floats up and down with a soft gold glow
-       * a shine sweeps across the coin every few seconds
-       * little sparkles twinkle around it
-       * tap / click the coin: it spins and bursts with mini coins
-       * when BUN goes up the number counts up, the coin pops and
-         coins rain
-   - BUN stays "for fun, no cash value". Nothing about points rules
-     is changed. This file only reads the balance.
-   Nothing in the other files is changed.
-   ============================================================ */
 (function(){
 'use strict';
 
@@ -36,13 +10,11 @@ if(!inv||!pts||!C.getWallet){
   return;
 }
 
-/* ---------------- settings ---------------- */
 const COIN_FILE='BUN COIN.png';
-const COIN_SRC=encodeURI(COIN_FILE);     // handles the space in the file name
-const BURST=10;                           // mini coins per tap
-const COUNT_MS=900;                       // count-up time
+const COIN_SRC=encodeURI(COIN_FILE);
+const BURST=10;
+const COUNT_MS=900;
 
-/* ---------------- styles ---------------- */
 const css=document.createElement('style');
 css.textContent=`
 .bc-panel{display:flex;align-items:center;gap:16px;padding:12px 14px;margin:0 0 14px;background:var(--sb);border:3px solid var(--ink);border-radius:22px;box-shadow:inset 0 4px 0 rgba(18,48,92,.1)}
@@ -88,7 +60,6 @@ css.textContent=`
 `;
 document.head.appendChild(css);
 
-/* ---------------- fallback coin (gold, navy bunny) ---------------- */
 const FALLBACK_SVG=
 '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'+
  '<defs>'+
@@ -104,7 +75,6 @@ const FALLBACK_SVG=
  '<ellipse cx="50" cy="63" rx="21" ry="19" fill="url(#bcG3)" stroke="#8A5F00" stroke-width=".8"/>'+
 '</svg>';
 
-/* ---------------- panel ---------------- */
 const panel=document.createElement('div');
 panel.className='bc-panel';
 panel.id='bcPanel';
@@ -120,24 +90,21 @@ panel.innerHTML=
   '<div class="small bc-sub" id="bcSub">Connect your wallet to see your BUN.</div>'+
  '</div>';
 
-/* Goes to the very top of the Inventory card */
 const card=inv.querySelector('.card');
 if(card)card.prepend(panel);else inv.appendChild(panel);
 
 const coin=$('bcCoin'),face=$('bcFace'),numEl=$('bcNum'),sub=$('bcSub');
 
-/* Coin face: your picture first, drawn coin if the file is missing */
 function useFallback(){face.innerHTML=FALLBACK_SVG}
 (function loadFace(){
   const img=new Image();
   img.alt='';img.draggable=false;
   img.onload=()=>{face.innerHTML='';face.appendChild(img)};
   img.onerror=useFallback;
-  useFallback();             // show something right away
+  useFallback();
   img.src=COIN_SRC;
 })();
 
-/* ---------------- effects ---------------- */
 function restart(cls){
   coin.classList.remove('spin','pop');
   void coin.offsetWidth;
@@ -180,7 +147,6 @@ coin.addEventListener('click',()=>{
   burst();
 });
 
-/* ---------------- balance ---------------- */
 let shown=0,target=0,raf=0,first=true;
 
 function fmt(n){return Math.round(n).toLocaleString()}
@@ -219,9 +185,8 @@ function read(){
   first=false;
 }
 
-/* The Earn tab number changes whenever BUN is earned, so follow it */
 new MutationObserver(read).observe(pts,{childList:true,characterData:true,subtree:true});
-setInterval(read,1000);   // also catches wallet connect / disconnect
+setInterval(read,1000);
 read();
 
 window.FIJI_BUNCOIN={refresh:read,spin:()=>{restart('spin');burst()}};
