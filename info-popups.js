@@ -1,11 +1,6 @@
-/* ===================================================================
-   FIJI info-popups.js — Roadmap + Whitepaper pop-ups (v2: NFT mining plan)
-   Replaces the two hero buttons on Home. Self-contained (own CSS).
-=================================================================== */
 (function(){
 'use strict';
 
-/* ---------------- CSS ---------------- */
 const css=`
 .ip-modal{position:fixed;inset:0;background:rgba(18,48,92,.5);z-index:450;display:flex;align-items:center;justify-content:center;padding:16px;animation:ipfade .2s}
 .ip-sheet{width:100%;max-width:760px;height:min(88vh,860px);display:flex;flex-direction:column;overflow:hidden;padding:0;animation:ippop .28s cubic-bezier(.2,1.3,.4,1)}
@@ -83,11 +78,9 @@ const css=`
 `;
 const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
 
-/* ---------------- helpers ---------------- */
 const L=a=>'<ul>'+a.map(x=>'<li>'+x+'</li>').join('')+'</ul>';
 const FLOW=a=>'<div class="ip-flow">'+a.map((x,i)=>(i?'<span>↓</span>':'')+'<div>'+x+'</div>').join('')+'</div>';
 
-/* shared tables */
 const RARITY_TBL=`<table><tr><th>Rarity</th><th>Supply</th><th>Mint price</th><th>Multiplier</th><th>Max GEM / 24h</th></tr>
 <tr><td>Common</td><td>180</td><td>0.15 SOL</td><td>1.0×</td><td>1,000</td></tr>
 <tr><td>Rare</td><td>75</td><td>0.30 SOL</td><td>1.5×</td><td>1,500</td></tr>
@@ -95,9 +88,6 @@ const RARITY_TBL=`<table><tr><th>Rarity</th><th>Supply</th><th>Mint price</th><t
 <tr><td>Legendary</td><td>9</td><td>1.00 SOL</td><td>3.0×</td><td>3,000</td></tr>
 <tr><td><b>Total</b></td><td><b>300</b></td><td>—</td><td>—</td><td>—</td></tr></table>`;
 
-/* ===================================================================
-   ROADMAP DATA
-=================================================================== */
 const PH=[
 {em:'🐰',k:'Phase 1',n:'EARN',sub:"FIJI's Little Home",tag:'Launch',lead:'The beginning of the FIJI journey.',
  items:['Fijilabs.fun launch','BUN introduced as FIJI\'s in-website currency','Daily Check-in','Tap Splash activities','Referral system','Community activities','Leaderboard and user ranks','BUN earning opportunities','BUN-based items and ecosystem utilities','FIJI holder access system','Trade tab with a proposed 0.25% fee supporting the Rewards Pool','Continued website improvements'],
@@ -143,9 +133,6 @@ function rmLoop(){return `<h3>🐰 The FIJI Loop</h3>${FLOW(LOOP)}
 <p>Features, mechanics, rates and timelines may be adjusted as FIJI Labs develops and balances the ecosystem.</p>
 <div class="ip-q">FIJI is built one hop at a time. 🐰</div>`}
 
-/* ===================================================================
-   WHITEPAPER DATA
-=================================================================== */
 const WP=[
 ['Welcome',`<p>FIJI started with a simple idea:</p><div class="ip-q">What if a meme could become a little world of its own?</div>
 <p>FIJI is a pure meme project built around a cute bunny and an expanding interactive ecosystem.</p>
@@ -317,7 +304,6 @@ ${PH.map(p=>`<h4>${p.em} ${p.k.toUpperCase()} — ${p.n}</h4><p><b>${p.sub}</b><
 <div class="ip-goal" style="text-align:center"><b>🐰 FIJI LABS</b><br>The little bunny with a bigger adventure ahead.</div>`]
 ];
 
-/* ---------------- GEM calculator (whitepaper) ---------------- */
 const CAPS={Common:1000,Rare:1500,Epic:2000,Legendary:3000};
 function bindCalc(root){
  const c=root.querySelector('.ip-calc');if(!c)return;
@@ -334,7 +320,6 @@ function bindCalc(root){
  up();
 }
 
-/* ---------------- modal engine ---------------- */
 let modal=null;
 function close(){if(!modal)return;modal.remove();modal=null;document.body.style.overflow=''}
 function shell(icon,title,sub){
@@ -350,7 +335,6 @@ function shell(icon,title,sub){
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
 
-/* ---------------- ROADMAP pop-up ---------------- */
 function openRoadmap(start){
  const m=shell('🗺️','Roadmap','FIJI Labs · one hop at a time');
  const tabs=['🐰 Intro',...PH.map(p=>p.em+' '+p.k),'🔁 Loop'];
@@ -373,7 +357,6 @@ function openRoadmap(start){
  show(i);
 }
 
-/* ---------------- WHITEPAPER pop-up ---------------- */
 function openWhitepaper(){
  const m=shell('📜','Whitepaper','Ecosystem Whitepaper · Version 1.0 — 2026');
  m.nav.innerHTML=WP.map((s,x)=>`<button class="ip-chip" data-i="${x}">${x+1}. ${s[0]}</button>`).join('');
@@ -396,7 +379,6 @@ function openWhitepaper(){
  m.body.dispatchEvent(new Event('scroll'));
 }
 
-/* ---------------- swap the hero buttons ---------------- */
 const btns=document.querySelector('#home .hero .btns');
 if(btns){
  btns.innerHTML='<button class="btn" id="ipRoad">🗺️ Roadmap</button><button class="btn alt" id="ipPaper">📜 Whitepaper</button>';
