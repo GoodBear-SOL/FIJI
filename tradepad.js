@@ -1145,7 +1145,7 @@ async function refreshPortfolioSoon(mint){
 async function claimTradePoints(sig,mint){
   const wallet=walletAddress();
   if(!wallet||!sig)return;
-  for(let i=0;i<4;i++){
+  for(let i=0;i<5;i++){
     try{
       const res=await routerPost('/claim',{wallet,signature:sig,mint});
       if(res?.awarded){
@@ -1157,7 +1157,7 @@ async function claimTradePoints(sig,mint){
       return;
     }catch(e){
       const m=String(e.message||e);
-      if(/not found yet/i.test(m)&&i<3){await sleep(2500);continue}
+      if(/not found yet|could not read/i.test(m)&&i<4){await sleep(3000);continue}
       console.warn('Trade points claim failed',e);
       toast(m);
       return;
