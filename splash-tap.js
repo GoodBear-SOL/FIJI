@@ -1,20 +1,3 @@
-/* ============================================================
-   FIJI SPLASH TAP: SMILE + MOOD FACE + SPLASH EFFECT
-   Load AFTER market-trade.js (last script in index.html):
-     <script src="market-tab.js"></script>
-     <script src="market-trade.js"></script>
-     <script src="splash-tap.js"></script>
-
-   Images (put them in the same folder as fiji.png):
-     fiji-smile.png   Fiji smiling, shown while nobody is tapping
-     fiji-hurt.png    face shown for a moment on every tap
-                      (already used by the site today)
-   Want more moods? Add more file names to TAP_FACES below.
-   A random one is picked on each tap.
-
-   Points rules are NOT changed: 10 taps = +5 points, 5 plays a day,
-   wallet required. Only the look of the tap changes.
-   ============================================================ */
 (function(){
 'use strict';
 
@@ -25,14 +8,12 @@ if(!pad||!bar||!C.getWallet||typeof window.doEarn!=='function'){
   console.warn('splash-tap: load it after the core script');return;
 }
 
-/* ---------------- settings ---------------- */
-const IDLE='fiji-smile.png';                 // smiling face while idle
-const TAP_FACES=['fiji-hurt.png','fiji-shock.png','fiji-angry.png']; // faces used when tapped, e.g. ['fiji-hurt.png','fiji-shock.png']
-const FACE_MS=350;                           // how long the tap face stays
-const DROPS=8;                               // splash drops per tap
+const IDLE='fiji-smile.png';
+const TAP_FACES=['fiji-hurt.png','fiji-shock.png','fiji-angry.png'];
+const FACE_MS=350;
+const DROPS=8;
 const FALLBACK=pad.getAttribute('src')||'fiji.png';
 
-/* ---------------- styles ---------------- */
 const css=document.createElement('style');
 css.textContent=`
 .st-wrap{position:relative;display:inline-block;vertical-align:middle;line-height:0}
@@ -51,13 +32,11 @@ css.textContent=`
 `;
 document.head.appendChild(css);
 
-/* ---------------- wrap the image so the splash can sit around it ---------------- */
 const wrap=document.createElement('span');
 wrap.className='st-wrap';
 pad.parentNode.insertBefore(wrap,pad);
 wrap.appendChild(pad);
 
-/* ---------------- preload faces (missing files are skipped safely) ---------------- */
 const ok={};
 let faceTimer=null,tapping=false;
 const idle=()=>ok[IDLE]?IDLE:FALLBACK;
@@ -67,7 +46,6 @@ const idle=()=>ok[IDLE]?IDLE:FALLBACK;
   i.src=f;
 });
 
-/* ---------------- tap visuals ---------------- */
 function face(){
   const faces=TAP_FACES.filter(f=>ok[f]);
   tapping=true;
@@ -102,7 +80,6 @@ function splash(){
   setTimeout(()=>made.forEach(el=>el.remove()),700);
 }
 
-/* ---------------- the tap itself (same rules as before) ---------------- */
 let taps=0;
 window.tap=function(){
   if(!C.getWallet())return C.toast('Connect your wallet first');
