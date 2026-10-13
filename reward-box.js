@@ -11,7 +11,6 @@ if(!sec||!C.getSupabase||!C.getWallet){
 const toast=C.toast||(m=>console.log('[FIJI]',m));
 const POLL_MS=60000;
 
-/* ---------------- state ---------------- */
 let gifts=[];
 let carrots=0;
 let lastWallet=null;
@@ -68,8 +67,6 @@ bar.className='rw-bar';
 bar.id='rwBar';
 sec.prepend(bar);
 
-/* 5 columns x 3 rows. Seeds, water, vegetables and carrots never
-   take more than 12 slots, so 15 always has room. */
 const SLOTS=15;
 const inv=document.createElement('div');
 inv.id='rwInv';
@@ -80,9 +77,7 @@ inv.innerHTML=
 const walletCard=$('assets')&&$('assets').closest('.card');
 if(walletCard)walletCard.after(inv);else sec.appendChild(inv);
 
-/* Items the player owns. Carrots come from the Carrots balance.
-   Seeds, water and vegetables come from shop.js (window.FIJI_FARM),
-   which may load after this file, so it is read at paint time. */
+
 function items(){
   const list=[];
   if(wallet()&&carrots>0)list.push({id:'carrots',icon:'🥕',img:'',name:'Carrots',count:carrots});
@@ -308,8 +303,6 @@ setInterval(()=>{
   if(onBurrow()&&!document.hidden&&wallet()&&!busy)loadGifts(true);
 },POLL_MS);
 
-/* Called by shop.js after every farm change: updates the Carrots
-   balance (harvested carrots) and repaints the Inventory. */
 function syncFarm(c){
   const n=Number(c);
   if(c!=null&&Number.isFinite(n)&&n>=0&&wallet())carrots=n;
