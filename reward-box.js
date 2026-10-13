@@ -39,6 +39,7 @@ css.textContent=`
 .rw-slot.full:hover{transform:translateY(2px);box-shadow:0 2px 0 var(--ink)}
 .rw-slot.new{animation:rwSlotPop .8s cubic-bezier(.2,.9,.3,1.3)}
 .rw-ico{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:clamp(26px,7.5vw,42px);line-height:1;padding-bottom:5px}
+.rw-ico img{width:68%;height:68%;object-fit:contain;display:block}
 .rw-cnt{position:absolute;right:-5px;bottom:-7px;min-width:24px;padding:2px 6px;border:2px solid var(--ink);border-radius:99px;background:var(--sun);color:var(--ink);font:700 clamp(11px,3.3vw,14px)/1.1 Fredoka,sans-serif;text-align:center;box-shadow:0 2px 0 var(--ink)}
 .rw-invnote{margin-top:12px;text-align:center}
 @keyframes rwSlotPop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.18);opacity:1}100%{transform:scale(1)}}
@@ -67,7 +68,9 @@ bar.className='rw-bar';
 bar.id='rwBar';
 sec.prepend(bar);
 
-const SLOTS=10;
+/* 5 columns x 3 rows. Seeds, water, vegetables and carrots never
+   take more than 12 slots, so 15 always has room. */
+const SLOTS=15;
 const inv=document.createElement('div');
 inv.id='rwInv';
 inv.innerHTML=
@@ -77,9 +80,18 @@ inv.innerHTML=
 const walletCard=$('assets')&&$('assets').closest('.card');
 if(walletCard)walletCard.after(inv);else sec.appendChild(inv);
 
+/* Items the player owns. Carrots come from the Carrots balance.
+   Seeds, water and vegetables come from shop.js (window.FIJI_FARM),
+   which may load after this file, so it is read at paint time. */
 function items(){
   const list=[];
-  if(wallet()&&carrots>0)list.push({id:'carrots',icon:'🥕',name:'Carrots',count:carrots});
+  if(wallet()&&carrots>0)list.push({id:'carrots',icon:'🥕',img:'',name:'Carrots',count:carrots});
+  if(wallet()){
+    try{
+      const f=window.FIJI_FARM&&window.FIJI_FARM.inventoryItems?window.FIJI_FARM.inventoryItems():[];
+      (Array.isArray(f)?f:[]).forEach(x=>{if(x&&x.id&&x.count>0)list.push(x)});
+    }catch(e){console.debug('farm items unavailable',e)}
+  }
   return list;
 }
 function fmtCount(n){
@@ -96,8 +108,12 @@ function paintInventory(){
     const it=list[i];
     if(it){
       const label=it.name+' × '+it.count.toLocaleString();
-      html+='<button type="button" class="rw-slot full'+(popId===it.id?' new':'')+'" data-item="'+it.id+'" title="'+esc(label)+'" aria-label="'+esc(label)+'">'+
-        '<span class="rw-ico">'+it.icon+'</span><span class="rw-cnt">'+fmtCount(it.count)+'</span></button>';
+      const fb='<span>'+esc(it.icon||'🎁')+'</span>';
+      const inner=it.img
+        ?'<img src="'+esc(it.img)+'" alt="" loading="lazy" data-fb="'+esc(fb)+'" onerror="this.outerHTML=this.dataset.fb">'
+        :esc(it.icon||'🎁');
+      html+='<button type="button" class="rw-slot full'+(popId===it.id?' new':'')+'" data-item="'+esc(it.id)+'" title="'+esc(label)+'" aria-label="'+esc(label)+'">'+
+        '<span class="rw-ico">'+inner+'</span><span class="rw-cnt">'+fmtCount(it.count)+'</span></button>';
     }else{
       html+='<div class="rw-slot" aria-hidden="true"></div>';
     }
@@ -109,14 +125,14 @@ function paintInventory(){
       ?'Connect your wallet to see your inventory.'
       :list.length
         ?'Tap an item to see its name.'
-        :'Nothing here yet. Carrots from gifts will show up in your inventory.';
+        :'Nothing here yet. Seeds, water and carrots will show up here.';
   }
 }
 inv.addEventListener('click',e=>{
   const b=e.target.closest('.rw-slot.full');
   if(!b)return;
   const it=items().find(x=>x.id===b.dataset.item);
-  if(it)toast(it.icon+' '+it.name+' × '+it.count.toLocaleString());
+  if(it)toast((it.icon||'')+' '+it.name+' × '+it.count.toLocaleString());
 });
 
 function paintBar(){
@@ -292,7 +308,15 @@ setInterval(()=>{
   if(onBurrow()&&!document.hidden&&wallet()&&!busy)loadGifts(true);
 },POLL_MS);
 
+/* Called by shop.js after every farm change: updates the Carrots
+   balance (harvested carrots) and repaints the Inventory. */
+function syncFarm(c){
+  const n=Number(c);
+  if(c!=null&&Number.isFinite(n)&&n>=0&&wallet())carrots=n;
+  paintBar();
+}
+
 paintBar();
 if(onBurrow()&&wallet())loadGifts(true);
-window.FIJI_REWARDS={refresh:()=>loadGifts(true)};
+window.FIJI_REWARDS={refresh:()=>loadGifts(true),sync:syncFarm};
 })();
