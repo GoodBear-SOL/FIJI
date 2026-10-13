@@ -1,17 +1,3 @@
-/* ============================================================
-   FIJI FARM  shop.js  v1
-   Load AFTER market-tab.js, reward-box.js and bun-coin.js:
-     <script src="shop.js?v=1"></script>
-   Run farm.sql in Supabase first.
-
-   - Replaces the "Shop (coming soon)" tile with a real Market.
-   - Market popup: Seeds / Vegetables / Water.
-   - "Bunny Field": plots, plant, water, countdown, harvest.
-   - Gives reward-box.js the seeds / water / vegetables to show
-     in the Inventory (window.FIJI_FARM.inventoryItems).
-   - Images: set the file names in the fiji_crops / fiji_farm_items
-     tables. Missing images fall back to an emoji.
-   ============================================================ */
 (function(){
 'use strict';
 
@@ -40,17 +26,15 @@ function fmtLeft(ms){
   return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(x).padStart(2,'0');
 }
 
-/* ---------------- state ---------------- */
-let cat=null;          // catalog (crops, items, config, plot prices)
-let st=null;           // player state from the server
-let skew=0;            // server time minus device time
+let cat=null;
+let st=null;
+let skew=0;
 let busy=false;
 let failed=false;
 let lastWallet=null;
 let view={open:false,mode:'market',tab:'seeds',plot:null};
 const nowMs=()=>Date.now()+skew;
 
-/* ---------------- images (file name -> safe URL) ---------------- */
 const IMG_OK=/^[\w .\-]+\.(png|jpe?g|webp|gif|svg)$/i;
 function imgUrl(f){
   f=String(f||'').trim();
@@ -65,7 +49,6 @@ function pic(img,emoji,cls){
     :fb)+'</span>';
 }
 
-/* ---------------- data helpers ---------------- */
 const crop=id=>(cat&&cat.crops.find(c=>c.id===id))||null;
 const waterItem=()=>(cat&&cat.items.find(i=>i.id==='water'))||{id:'water',name:'Water',emoji:'💧',img:'',price:20};
 const own=id=>{
@@ -74,8 +57,7 @@ const own=id=>{
   return r?Number(r.qty)||0:0;
 };
 
-/* Items for the Inventory grid (used by reward-box.js). Carrots are
-   handled by reward-box itself from the Carrots balance. */
+
 function inventoryItems(){
   if(!st||!cat)return [];
   const out=[],w=waterItem();
@@ -94,7 +76,6 @@ function publish(){
   try{window.FIJI_REWARDS&&window.FIJI_REWARDS.sync&&window.FIJI_REWARDS.sync(st?st.carrots:null)}catch(e){}
 }
 
-/* ---------------- loading ---------------- */
 async function loadCatalog(){
   const {data,error}=await db().rpc('fiji_farm_catalog');
   if(error)throw error;
@@ -124,7 +105,6 @@ async function loadState(){
   }
 }
 
-/* ---------------- actions (one at a time) ---------------- */
 async function act(fn,args,okMsg){
   const w=wallet();
   if(!w){toast('Connect your wallet first');return null}
@@ -142,7 +122,6 @@ async function act(fn,args,okMsg){
   }finally{busy=false}
 }
 
-/* ---------------- styles ---------------- */
 const css=document.createElement('style');
 css.textContent=`
 .fm-top{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
@@ -197,7 +176,6 @@ css.textContent=`
 `;
 document.head.appendChild(css);
 
-/* ---------------- page: remove the old Shop tile, add the farm ---------------- */
 sec.querySelectorAll('.cs').forEach(c=>{
   const h=c.querySelector('h3');
   if(h&&h.textContent.trim()==='Shop')c.remove();
@@ -216,7 +194,6 @@ farm.innerHTML=
 const anchor=$('rwInv')||($('assets')&&$('assets').closest('.card'));
 if(anchor)anchor.after(farm);else sec.appendChild(farm);
 
-/* ---------------- the field ---------------- */
 function plotHtml(p,now,waterQty){
   const n=p.plot_no;
   if(!p.crop_id){
@@ -271,7 +248,6 @@ function renderField(){
   box.innerHTML=html;
 }
 
-/* ---------------- the popup (market + planting picker) ---------------- */
 const modal=document.createElement('div');
 modal.className='fm-modal';
 modal.innerHTML='<div class="sticker fm-sheet" role="dialog" aria-modal="true" aria-label="Market"></div>';
@@ -353,7 +329,6 @@ modal.addEventListener('input',e=>{
   if(btn)btn.textContent='Buy · '+fmtN(Number(q.dataset.price)*qty);
 });
 
-/* ---------------- clicks ---------------- */
 async function onClick(e){
   const b=e.target.closest('[data-a]');
   if(!b)return;
@@ -396,7 +371,6 @@ async function onClick(e){
 farm.addEventListener('click',onClick);
 modal.addEventListener('click',onClick);
 
-/* ---------------- render + timers ---------------- */
 function render(){renderField();renderModal()}
 
 setInterval(()=>{
@@ -413,7 +387,6 @@ setInterval(()=>{
   if(flip)renderField();
 },1000);
 
-/* reload when the wallet changes or the Burrow tab opens */
 setInterval(()=>{
   const w=wallet()||null;
   if(w===lastWallet)return;
