@@ -182,7 +182,7 @@ ${L(['100% Energy: fully energized','75% Energy: partially energized','50% Energ
 <p>Energy decreases as the NFT mines. When it reaches 0%, the NFT cannot continue mining until the owner feeds it.</p>
 <h4>🥕 Food</h4><p>Different foods restore different amounts of Energy. These are the quantities required for a full 100% refill:</p>
 <table><tr><th>Food</th><th>Units for 100% Energy</th></tr>
-<tr><td>🥦 Lettuce</td><td>10</td></tr><tr><td>🥬Celery</td><td>9</td></tr><tr><td>🌿Parsely</td><td>8</td></tr><tr><td>🌱 Basil</td><td>6</td></tr><tr><td>🥕 Carrots</td><td>5</td></tr></table>
+<tr><td>🍌Banana</td><td>10</td></tr><tr><td>🥬Lettuce</td><td>9</td></tr><tr><td>🌿Parsely</td><td>8</td></tr><tr><td>🌱 Basil</td><td>6</td></tr><tr><td>🥕 Carrots</td><td>5</td></tr></table>
 <p>Food restores Energy up to a maximum of 100%. Feeding an NFT that is already full does not create extra Energy.</p>
 <p>The website will show how much Energy a feeding restores before the user confirms it. Food acquisition methods and inventory limits will be defined separately, and food quantities are proposed balancing values.</p>
 <div class="ip-q">BUN → Food → Energy → Mining</div>`],
