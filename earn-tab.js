@@ -49,7 +49,7 @@ grid.querySelectorAll(':scope > .card[style]').forEach(c=>c.style.removeProperty
 const SOON=[
   {em:'🎯',t:'Weekly Quests',d:'Simple community goals that earn bonus BUN and BUNXP.'},
   {em:'💪',t:'Strong Bunny',d:'Hold FIJI Labs coins over time and earn BUN and BUNXP'},
-  {em:'🥕',t:'Team Hops',d:'Hop together with the community.'}
+  {em:'🔨',t:'Bun-A-Mole',d:'Smash the holes when FIJI pops out and test your reflexes!'}
 ];
 SOON.forEach(s=>{
   const d=document.createElement('div');
