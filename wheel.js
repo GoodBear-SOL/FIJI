@@ -58,9 +58,14 @@ card.innerHTML='<div class="em">🎡</div><h3>Lucky Wheel</h3>'+
   '<p>Spin for veggies, seeds, water or the BUN jackpot. Costs BUN, limited spins per day.</p><br>'+
   '<button class="btn sm" type="button" data-a="open">Spin the wheel</button>';
 function mountCard(){
-  if(document.body.contains(card))return;
   const grid=sec.querySelector('.grid');
-  (grid||sec).appendChild(card);
+  const pad=$('pad');
+  const tapCard=pad&&pad.closest('.card');
+  if(tapCard&&grid&&tapCard.parentElement===grid){
+    if(tapCard.nextElementSibling!==card)tapCard.after(card);
+    return;
+  }
+  if(!document.body.contains(card))(grid||sec).appendChild(card);
 }
 mountCard();
 setInterval(mountCard,1500); 
@@ -215,7 +220,7 @@ async function spin(){
     status.used=Number(data.used)||status.used+1;
     status.limit=Number(data.limit)||status.limit;
     res.className='wh-res '+(data.jackpot?'jack':'win');
-    res.textContent=(data.jackpot?'👑 JACKPOT! ':'🎉 You got ')+data.emoji+' '+data.label;
+    res.textContent=(data.jackpot?'👑 JACKPOT! ':'🎉 You got ')+data.emoji+' '+data.label+(data.xp_gained?' · +'+data.xp_gained+' XP':'');
     paintInfo();
     // refresh BUN, streak, inventory and carrots everywhere
     try{if(data.profile&&C.setProfile)C.setProfile(data.profile)}catch(e){}
