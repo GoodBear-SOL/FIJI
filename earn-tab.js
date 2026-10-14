@@ -47,10 +47,9 @@ grid.querySelectorAll(':scope > .card').forEach(card=>{
 grid.querySelectorAll(':scope > .card[style]').forEach(c=>c.style.removeProperty('text-align'));
 
 const SOON=[
-  {em:'🎯',t:'Weekly Quests',d:'Simple community goals that earn bonus BUN.'},
-  {em:'🏅',t:'Bunny Badges',d:'Collect badges for streaks, trades and referrals.'},
-  {em:'🎡',t:'Lucky Spin',d:'A fun daily spin for a chance at extra BUN.'},
-  {em:'🥕',t:'Team Hops',d:'Hop together with the community to unlock shared goals.'}
+  {em:'🎯',t:'Weekly Quests',d:'Simple community goals that earn bonus BUN and BUNXP.'},
+  {em:'💪',t:'Strong Bunny',d:'Hold FIJI Labs coins over time and earn BUN and BUNXP'},
+  {em:'🥕',t:'Team Hops',d:'Hop together with the community.'}
 ];
 SOON.forEach(s=>{
   const d=document.createElement('div');
