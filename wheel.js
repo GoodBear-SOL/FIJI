@@ -51,7 +51,6 @@ css.textContent=`
 `;
 document.head.appendChild(css);
 
-/* ---------- card in the Earn tab ---------- */
 const card=document.createElement('div');
 card.className='sticker card';
 card.id='whCard';
@@ -64,10 +63,9 @@ function mountCard(){
   (grid||sec).appendChild(card);
 }
 mountCard();
-setInterval(mountCard,1500);   // other scripts may rebuild the Earn grid
+setInterval(mountCard,1500); 
 card.addEventListener('click',e=>{if(e.target.closest('[data-a="open"]'))openWheel()});
 
-/* ---------- popup ---------- */
 const modal=document.createElement('div');
 modal.className='wh-modal';
 modal.innerHTML=
@@ -230,7 +228,6 @@ async function spin(){
   },4800);
 }
 
-/* reset when the wallet changes */
 setInterval(()=>{
   const w=wallet()||null;
   if(w===lastWallet)return;
