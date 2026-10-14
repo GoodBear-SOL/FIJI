@@ -1,14 +1,6 @@
 (function(){
 'use strict';
 
-/* BunXP: new leaderboard + BunXP display in the Bunny Field.
-   Load AFTER shop.js. It does not edit any other file:
-   - it replaces the Board tab table with the BunXP leaderboard
-     (and keeps a BUN view, so the old ranking is not lost)
-   - it adds a "BunXP" pill to the Bunny Field stats and shows a
-     "+XP" message after watering or harvesting
-   If bunxp.sql has not been run yet, the old leaderboard is used. */
-
 const C=window.FIJI_CORE||{};
 const $=id=>document.getElementById(id);
 const sec=$('board'),tbl=$('lb');
@@ -38,7 +30,6 @@ css.textContent=`
 `;
 document.head.appendChild(css);
 
-/* ---------- Board tab ---------- */
 let mode='xp';
 let seq=0;
 const card=tbl.closest('.card');
@@ -119,7 +110,6 @@ async function loadBoard(){
 }
 window.loadBoard=loadBoard;
 
-/* ---------- Bunny Field: BunXP pill + "+XP" message ---------- */
 let xp=null,lastW=null,rseq=0;
 
 function paintPill(){
