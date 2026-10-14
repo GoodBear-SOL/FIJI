@@ -166,6 +166,17 @@ css.textContent=`
 .fm-soon b{font:700 18px Fredoka,sans-serif}
 .fm-soon p{margin:4px 0 0;font-size:14px}
 .fm-empty{text-align:center;padding:18px 10px}
+.fm-cf{position:fixed;inset:0;background:rgba(18,48,92,.5);z-index:480;display:none;align-items:center;justify-content:center;padding:16px}
+.fm-cf.on{display:flex}
+.fm-cfbox{width:100%;max-width:380px;padding:22px;text-align:center;background:var(--bg);animation:fmPop .18s ease-out}
+@keyframes fmPop{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
+.fm-cfem{font-size:54px;line-height:1}
+.fm-cfbox h3{margin:8px 0 4px;font-size:24px}
+.fm-cfprice{display:inline-block;margin:10px 0 4px;font:700 22px Fredoka,sans-serif}
+.fm-cfbal{font-size:14px;opacity:.8;margin-bottom:4px}
+.fm-cfbal.low{color:var(--dni);opacity:1}
+.fm-cfacts{display:flex;gap:10px;margin-top:16px}
+.fm-cfacts .btn{flex:1}
 @media(max-width:760px){
  .fm-modal{align-items:flex-end;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
  .fm-sheet{max-height:92vh}
@@ -253,6 +264,44 @@ modal.className='fm-modal';
 modal.innerHTML='<div class="sticker fm-sheet" role="dialog" aria-modal="true" aria-label="Market"></div>';
 document.body.appendChild(modal);
 const sheet=modal.firstChild;
+const cf=document.createElement('div');
+cf.className='fm-cf';
+cf.innerHTML='<div class="sticker fm-cfbox" role="dialog" aria-modal="true" aria-label="Confirm purchase"></div>';
+document.body.appendChild(cf);
+const cfBox=cf.firstChild;
+let cfResolve=null;
+
+function closeConfirm(ok){
+  cf.classList.remove('on');
+  const r=cfResolve;cfResolve=null;
+  if(r)r(!!ok);
+}
+function askConfirm(o){
+  return new Promise(resolve=>{
+    if(cfResolve)cfResolve(false);
+    cfResolve=resolve;
+    const low=o.balance!=null&&o.balance<o.price;
+    cfBox.innerHTML=
+      '<div class="fm-cfem">'+(o.emoji||'🟫')+'</div>'+
+      '<h3>'+esc(o.title)+'</h3>'+
+      '<p class="small">'+esc(o.text||'')+'</p>'+
+      '<div class="fm-cfprice">⭐ '+fmtN(o.price)+' BUN</div>'+
+      (o.balance!=null
+        ?'<div class="fm-cfbal'+(low?' low':'')+'">'+(low?'Not enough BUN. You have ':'Your balance: ')+fmtN(o.balance)+' BUN</div>'
+        :'')+
+      '<div class="fm-cfacts">'+
+        '<button class="btn alt" type="button" data-c="no">Cancel</button>'+
+        '<button class="btn" type="button" data-c="yes"'+(low?' disabled':'')+'>'+esc(o.confirmLabel||'Confirm')+'</button>'+
+      '</div>';
+    cf.classList.add('on');
+  });
+}
+cf.addEventListener('click',e=>{
+  if(e.target===cf)return closeConfirm(false);
+  const b=e.target.closest('[data-c]');
+  if(b)closeConfirm(b.dataset.c==='yes');
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&cf.classList.contains('on'))closeConfirm(false)});
 
 function headHtml(title){
   const bal=st?'<span class="pill">⭐ '+fmtN(st.points)+' BUN</span>':'<span class="pill">Connect wallet</span>';
@@ -364,7 +413,15 @@ async function onClick(e){
   }
   if(a==='buyplot'){
     if(!st)return;
-    if(!window.confirm('Buy plot '+(st.plots_owned+1)+' for '+fmtN(st.next_plot_price)+' BUN?'))return;
+    const ok=await askConfirm({
+      emoji:'🟫',
+      title:'Buy plot '+(st.plots_owned+1)+'?',
+      text:'Unlock a new plot in your Bunny Field to grow more vegetables.',
+      price:st.next_plot_price,
+      balance:Number(st.points),
+      confirmLabel:'Buy plot'
+    });
+    if(!ok)return;
     return void act('fiji_farm_buy_plot',{},'New plot unlocked 🟫');
   }
 }
