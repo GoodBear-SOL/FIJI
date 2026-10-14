@@ -255,7 +255,7 @@ function renderField(){
   let html=st.plots.map(p=>plotHtml(p,now,own('water'))).join('');
   if(st.plots_owned<st.max_plots&&st.next_plot_price!=null){
     html+='<div class="fm-plot buy"><span class="fm-pic big"><span class="fm-em">➕</span></span><b>New plot</b>'+
-      '<span class="small"><img src="images/bun-coin.png" class="bun-icon" alt=""> '+fmtN(st.next_plot_price)+' BUN</span>'+
+      '<span class="small"><img src="bun-coin.png" class="bun-icon" alt=""> '+fmtN(st.next_plot_price)+' BUN</span>'+
       '<button class="btn sm alt" type="button" data-a="buyplot">Buy plot</button></div>';
   }
   box.innerHTML=html;
@@ -287,7 +287,7 @@ function askConfirm(o){
       '<div class="fm-cfem">'+(o.emoji||'🟫')+'</div>'+
       '<h3>'+esc(o.title)+'</h3>'+
       '<p class="small">'+esc(o.text||'')+'</p>'+    
-      '<div class="fm-cfprice"><img src="images/bun-coin.png" class="bun-icon" alt=""> '+fmtN(o.price)+' BUN</div>'+
+      '<div class="fm-cfprice"><img src="bun-coin.png" class="bun-icon" alt=""> '+fmtN(o.price)+' BUN</div>'+
       (o.balance!=null
         ?'<div class="fm-cfbal'+(low?' low':'')+'">'+(low?'Not enough BUN. You have ':'Your balance: ')+fmtN(o.balance)+' BUN</div>'
         :'')+
@@ -306,7 +306,7 @@ cf.addEventListener('click',e=>{
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&cf.classList.contains('on'))closeConfirm(false)});
 
 function headHtml(title){
-  const bal=st?'<span class="pill"><img src="images/bun-coin.png" class="bun-icon" alt=""> '+fmtN(st.points)+' BUN</span>':'<span class="pill">Connect wallet</span>';
+  const bal=st?'<span class="pill"><img src="bun-coin.png" class="bun-icon" alt=""> '+fmtN(st.points)+' BUN</span>':'<span class="pill">Connect wallet</span>';
   return '<div class="fm-head"><h3>'+title+'</h3>'+bal+'<button class="btn sm alt" type="button" data-a="close" aria-label="Close">✕</button></div>';
 }
 function buyRow(o){
