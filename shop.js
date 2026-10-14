@@ -182,6 +182,8 @@ css.textContent=`
  .fm-sheet{max-height:92vh}
  .fm-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
  .fm-bigem{font-size:36px}
+ .bun-icon{width:1em;height:1em;object-fit:contain;vertical-align:-0.15em;display:inline-block}
+ .fm-cfprice .bun-icon{width:26px;height:26px;vertical-align:-5px}
 }
 @media(prefers-reduced-motion:reduce){.fm-plot.ready .fm-pic{animation:none}}
 `;
