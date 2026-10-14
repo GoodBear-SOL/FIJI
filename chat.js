@@ -1,14 +1,3 @@
-/* ============================================================
-   FIJI GLOBAL CHAT  v1
-   Load LAST in index.html (after splash-tap.js):
-     <script src="chat.js"></script>
-   Run chat.sql in Supabase first.
-
-   - Replaces the "his voice" section on Home with a public chat.
-   - Flow: connect wallet -> pick a username -> chat.
-   - Messenger-style reactions (👍 ❤️ 😂 😮 😢 😡) and replies.
-   - The same username replaces the short wallet on the Leaderboard.
-   ============================================================ */
 (function(){
 'use strict';
 
@@ -24,7 +13,6 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 const hue=s=>{let h=0;for(const c of String(s))h=(h*31+c.charCodeAt(0))%360;return h};
 const toast=m=>C.toast?C.toast(m):console.log(m);
 
-/* ---------------- styles ---------------- */
 const css=document.createElement('style');
 css.textContent=`
 .ch-card{overflow:hidden}
@@ -69,20 +57,17 @@ css.textContent=`
 `;
 document.head.appendChild(css);
 
-/* ---------------- replace "his voice" ---------------- */
 const host=document.createElement('div');
 const h2=quote.previousElementSibling,tag=h2&&h2.previousElementSibling;
 quote.before(host);
 [tag,h2,quote].forEach(el=>el&&el.remove());
 
-/* ---------------- state ---------------- */
 let wallet=null,me=null,editing=false;
 let replyTo=null,pickerFor=null,lastHtml='',forceBottom=false;
 let chan=null,poll=null,live=false,kickT=null,busy=false;
 const msgs=new Map(),rx=new Map();
 const q=s=>host.querySelector(s);
 
-/* ---------------- screens ---------------- */
 function mount(phase){
   if(phase==='connect'||phase==='offline'){
     host.innerHTML='<div class="tag">community chat</div><h2>Say hi to the bunnies 🐰</h2><div class="sticker ch-card ch-gate"><div class="em">💬</div><h3>Fiji Chat</h3>'+
@@ -104,7 +89,6 @@ function mount(phase){
   }
 }
 
-/* ---------------- rendering ---------------- */
 function msgHtml(m){
   const id=Number(m.id),mine=me&&m.wallet===me.wallet;
   const counts={};let mineE=null;
@@ -136,7 +120,6 @@ function paintReply(){
   b.innerHTML='<span>↩ Replying to <b>'+esc(replyTo.username)+'</b>: '+esc(replyTo.body.slice(0,60))+'</span><button data-act="cancelreply" aria-label="Cancel reply">✕</button>';
 }
 
-/* ---------------- data ---------------- */
 async function load(){
   if(!db||!me)return;
   const {data,error}=await db.from('fiji_chat_messages').select('*').order('id',{ascending:false}).limit(LIMIT);
@@ -168,7 +151,6 @@ function stop(){
   if(chan){try{db.removeChannel(chan)}catch(e){}chan=null}
 }
 
-/* ---------------- actions ---------------- */
 async function saveName(){
   const v=(q('#chName')||{}).value||'';
   try{
@@ -231,7 +213,6 @@ host.addEventListener('keydown',ev=>{
   else if(ev.target.id==='chName'){ev.preventDefault();saveName()}
 });
 
-/* ---------------- wallet watcher ---------------- */
 async function onWallet(){
   const w=wallet;
   stop();me=null;replyTo=null;pickerFor=null;editing=false;msgs.clear();rx.clear();lastHtml='';
@@ -253,7 +234,6 @@ else{
   },1000);
 }
 
-/* ---------------- leaderboard with usernames ---------------- */
 window.loadBoard=async function(){
   if(!db)return;
   const lb=document.getElementById('lb');if(!lb)return;
