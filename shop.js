@@ -166,8 +166,19 @@ css.textContent=`
 .fm-soon b{font:700 18px Fredoka,sans-serif}
 .fm-soon p{margin:4px 0 0;font-size:14px}
 .fm-empty{text-align:center;padding:18px 10px}
-.bun-icon{width:1em;height:1em;object-fit:contain;vertical-align:-0.15em;display:inline-block}
-.fm-cfprice .bun-icon{width:26px;height:26px;vertical-align:-5px}
+.bun-icon {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.fm-cfprice .bun-icon {
+  width: 26px;
+  height: 26px;
+}
 .fm-cf{position:fixed;inset:0;background:rgba(18,48,92,.5);z-index:480;display:none;align-items:center;justify-content:center;padding:16px}
 .fm-cf.on{display:flex}
 .fm-cfbox{width:100%;max-width:380px;padding:22px;text-align:center;background:var(--bg);animation:fmPop .18s ease-out}
