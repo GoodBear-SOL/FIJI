@@ -4,7 +4,7 @@
 const C=window.FIJI_CORE||{};
 const pad=document.getElementById('pad');
 const bar=document.getElementById('tb');
-if(!pad||!bar||!C.getWallet||typeof window.doEarn!=='function'){
+if(!pad||!bar||!C.getWallet){
   console.warn('splash-tap: load it after the core script');return;
 }
 
@@ -80,6 +80,17 @@ function splash(){
   setTimeout(()=>made.forEach(el=>el.remove()),700);
 }
 
+/* Reward: +1 water and +10 BunXP per completed round, max 5/day.
+   Everything is granted inside the database (fiji_splash_reward). */
+async function splashReward(){
+  const db=C.getSupabase&&C.getSupabase(),w=C.getWallet();
+  if(!db||!w)return;
+  const {data,error}=await db.rpc('fiji_splash_reward',{p_wallet:w});
+  if(error)return C.toast(error.message);
+  C.toast('💧 +1 water · ⭐ +10 BunXP ('+data.plays_left+' plays left today)');
+  if(window.FIJI_BUNXP&&window.FIJI_BUNXP.refresh)window.FIJI_BUNXP.refresh();
+}
+
 let taps=0;
 window.tap=function(){
   if(!C.getWallet())return C.toast('Connect your wallet first');
@@ -89,7 +100,7 @@ window.tap=function(){
   if(taps>=10){
     taps=0;
     setTimeout(()=>bar.style.width='0',300);
-    window.doEarn('game');
+    splashReward();
   }
 };
 
