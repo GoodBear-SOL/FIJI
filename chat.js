@@ -15,10 +15,13 @@ const toast=m=>C.toast?C.toast(m):console.log(m);
 
 const css=document.createElement('style');
 css.textContent=`
-.ch-card{overflow:hidden}
+.ch-card{overflow:hidden;position:relative}
 .ch-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;border-bottom:3px solid var(--ink);background:var(--sun);font:600 17px Fredoka}
 .ch-head button{background:none;border:0;font:600 14px Fredoka;text-decoration:underline;cursor:pointer;padding:0}
-.ch-list{height:430px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:14px;background:var(--soft)}
+.ch-hr{display:flex;align-items:center;gap:8px;min-width:0}
+.ch-head .ch-x,.ch-gate .ch-x{background:#fff;border:2.5px solid var(--ink);border-radius:50%;width:30px;height:30px;font:700 14px Fredoka;text-decoration:none;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;flex:none}
+.ch-gate .ch-x{position:absolute;top:10px;right:10px}
+.ch-list{height:430px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:14px;background:var(--soft);overscroll-behavior:contain}
 .ch-m{display:flex;gap:8px;max-width:88%}
 .ch-m.me{align-self:flex-end;flex-direction:row-reverse}
 .ch-m.flash .ch-bub{animation:chFlash 1.2s}
@@ -47,44 +50,146 @@ css.textContent=`
 .ch-replybar button{border:0;background:none;font-size:16px;cursor:pointer}
 .ch-send{display:flex;gap:8px;padding:10px 12px;border-top:3px solid var(--ink)}
 .ch-send input{margin:0;flex:1;min-width:0}
+.ch-note{padding:0 14px 10px;font-size:12px;opacity:.75}
 .ch-gate{text-align:center;padding:30px 20px}
 .ch-gate .em{font-size:44px}
 .ch-gate h3{font-size:26px;margin:6px 0}
 .ch-gate input{max-width:320px;text-align:center;margin:12px auto 6px}
 .ch-gate .btn{margin:6px 4px}
 .lb-me{background:#FFF6CF}
-@media(max-width:760px){.ch-list{height:380px}.ch-m{max-width:94%}}
+
+/* floating chat icon + popup */
+#chFab{position:fixed;right:20px;bottom:22px;z-index:350;width:62px;height:62px;border-radius:50%;border:3px solid var(--ink);background:var(--sun);box-shadow:0 5px 0 var(--ink);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;font-size:28px;line-height:1;transition:transform .1s,box-shadow .1s;-webkit-tap-highlight-color:transparent}
+#chFab:hover{transform:translateY(2px);box-shadow:0 3px 0 var(--ink)}
+#chFab.ping{animation:chPing .9s ease-out}
+@keyframes chPing{0%{transform:scale(1)}20%{transform:scale(1.2) rotate(-10deg)}40%{transform:scale(1.1) rotate(8deg)}60%{transform:scale(1.15) rotate(-6deg)}100%{transform:scale(1)}}
+.ch-badge{position:absolute;top:-7px;right:-7px;min-width:24px;height:24px;padding:0 6px;border-radius:99px;background:var(--dn);color:#fff;border:2.5px solid var(--ink);font:700 13px Fredoka,sans-serif;display:none;align-items:center;justify-content:center;pointer-events:none}
+.ch-pop{position:fixed;right:20px;bottom:98px;z-index:355;width:380px;height:min(560px,calc(100vh - 124px));display:none;flex-direction:column}
+.ch-pop.on{display:flex}
+.ch-pop>.ch-card{flex:1;min-height:0;display:flex;flex-direction:column}
+.ch-pop .ch-list{height:auto;flex:1;min-height:0}
+.ch-pop .ch-gate{justify-content:center;align-items:center;overflow-y:auto}
+@media(max-width:760px){
+ .ch-m{max-width:94%}
+ #chFab{right:14px;bottom:calc(96px + env(safe-area-inset-bottom));width:56px;height:56px;font-size:26px}
+ .ch-pop{inset:0;width:auto;height:auto;background:rgba(18,48,92,.45);padding:calc(10px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom))}
+}
 `;
 document.head.appendChild(css);
 
+/* the old "his voice" block on the home page is cleared; the chat now lives in a floating popup */
 const host=document.createElement('div');
+host.className='ch-pop';
+host.id='chPop';
+host.setAttribute('role','dialog');
+host.setAttribute('aria-label','Fiji Chat');
 const h2=quote.previousElementSibling,tag=h2&&h2.previousElementSibling;
-quote.before(host);
 [tag,h2,quote].forEach(el=>el&&el.remove());
+document.body.appendChild(host);
+
+const fab=document.createElement('button');
+fab.type='button';
+fab.id='chFab';
+fab.setAttribute('aria-label','Open chat');
+fab.setAttribute('aria-expanded','false');
+fab.innerHTML='<span class="ch-ico">💬</span><span class="ch-badge" id="chBadge"></span>';
+document.body.appendChild(fab);
 
 let wallet=null,me=null,editing=false;
 let replyTo=null,pickerFor=null,lastHtml='',forceBottom=false;
 let chan=null,poll=null,live=false,kickT=null,busy=false;
+let isOpen=false,seen=null,unread=0;
 const msgs=new Map(),rx=new Map();
 const q=s=>host.querySelector(s);
+const isMobile=()=>window.matchMedia&&window.matchMedia('(max-width:760px)').matches;
+
+/* ---------- unread badge ---------- */
+const seenKey=w=>'fiji_chat_seen_'+w;
+function readSeen(w){
+  try{const v=localStorage.getItem(seenKey(w));return v===null?null:Number(v)}catch(e){return null}
+}
+function saveSeen(){
+  if(!wallet||seen===null)return;
+  try{localStorage.setItem(seenKey(wallet),String(seen))}catch(e){}
+}
+function paintBadge(prev){
+  const b=$badge();
+  if(!b)return;
+  if(unread>0&&!isOpen){
+    b.textContent=unread>9?'9+':String(unread);
+    b.style.display='flex';
+    fab.setAttribute('aria-label','Open chat, '+unread+' new message'+(unread===1?'':'s'));
+  }else{
+    b.style.display='none';
+    fab.setAttribute('aria-label',isOpen?'Close chat':'Open chat');
+  }
+  if(unread>prev&&!isOpen){
+    fab.classList.remove('ping');void fab.offsetWidth;fab.classList.add('ping');
+    setTimeout(()=>fab.classList.remove('ping'),1000);
+  }
+}
+function $badge(){return document.getElementById('chBadge')}
+function updateUnread(){
+  if(!me)return;
+  const prev=unread;
+  const list=[...msgs.values()];
+  const maxId=list.reduce((m,x)=>Math.max(m,Number(x.id)),0);
+  if(seen===null){seen=maxId;saveSeen()}
+  if(isOpen){
+    if(maxId>seen){seen=maxId;saveSeen()}
+    unread=0;
+  }else{
+    unread=list.filter(m=>Number(m.id)>seen&&m.wallet!==me.wallet).length;
+  }
+  paintBadge(prev);
+}
+
+/* ---------- open / close ---------- */
+function openChat(){
+  if(isOpen)return;
+  isOpen=true;
+  host.classList.add('on');
+  fab.setAttribute('aria-expanded','true');
+  fab.querySelector('.ch-ico').textContent='✕';
+  lastHtml='';forceBottom=true;
+  render();
+  updateUnread();
+  paintBadge(unread);
+  if(!isMobile()){const i=q('#chIn')||q('#chName');if(i)i.focus()}
+}
+function closeChat(){
+  if(!isOpen)return;
+  isOpen=false;
+  pickerFor=null;
+  host.classList.remove('on');
+  fab.setAttribute('aria-expanded','false');
+  fab.querySelector('.ch-ico').textContent='💬';
+  paintBadge(unread);
+}
+fab.addEventListener('click',()=>isOpen?closeChat():openChat());
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&isOpen)closeChat()});
+
+/* ---------- panel contents ---------- */
+const CLOSE_BTN='<button type="button" class="ch-x" data-act="close" aria-label="Close chat">✕</button>';
+const NOTE='<p class="small ch-note">Be kind. Never share your seed phrase. Admins will never DM you first.</p>';
 
 function mount(phase){
   if(phase==='connect'||phase==='offline'){
-    host.innerHTML='<div class="tag">community chat</div><h2>Say hi to the bunnies 🐰</h2><div class="sticker ch-card ch-gate"><div class="em">💬</div><h3>Fiji Chat</h3>'+
+    host.innerHTML='<div class="sticker ch-card ch-gate">'+CLOSE_BTN+'<div class="em">💬</div><h3>Fiji Chat</h3>'+
       (phase==='offline'?'<p>Chat is offline right now. Try again later.</p>':'<p>Connect your wallet to join the conversation.</p><button class="btn" data-act="connect">Connect wallet</button>')+'</div>';
   }else if(phase==='name'){
-    host.innerHTML='<div class="tag">community chat</div><h2>Say hi to the bunnies 🐰</h2><div class="sticker ch-card ch-gate"><div class="em">🐰</div><h3>Pick your username</h3>'+
+    host.innerHTML='<div class="sticker ch-card ch-gate">'+CLOSE_BTN+'<div class="em">🐰</div><h3>Pick your username</h3>'+
       '<p class="small">3 to 16 characters: letters, numbers or _<br>It also shows on the leaderboard.</p>'+
       '<input id="chName" maxlength="16" autocomplete="off" placeholder="e.g. hoppy_bun" value="'+esc(me?me.username:'')+'">'+
       '<div><button class="btn" data-act="save">'+(me?'Save name':'Enter chat')+'</button>'+(me?'<button class="btn alt" data-act="cancel">Cancel</button>':'')+'</div></div>';
-    const i=q('#chName');if(i)i.focus();
+    const i=q('#chName');if(i&&isOpen)i.focus();
   }else{
-    host.innerHTML='<div class="tag">community chat</div><h2>Say hi to the bunnies 🐰</h2><div class="sticker ch-card">'+
-      '<div class="ch-head"><span>💬 Fiji Chat</span><span>@'+esc(me.username)+' · <button data-act="edit">change</button></span></div>'+
+    host.innerHTML='<div class="sticker ch-card">'+
+      '<div class="ch-head"><span>💬 Fiji Chat</span><span class="ch-hr"><span>@'+esc(me.username)+' ·</span><button data-act="edit">change</button>'+CLOSE_BTN+'</span></div>'+
       '<div class="ch-list" id="chList"></div>'+
       '<div class="ch-replybar" id="chReply"></div>'+
-      '<div class="ch-send"><input id="chIn" maxlength="300" autocomplete="off" placeholder="Write a message…"><button class="btn sm" data-act="send">Send</button></div></div>'+
-      '<p class="small" style="margin-top:10px">Be kind. Never share your seed phrase. Admins will never DM you first.</p>';
+      '<div class="ch-send"><input id="chIn" maxlength="300" autocomplete="off" placeholder="Write a message…"><button class="btn sm" data-act="send">Send</button></div>'+
+      NOTE+'</div>';
     lastHtml='';forceBottom=true;paintReply();render();
   }
 }
@@ -111,7 +216,7 @@ function render(){
   lastHtml=html;
   const stick=forceBottom||box.scrollHeight-box.scrollTop-box.clientHeight<90;
   box.innerHTML=html;
-  if(stick){box.scrollTop=box.scrollHeight;forceBottom=false}
+  if(stick){box.scrollTop=box.scrollHeight;if(isOpen)forceBottom=false}
 }
 function paintReply(){
   const b=q('#chReply');if(!b)return;
@@ -133,6 +238,7 @@ async function load(){
     (r.data||[]).forEach(x=>{const k=Number(x.message_id);if(!rx.has(k))rx.set(k,new Map());rx.get(k).set(x.wallet,x.emoji)});
   }
   render();
+  updateUnread();
 }
 const kick=()=>{clearTimeout(kickT);kickT=setTimeout(()=>load().catch(()=>{}),250)};
 function start(){
@@ -172,7 +278,7 @@ async function send(){
     if(error)throw error;
     inp.value='';replyTo=null;paintReply();
     if(data&&data.id)msgs.set(Number(data.id),data);
-    forceBottom=true;render();
+    forceBottom=true;render();updateUnread();
   }catch(e){toast(e.message||String(e))}
   busy=false;inp.focus();
 }
@@ -186,10 +292,12 @@ async function react(id,e){
 }
 
 host.addEventListener('click',ev=>{
+  if(ev.target===host){closeChat();return}   // tap on the dim background (mobile)
   const b=ev.target.closest('[data-act]');
   if(!b){if(pickerFor!==null){pickerFor=null;render()}return}
   const a=b.dataset.act,id=Number(b.dataset.id);
-  if(a==='connect'&&typeof window.connect==='function')window.connect();
+  if(a==='close')closeChat();
+  else if(a==='connect'&&typeof window.connect==='function')window.connect();
   else if(a==='save')saveName();
   else if(a==='cancel'){editing=false;mount('chat')}
   else if(a==='edit'){editing=true;mount('name')}
@@ -216,11 +324,12 @@ host.addEventListener('keydown',ev=>{
 async function onWallet(){
   const w=wallet;
   stop();me=null;replyTo=null;pickerFor=null;editing=false;msgs.clear();rx.clear();lastHtml='';
+  seen=null;unread=0;paintBadge(0);
   if(!w)return mount('connect');
   try{
     const {data}=await db.from('fiji_profiles').select('username').eq('wallet',w).maybeSingle();
     if(w!==wallet)return;
-    if(data&&data.username){me={wallet:w,username:data.username};mount('chat');start()}
+    if(data&&data.username){me={wallet:w,username:data.username};seen=readSeen(w);mount('chat');start()}
     else mount('name');
   }catch(e){console.warn('chat: username lookup failed',e);if(w===wallet)mount('name')}
 }
