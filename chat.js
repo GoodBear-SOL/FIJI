@@ -77,7 +77,6 @@ css.textContent=`
 `;
 document.head.appendChild(css);
 
-/* the old "his voice" block on the home page is cleared; the chat now lives in a floating popup */
 const host=document.createElement('div');
 host.className='ch-pop';
 host.id='chPop';
@@ -103,7 +102,6 @@ const msgs=new Map(),rx=new Map();
 const q=s=>host.querySelector(s);
 const isMobile=()=>window.matchMedia&&window.matchMedia('(max-width:760px)').matches;
 
-/* ---------- unread badge ---------- */
 const seenKey=w=>'fiji_chat_seen_'+w;
 function readSeen(w){
   try{const v=localStorage.getItem(seenKey(w));return v===null?null:Number(v)}catch(e){return null}
@@ -144,7 +142,6 @@ function updateUnread(){
   paintBadge(prev);
 }
 
-/* ---------- open / close ---------- */
 function openChat(){
   if(isOpen)return;
   isOpen=true;
@@ -169,7 +166,6 @@ function closeChat(){
 fab.addEventListener('click',()=>isOpen?closeChat():openChat());
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&isOpen)closeChat()});
 
-/* ---------- panel contents ---------- */
 const CLOSE_BTN='<button type="button" class="ch-x" data-act="close" aria-label="Close chat">✕</button>';
 const NOTE='<p class="small ch-note">Be kind. Never share your seed phrase. Admins will never DM you first.</p>';
 
@@ -292,7 +288,7 @@ async function react(id,e){
 }
 
 host.addEventListener('click',ev=>{
-  if(ev.target===host){closeChat();return}   // tap on the dim background (mobile)
+  if(ev.target===host){closeChat();return}
   const b=ev.target.closest('[data-act]');
   if(!b){if(pickerFor!==null){pickerFor=null;render()}return}
   const a=b.dataset.act,id=Number(b.dataset.id);
