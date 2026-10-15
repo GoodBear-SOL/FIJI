@@ -246,7 +246,7 @@ function start(){
       .on('postgres_changes',{event:'*',schema:'public',table:'fiji_chat_reactions'},kick)
       .subscribe(s=>{live=s==='SUBSCRIBED'});
   }catch(e){live=false}
-  poll=setInterval(()=>{if(!document.hidden&&!live)load().catch(()=>{})},8000);   // fallback if realtime is off
+  poll=setInterval(()=>{if(!document.hidden&&!live)load().catch(()=>{})},8000);
 }
 function stop(){
   clearInterval(poll);poll=null;live=false;
