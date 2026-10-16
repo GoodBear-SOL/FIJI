@@ -32,6 +32,10 @@ css.textContent=`
 .me .ch-who{text-align:right}
 .ch-bub{background:#fff;border:2.5px solid var(--ink);border-radius:18px;padding:8px 13px;word-break:break-word;white-space:pre-wrap;font-size:16px;line-height:1.4;width:fit-content;max-width:100%}
 .me .ch-bub{background:var(--blue);color:#fff;margin-left:auto}
+.ch-bub.sale{background:#FFF6CF;color:var(--ink);border-style:dashed}
+.ch-lbtn{display:block;margin-top:6px;border:2.5px solid var(--ink);background:var(--sun);color:var(--ink);border-radius:99px;padding:4px 12px;font:600 13px Fredoka;cursor:pointer;box-shadow:0 3px 0 var(--ink)}
+.ch-lbtn:hover{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+.me .ch-lbtn{margin-left:auto}
 .ch-rep{font-size:12px;background:rgba(18,48,92,.09);border-radius:12px;padding:4px 10px 10px;margin-bottom:-8px;cursor:pointer;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:fit-content}
 .me .ch-rep{margin-left:auto}
 .ch-chips,.ch-pick,.ch-acts{display:flex;gap:5px;margin-top:5px}
@@ -169,6 +173,15 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&isOpen)closeChat()}
 const CLOSE_BTN='<button type="button" class="ch-x" data-act="close" aria-label="Close chat">✕</button>';
 const NOTE='<p class="small ch-note">Be kind. Never share your seed phrase. Admins will never DM you first.</p>';
 
+function openMarket(tab){
+  if(!window.FIJI_FARM||typeof window.FIJI_FARM.open!=='function'){
+    toast('The Market is still loading. Try again in a moment 🌱');
+    return;
+  }
+  closeChat();
+  window.FIJI_FARM.open('market',tab);
+}
+
 function mount(phase){
   if(phase==='connect'||phase==='offline'){
     host.innerHTML='<div class="sticker ch-card ch-gate">'+CLOSE_BTN+'<div class="em">💬</div><h3>Fiji Chat</h3>'+
@@ -184,7 +197,7 @@ function mount(phase){
       '<div class="ch-head"><span>💬 Fiji Chat</span><span class="ch-hr"><span>@'+esc(me.username)+' ·</span><button data-act="edit">change</button>'+CLOSE_BTN+'</span></div>'+
       '<div class="ch-list" id="chList"></div>'+
       '<div class="ch-replybar" id="chReply"></div>'+
-      '<div class="ch-send"><input id="chIn" maxlength="300" autocomplete="off" placeholder="Write a message…"><button class="btn sm" data-act="send">Send</button></div>'+
+      '<div class="ch-send"><input id="chIn" maxlength="300" autocomplete="off" placeholder="Write a message…"><button class="btn sm alt" data-act="sell" title="Sell your vegetables">💰 Sell</button><button class="btn sm" data-act="send">Send</button></div>'+
       NOTE+'</div>';
     lastHtml='';forceBottom=true;paintReply();render();
   }
@@ -199,8 +212,10 @@ function msgHtml(m){
   const picker=pickerFor===id?'<div class="ch-pick">'+EMOJI.map(e=>'<button type="button" class="'+(e===mineE?'on':'')+'" data-act="pick" data-id="'+id+'" data-e="'+e+'">'+e+'</button>').join('')+'</div>':'';
   const rep=m.reply_to?'<div class="ch-rep" data-act="jump" data-id="'+Number(m.reply_to)+'">↩ <b>'+esc(m.reply_username)+'</b> '+esc(m.reply_body)+'</div>':'';
   const t=new Date(m.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  const sale=!!m.listing_id;
+  const saleBtn=sale?'<button type="button" class="ch-lbtn" data-act="market">🛒 View in Market</button>':'';
   return '<div class="ch-m'+(mine?' me':'')+'" id="chm-'+id+'"><div class="ch-av" style="background:hsl('+hue(m.username)+',65%,48%)">'+esc(String(m.username).charAt(0).toUpperCase())+'</div>'+
-    '<div class="ch-body"><div class="ch-who">'+esc(m.username)+' · '+t+'</div>'+rep+'<div class="ch-bub">'+esc(m.body)+'</div>'+
+    '<div class="ch-body"><div class="ch-who">'+esc(m.username)+' · '+t+'</div>'+rep+'<div class="ch-bub'+(sale?' sale':'')+'">'+(sale?'💰 ':'')+esc(m.body)+'</div>'+saleBtn+
     (chips?'<div class="ch-chips">'+chips+'</div>':'')+picker+
     '<div class="ch-acts"><button data-act="open" data-id="'+id+'">😊 React</button><button data-act="reply" data-id="'+id+'">↩ Reply</button></div></div></div>';
 }
@@ -298,6 +313,8 @@ host.addEventListener('click',ev=>{
   else if(a==='cancel'){editing=false;mount('chat')}
   else if(a==='edit'){editing=true;mount('name')}
   else if(a==='send')send();
+  else if(a==='sell')openMarket('sell');
+  else if(a==='market')openMarket('veg');
   else if(a==='open'){pickerFor=pickerFor===id?null:id;render()}
   else if(a==='pick')react(id,b.dataset.e);
   else if(a==='reply'){
@@ -346,7 +363,7 @@ window.loadBoard=async function(){
   const sh=a=>{const s=String(a||'');return s.length<=10?s:s.slice(0,4)+'…'+s.slice(-4)};
   lb.innerHTML='<tr><th>#</th><th>Player</th><th>BUN</th><th>Streak</th></tr>'+
     (data||[]).map((p,i)=>{
-      const mine=wallet&&p.wallet===wallet;
+      const mine=wallet&&p.wallet===mine;
       return '<tr'+(mine?' class="lb-me"':'')+'><td>'+(['🥇','🥈','🥉'][i]||i+1)+'</td><td>'+
         (p.username?'<b>'+esc(p.username)+'</b><div class="small">'+esc(sh(p.wallet))+'</div>':esc(sh(p.wallet)))+
         '</td><td>'+Number(p.points||0)+'</td><td>🔥 '+Number(p.streak||0)+'</td></tr>';
