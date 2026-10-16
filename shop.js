@@ -40,6 +40,23 @@ let mkt={list:[],mine:[],loading:false,err:''};
 let sess={token:null,wallet:null,exp:0};
 const nowMs=()=>Date.now()+skew;
 
+const MIN_FIJI_TO_SELL=2000000;
+let hold={w:null,amt:null,t:0};
+async function loadHold(force){
+  const w=wallet();
+  if(!w){hold={w:null,amt:null,t:0};return}
+  if(!force&&hold.w===w&&Date.now()-hold.t<30000)return;
+  let amt=null;
+  try{
+    const r=await C.getConnection().getParsedTokenAccountsByOwner(
+      new solanaWeb3.PublicKey(w),{mint:new solanaWeb3.PublicKey(C.CFG.FIJI_MINT)});
+    amt=r.value.reduce((s,a)=>s+(Number(a.account.data.parsed.info.tokenAmount.uiAmount)||0),0);
+  }catch(e){console.warn('FIJI balance lookup failed',e)}
+  hold={w,amt,t:Date.now()};
+  if(view.open)renderModal();
+}
+const canSell=()=>hold.amt!==null&&hold.amt>=MIN_FIJI_TO_SELL;
+
 const IMG_OK=/^[\w .\-]+\.(png|jpe?g|webp|gif|svg)$/i;
 function imgUrl(f){
   f=String(f||'').trim();
@@ -197,6 +214,7 @@ async function marketAct(action,body,okMsg){
 }
 async function loadMarket(){
   if(!cat)return;
+  loadHold();
   mkt.loading=true;mkt.err='';
   if(view.open)renderModal();
   try{
@@ -449,7 +467,12 @@ function vegBody(){
 function sellBody(){
   const me=wallet();
   if(!me)return '<div class="fm-empty">Connect your wallet to sell vegetables 🐰</div>';
-  let html='<div class="fm-soon"><b>Sell your vegetables</b><p>You receive the base value. Your listing is also posted to the chat so everyone can see it. Items are held while listed and returned if you cancel.</p></div>';
+  const ok=canSell();
+  let html=(ok
+    ?'<div class="fm-soon"><b>✅ Seller unlocked</b><p>You hold '+fmtN(Math.floor(hold.amt))+' FIJI.</p></div>'
+    :'<div class="fm-soon"><b>🔒 Selling is for FIJI holders</b><p>Hold at least '+fmtN(MIN_FIJI_TO_SELL)+' FIJI to sell crops. '+
+      (hold.amt===null?'Checking your balance…':'You hold '+fmtN(Math.floor(hold.amt))+' FIJI.')+'</p></div>')+
+    '<div class="fm-soon"><b>Sell your vegetables</b><p>You receive the base value. Your listing is also posted to the chat so everyone can see it. Items are held while listed and returned if you cancel.</p></div>';
   const rows=cat.crops.map(c=>{
     const have=cropQty(c);
     if(have<1)return '';
@@ -458,7 +481,7 @@ function sellBody(){
       '<div class="fm-info"><b>'+esc(c.name)+'</b><span>You have: '+fmtN(have)+'</span>'+
       '<span>Buyers pay '+fmtN(unit)+' · you get '+fmtN(c.base_value)+' BUN · +'+fmtN(c.market_xp||0)+' BunXP each</span></div>'+
       '<div class="fm-buy"><input class="fm-q" type="number" min="1" max="'+Math.min(99,have)+'" value="1" inputmode="numeric" data-price="'+c.base_value+'">'+
-      '<button class="btn sm" type="button" data-a="msell" data-crop="'+esc(c.id)+'" data-price="'+c.base_value+'" data-pre="Sell · ">Sell · '+fmtN(c.base_value)+'</button></div></div>';
+      '<button class="btn sm" type="button" data-a="msell" data-crop="'+esc(c.id)+'" data-price="'+c.base_value+'" data-pre="Sell · "'+(ok?'':' disabled')+'>Sell · '+fmtN(c.base_value)+'</button></div></div>';
   }).join('');
   html+=rows||'<div class="fm-empty">You have no harvested vegetables to sell yet 🌱</div>';
   html+='<div class="fm-sub">My listings</div>';
@@ -582,6 +605,8 @@ async function onClick(e){
   }
   if(a==='msell'){
     if(!wallet())return toast('Connect your wallet first');
+    await loadHold(true);
+    if(!canSell())return toast('You need '+fmtN(MIN_FIJI_TO_SELL)+' FIJI to sell crops 🔒');
     const qty=qtyOf(b),id=b.dataset.crop,c=crop(id);
     return void marketAct('list',{crop:id,qty},'Listed '+qty+' × '+(c?c.name:id)+' 💰 (posted to chat)');
   }
@@ -656,6 +681,7 @@ setInterval(()=>{
   const w=wallet()||null;
   if(w===lastWallet)return;
   lastWallet=w;
+  hold={w:null,amt:null,t:0};
   st=null;publish();
   if(sess.wallet!==w)sess={token:null,wallet:null,exp:0};
   mkt={list:[],mine:[],loading:false,err:''};
