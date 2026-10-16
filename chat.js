@@ -363,7 +363,7 @@ window.loadBoard=async function(){
   const sh=a=>{const s=String(a||'');return s.length<=10?s:s.slice(0,4)+'…'+s.slice(-4)};
   lb.innerHTML='<tr><th>#</th><th>Player</th><th>BUN</th><th>Streak</th></tr>'+
     (data||[]).map((p,i)=>{
-      const mine=wallet&&p.wallet===mine;
+      const mine=wallet&&p.wallet===wallet;
       return '<tr'+(mine?' class="lb-me"':'')+'><td>'+(['🥇','🥈','🥉'][i]||i+1)+'</td><td>'+
         (p.username?'<b>'+esc(p.username)+'</b><div class="small">'+esc(sh(p.wallet))+'</div>':esc(sh(p.wallet)))+
         '</td><td>'+Number(p.points||0)+'</td><td>🔥 '+Number(p.streak||0)+'</td></tr>';
