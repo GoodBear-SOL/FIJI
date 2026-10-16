@@ -229,6 +229,7 @@ async function spin(){
       if(window.FIJI_REWARDS&&window.FIJI_REWARDS.sync&&Number.isFinite(c))window.FIJI_REWARDS.sync(c);
     }catch(e){}
     try{window.FIJI_FARM&&window.FIJI_FARM.refresh&&window.FIJI_FARM.refresh()}catch(e){}
+    try{window.FIJI_BUNXP&&window.FIJI_BUNXP.refresh&&window.FIJI_BUNXP.refresh()}catch(e){}
     toast(data.jackpot?'JACKPOT! 👑':'You won '+data.label+' '+data.emoji);
   },4800);
 }
