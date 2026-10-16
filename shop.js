@@ -218,6 +218,9 @@ farm.innerHTML=
 const anchor=$('rwInv')||($('assets')&&$('assets').closest('.card'));
 if(anchor)anchor.after(farm);else sec.appendChild(farm);
 
+const harvestSound = new Audio('./crop-harvest.mp3');
+harvestSound.preload = 'auto';
+
 function plotHtml(p,now,waterQty){
   const n=p.plot_no;
   if(!p.crop_id){
@@ -417,13 +420,29 @@ async function onClick(e){
     return;
   }
   if(a==='water')return void act('fiji_farm_water',{p_plot:plot},'Watered 💧');
+  
   if(a==='harvest'){
-    return void act('fiji_farm_harvest',{p_plot:plot},d=>{
-      const h=d&&d.harvested,c=h&&crop(h.crop_id);
-      if(!h)return 'Harvested 🧺';
-      return 'Harvested '+(c?c.name:h.crop_id)+' × '+h.qty+(h.to_carrots?' (added to your Carrots)':'')+' 🧺';
+    const result = await act('fiji_farm_harvest', {p_plot:plot}, d=>{
+      const h = d && d.harvested;
+      const c = h && crop(h.crop_id);
+  
+      if(!h) return 'Harvested 🧺';
+  
+      return 'Harvested ' + (c ? c.name : h.crop_id) +
+        ' × ' + h.qty +
+        (h.to_carrots ? ' (added to your Carrots)' : '') + ' 🧺';
     });
+  
+    if(result && result.harvested){
+      harvestSound.currentTime = 0;
+      harvestSound.play().catch(err=>{
+        console.warn('Harvest sound could not play:', err);
+      });
+    }
+  
+    return;
   }
+
   if(a==='buyplot'){
     if(!st)return;
     const ok=await askConfirm({
