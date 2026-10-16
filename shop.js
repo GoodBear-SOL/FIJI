@@ -129,7 +129,6 @@ async function act(fn,args,okMsg){
   }finally{busy=false}
 }
 
-/* ---------- MARKET: wallet sign-in + edge function ---------- */
 async function edge(body){
   const r=await fetch(EDGE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   let j={};
