@@ -1,20 +1,13 @@
-/* FIJI background music + settings gear
-   Setup:
-   1. Put your music file next to index.html and name it bgm.mp3 (or change SRC below).
-   2. Add this line with your other scripts at the bottom of index.html:
-        <script src="bgmusic.js?v=1"></script>
-*/
 (function () {
-  const SRC = 'cute-bgmusic.mp3';
+  const SRC = 'cute-bgmusic.mp3?v=2';
   const DEFAULT_VOL = 0.3;
   const KEY = 'fiji_bgm';
 
-  // ---- saved settings ----
+
   let st = { vol: DEFAULT_VOL, muted: false };
   try { Object.assign(st, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} };
 
-  // ---- audio ----
   const audio = new Audio(SRC);
   audio.loop = true;
   audio.preload = 'auto';
@@ -26,21 +19,20 @@
     if (started) return;
     audio.play().then(() => { started = true; removeUnlock(); }).catch(() => {});
   }
-  // Browsers block autoplay until the visitor interacts, so we start on the first tap/click/key.
+
   const unlockEvents = ['pointerdown', 'touchend', 'keydown', 'click'];
   const unlock = () => start();
   const removeUnlock = () => unlockEvents.forEach(ev => window.removeEventListener(ev, unlock, true));
   unlockEvents.forEach(ev => window.addEventListener(ev, unlock, true));
-  start(); // works if the browser allows autoplay
+  start();
 
-  // pause when the tab is hidden, resume when back
+
   document.addEventListener('visibilitychange', () => {
     if (!started) return;
     if (document.hidden) audio.pause();
     else audio.play().catch(() => {});
   });
 
-  // ---- styles (uses the site's CSS variables) ----
   const css = document.createElement('style');
   css.textContent = `
   .bgm-wrap{position:relative;display:flex;align-items:center}
@@ -67,7 +59,7 @@
   `;
   document.head.appendChild(css);
 
-  // ---- UI ----
+
   const gearSvg = '<svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.07-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.49.49 0 0 0-.48-.41h-3.84a.49.49 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.74 8.84a.5.5 0 0 0 .12.64l2.03 1.58c-.05.31-.08.63-.08.94s.03.63.08.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.12.22.37.29.6.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.26.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg>';
 
   const wrap = document.createElement('div');
@@ -101,7 +93,7 @@
   });
   slider.addEventListener('input', () => {
     st.vol = slider.value / 100;
-    if (st.vol > 0 && st.muted) st.muted = false; // moving the slider un-mutes
+    if (st.vol > 0 && st.muted) st.muted = false;
     apply(); save(); refresh(); start();
   });
   gear.addEventListener('click', e => {
@@ -117,7 +109,6 @@
     if (e.key === 'Escape') { panel.classList.remove('open'); gear.classList.remove('open'); }
   });
 
-  // place the gear in the top nav, just before the Connect wallet button
   function mount() {
     const cbtn = document.getElementById('cbtn');
     if (cbtn && cbtn.parentNode) cbtn.parentNode.insertBefore(wrap, cbtn);
@@ -126,6 +117,5 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
   else mount();
 
-  // optional: let other scripts control it
   window.FIJI_MUSIC = { audio, getState: () => ({ ...st }) };
 })();
