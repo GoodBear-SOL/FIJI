@@ -13,11 +13,14 @@ const db=()=>C.getSupabase();
 const wallet=()=>C.getWallet();
 const onBurrow=()=>sec.classList.contains('on');
 
+const EDGE='https://tmceqqciccnnlxjiobgc.supabase.co/functions/v1/dynamic-api';
+
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtN=n=>Number(n||0).toLocaleString();
 const errMsg=e=>{
   const m=String((e&&e.message)||e||'Something went wrong');
   if(/could not find the function|does not exist/i.test(m))return 'The farm is not set up yet (run farm.sql)';
+  if(/user rejected|rejected the request|declined|denied/i.test(m))return 'Signature cancelled';
   return m.charAt(0).toUpperCase()+m.slice(1);
 };
 function fmtLeft(ms){
@@ -33,6 +36,8 @@ let busy=false;
 let failed=false;
 let lastWallet=null;
 let view={open:false,mode:'market',tab:'seeds',plot:null};
+let mkt={list:[],mine:[],loading:false,err:''};
+let sess={token:null,wallet:null,exp:0};
 const nowMs=()=>Date.now()+skew;
 
 const IMG_OK=/^[\w .\-]+\.(png|jpe?g|webp|gif|svg)$/i;
@@ -56,6 +61,7 @@ const own=id=>{
   const r=st.inventory.find(x=>x.item_id===id);
   return r?Number(r.qty)||0:0;
 };
+const cropQty=c=>c.to_carrots?(st?Number(st.carrots)||0:0):own('crop:'+c.id);
 
 
 function inventoryItems(){
@@ -88,6 +94,7 @@ function setState(d){
   if(p&&Number.isFinite(pts))p.textContent=pts;
   publish();
   render();
+  try{window.FIJI_BUNXP&&window.FIJI_BUNXP.refresh&&window.FIJI_BUNXP.refresh()}catch(e){}
 }
 async function loadState(){
   const w=wallet();
@@ -120,6 +127,94 @@ async function act(fn,args,okMsg){
     toast(errMsg(e));
     return null;
   }finally{busy=false}
+}
+
+/* ---------- MARKET: wallet sign-in + edge function ---------- */
+async function edge(body){
+  const r=await fetch(EDGE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  let j={};
+  try{j=await r.json()}catch(e){}
+  return {ok:r.ok,status:r.status,j};
+}
+async function signMsg(bytes){
+  const p=C.getProvider&&C.getProvider(),w=wallet();
+  if(!p)throw new Error('Connect your wallet first');
+  let sig;
+  if(typeof p.signMessage==='function'){
+    const r=await p.signMessage(bytes,'utf8');
+    sig=(r&&r.signature)?r.signature:r;
+  }else{
+    const f=p.features&&p.features['solana:signMessage'];
+    if(!f)throw new Error('This wallet cannot sign messages');
+    const acc=(p.accounts||[]).find(a=>a.address===w)||(p.accounts||[])[0];
+    const r=await f.signMessage({account:acc,message:bytes});
+    sig=r&&r[0]&&r[0].signature;
+  }
+  if(!sig)throw new Error('The wallet did not return a signature');
+  return Uint8Array.from(sig);
+}
+async function signIn(){
+  const w=wallet();
+  if(!w)throw new Error('Connect your wallet first');
+  const n=await edge({action:'nonce'});
+  if(!n.ok||!n.j.nonce)throw new Error(n.j.error||'Market sign-in is not available');
+  const sig=await signMsg(new TextEncoder().encode(n.j.message));
+  let bin='';sig.forEach(b=>bin+=String.fromCharCode(b));
+  const l=await edge({action:'login',wallet:w,nonce:n.j.nonce,signature:btoa(bin)});
+  if(!l.ok||!l.j.token)throw new Error(l.j.error||'Sign-in failed');
+  sess={token:l.j.token,wallet:w,exp:Date.now()+11*3600e3};
+}
+async function ensureSession(){
+  const w=wallet();
+  if(sess.token&&sess.wallet===w&&Date.now()<sess.exp)return;
+  sess={token:null,wallet:null,exp:0};
+  await signIn();
+}
+async function market(action,body){
+  if(!wallet())throw new Error('Connect your wallet first');
+  await ensureSession();
+  let r=await edge(Object.assign({action,token:sess.token},body));
+  if(r.j&&r.j.relogin){
+    sess={token:null,wallet:null,exp:0};
+    await signIn();
+    r=await edge(Object.assign({action,token:sess.token},body));
+  }
+  if(!r.ok||r.j.error)throw new Error(r.j.error||'Market request failed');
+  return r.j.data;
+}
+async function marketAct(action,body,okMsg){
+  if(busy)return null;
+  busy=true;
+  try{
+    const data=await market(action,body);
+    if(data&&data.now)setState(data);
+    if(okMsg)toast(typeof okMsg==='function'?okMsg(data):okMsg);
+    loadMarket();
+    return data;
+  }catch(e){
+    toast(errMsg(e));
+    return null;
+  }finally{busy=false}
+}
+async function loadMarket(){
+  if(!cat)return;
+  mkt.loading=true;mkt.err='';
+  if(view.open)renderModal();
+  try{
+    const w=wallet();
+    const [a,b]=await Promise.all([
+      db().rpc('fiji_market_listings',{p_crop:null}),
+      w?db().rpc('fiji_market_my_listings',{p_wallet:w}):Promise.resolve({data:[]})
+    ]);
+    if(a.error)throw a.error;
+    if(b.error)throw b.error;
+    mkt.list=a.data||[];mkt.mine=b.data||[];
+  }catch(e){
+    console.warn('market load failed',e);
+    mkt.err='The player market is not available right now 💧';
+  }
+  mkt.loading=false;
+  if(view.open)renderModal();
 }
 
 const css=document.createElement('style');
@@ -166,6 +261,7 @@ css.textContent=`
 .fm-soon b{font:700 18px Fredoka,sans-serif}
 .fm-soon p{margin:4px 0 0;font-size:14px}
 .fm-empty{text-align:center;padding:18px 10px}
+.fm-sub{font:600 14px Fredoka,sans-serif;letter-spacing:.08em;text-transform:uppercase;opacity:.7;margin:6px 2px 0}
 .bun-icon {
   display: inline-block;
   width: 20px;
@@ -210,7 +306,7 @@ farm.id='fmFarm';
 farm.innerHTML=
   '<div class="tag">your farm</div><h2>Bunny Field</h2>'+
   '<div class="sticker card fm-top"><span class="fm-bigem">🛍️</span>'+
-  '<div class="fm-topt"><h3>Market</h3><p class="small">Buy seeds and water, then grow vegetables in your field.</p></div>'+
+  '<div class="fm-topt"><h3>Market</h3><p class="small">Buy seeds and water, grow vegetables, and trade them with other players.</p></div>'+
   '<button class="btn" type="button" data-a="market">Open Market</button></div>'+
   '<div class="sticker card" style="margin-top:14px"><div class="fm-stats" id="fmStats"></div>'+
   '<div class="fm-grid" id="fmField"></div>'+
@@ -329,6 +425,55 @@ function buyRow(o){
     '<div class="fm-buy"><input class="fm-q" type="number" min="1" max="99" value="1" inputmode="numeric" data-q="'+esc(o.id)+'" data-price="'+o.price+'">'+
     '<button class="btn sm" type="button" data-a="buy" data-item="'+esc(o.id)+'" data-price="'+o.price+'">Buy · '+fmtN(o.price)+'</button></div></div>';
 }
+function vegBody(){
+  if(mkt.err)return '<div class="fm-empty">'+esc(mkt.err)+'</div>';
+  if(mkt.loading&&!mkt.list.length)return '<div class="fm-empty">Loading listings…</div>';
+  const me=wallet();
+  if(!mkt.list.length)return '<div class="fm-soon"><b>No vegetables for sale yet</b><p>Be the first: harvest something and list it in the 💰 Sell tab.</p></div>';
+  const note='<div class="fm-soon"><b>Player market</b><p>Buyers pay '+esc(cat.config.market_markup_pct)+'% more than the base value, and sellers receive the base value. Buyer and seller both earn BunXP on each sale.</p></div>';
+  return note+mkt.list.map(l=>{
+    const c=crop(l.crop_id);
+    if(!c)return '';
+    const mine=me&&l.seller===me;
+    const max=Math.min(99,Number(l.qty)||1);
+    return '<div class="fm-row">'+pic(c.crop_img,c.crop_emoji)+
+      '<div class="fm-info"><b>'+esc(c.name)+' × '+fmtN(l.qty)+'</b>'+
+      '<span>Seller: '+esc(l.seller_name)+(mine?' (you)':'')+'</span>'+
+      '<span><img src="./bun-coin.png" class="bun-icon" alt=""> '+fmtN(l.unit_price)+' BUN each · +'+fmtN(c.market_xp||0)+' BunXP each</span></div>'+
+      (mine
+        ?'<span class="pill">Yours</span>'
+        :'<div class="fm-buy"><input class="fm-q" type="number" min="1" max="'+max+'" value="1" inputmode="numeric" data-price="'+l.unit_price+'">'+
+         '<button class="btn sm" type="button" data-a="mbuy" data-listing="'+Number(l.listing_id)+'" data-price="'+l.unit_price+'" data-pre="Buy · ">Buy · '+fmtN(l.unit_price)+'</button></div>')+
+      '</div>';
+  }).join('');
+}
+function sellBody(){
+  const me=wallet();
+  if(!me)return '<div class="fm-empty">Connect your wallet to sell vegetables 🐰</div>';
+  let html='<div class="fm-soon"><b>Sell your vegetables</b><p>You receive the base value. Your listing is also posted to the chat so everyone can see it. Items are held while listed and returned if you cancel.</p></div>';
+  const rows=cat.crops.map(c=>{
+    const have=cropQty(c);
+    if(have<1)return '';
+    const unit=Math.ceil(c.base_value*(100+Number(cat.config.market_markup_pct))/100);
+    return '<div class="fm-row">'+pic(c.crop_img,c.crop_emoji)+
+      '<div class="fm-info"><b>'+esc(c.name)+'</b><span>You have: '+fmtN(have)+'</span>'+
+      '<span>Buyers pay '+fmtN(unit)+' · you get '+fmtN(c.base_value)+' BUN · +'+fmtN(c.market_xp||0)+' BunXP each</span></div>'+
+      '<div class="fm-buy"><input class="fm-q" type="number" min="1" max="'+Math.min(99,have)+'" value="1" inputmode="numeric" data-price="'+c.base_value+'">'+
+      '<button class="btn sm" type="button" data-a="msell" data-crop="'+esc(c.id)+'" data-price="'+c.base_value+'" data-pre="Sell · ">Sell · '+fmtN(c.base_value)+'</button></div></div>';
+  }).join('');
+  html+=rows||'<div class="fm-empty">You have no harvested vegetables to sell yet 🌱</div>';
+  html+='<div class="fm-sub">My listings</div>';
+  if(mkt.err)html+='<div class="fm-empty">'+esc(mkt.err)+'</div>';
+  else if(!mkt.mine.length)html+='<div class="fm-empty small">You have no active listings.</div>';
+  else html+=mkt.mine.map(l=>{
+    const c=crop(l.crop_id)||{name:l.crop_id,crop_emoji:'🥬',crop_img:''};
+    return '<div class="fm-row">'+pic(c.crop_img,c.crop_emoji)+
+      '<div class="fm-info"><b>'+esc(c.name)+' × '+fmtN(l.qty)+'</b>'+
+      '<span>'+fmtN(l.unit_price)+' BUN each · you get '+fmtN(l.unit_payout)+'</span></div>'+
+      '<button class="btn sm alt" type="button" data-a="mcancel" data-listing="'+Number(l.listing_id)+'">Cancel</button></div>';
+  }).join('');
+  return html;
+}
 function marketBody(){
   if(!cat)return '<div class="fm-empty">'+(failed?'The market is not available right now 💧':'Loading the market…')+'</div>';
   if(view.tab==='water'){
@@ -336,16 +481,8 @@ function marketBody(){
     return buyRow({id:'water',img:w.img,emoji:w.emoji,name:w.name,price:w.price,
       l1:'Used to water your plants',l2:'You have: '+fmtN(own('water'))});
   }
-  if(view.tab==='veg'){
-    return '<div class="fm-soon"><b>Player market opens soon</b><p>You will be able to sell vegetables you grew to other players here. Buyers pay '+
-      esc(cat.config.market_markup_pct)+'% more than the base value. Here is what each one is worth:</p></div>'+
-      cat.crops.map(c=>{
-        const have=c.to_carrots?(st?Number(st.carrots)||0:0):own('crop:'+c.id);
-        return '<div class="fm-row">'+pic(c.crop_img,c.crop_emoji)+
-          '<div class="fm-info"><b>'+esc(c.name)+'</b><span>Base value '+fmtN(c.base_value)+' BUN</span><span>Market price '+fmtN(c.market_price)+' BUN</span></div>'+
-          '<span class="pill">You have '+fmtN(have)+'</span></div>';
-      }).join('');
-  }
+  if(view.tab==='veg')return vegBody();
+  if(view.tab==='sell')return sellBody();
   return cat.crops.map(c=>buyRow({
     id:'seed:'+c.id,img:c.seed_img,emoji:c.seed_emoji,name:c.name+' seed',price:c.seed_price,
     l1:esc(c.waterings)+' watering'+(c.waterings===1?'':'s')+' · ready '+esc(c.grow_hours)+'h after the last one',
@@ -370,7 +507,7 @@ function renderModal(){
   }
   const tab=(k,l)=>'<button class="mk-p'+(view.tab===k?' on':'')+'" type="button" data-a="tab" data-tab="'+k+'">'+l+'</button>';
   sheet.innerHTML=headHtml('🛍️ Market')+
-    '<div class="fm-tabs">'+tab('seeds','🌱 Seeds')+tab('veg','🥕 Vegetables')+tab('water','💧 Water')+'</div>'+
+    '<div class="fm-tabs">'+tab('seeds','🌱 Seeds')+tab('water','💧 Water')+tab('veg','🥕 Buy veg')+tab('sell','💰 Sell')+'</div>'+
     '<div class="fm-body">'+marketBody()+'</div>';
 }
 function openModal(mode,tab,plot){
@@ -378,6 +515,7 @@ function openModal(mode,tab,plot){
   modal.classList.add('on');
   renderModal();
   if(!cat||(wallet()&&!st))loadState();
+  if(view.mode==='market'&&(view.tab==='veg'||view.tab==='sell'))loadMarket();
 }
 function closeModal(){
   view.open=false;
@@ -389,10 +527,16 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&view.open)closeModa
 modal.addEventListener('input',e=>{
   const q=e.target.closest&&e.target.closest('.fm-q');
   if(!q)return;
-  const qty=Math.min(99,Math.max(1,parseInt(q.value,10)||1));
-  const btn=q.parentNode.querySelector('[data-a="buy"]');
-  if(btn)btn.textContent='Buy · '+fmtN(Number(q.dataset.price)*qty);
+  const maxQ=Number(q.max)||99;
+  const qty=Math.min(maxQ,Math.max(1,parseInt(q.value,10)||1));
+  const btn=q.parentNode.querySelector('button[data-price]');
+  if(btn)btn.textContent=(btn.dataset.pre||'Buy · ')+fmtN(Number(q.dataset.price)*qty);
 });
+function qtyOf(b){
+  const row=b.closest('.fm-buy'),q=row&&row.querySelector('.fm-q');
+  const maxQ=Number(q&&q.max)||99;
+  return Math.min(maxQ,Math.max(1,parseInt(q&&q.value,10)||1));
+}
 
 async function onClick(e){
   const b=e.target.closest('[data-a]');
@@ -401,17 +545,50 @@ async function onClick(e){
   if(a==='market')return openModal('market','seeds');
   if(a==='market-water')return openModal('market','water');
   if(a==='close')return closeModal();
-  if(a==='tab'){view.tab=b.dataset.tab;return renderModal()}
+  if(a==='tab'){
+    view.tab=b.dataset.tab;renderModal();
+    if(view.tab==='veg'||view.tab==='sell')loadMarket();
+    return;
+  }
   if(a==='pick'){
     if(!wallet())return toast('Connect your wallet first');
     return openModal('pick',null,plot);
   }
   if(a==='buy'){
-    const row=b.closest('.fm-buy'),q=row&&row.querySelector('.fm-q');
-    const qty=Math.min(99,Math.max(1,parseInt(q&&q.value,10)||1));
+    const qty=qtyOf(b);
     const item=b.dataset.item;
     const label=item==='water'?waterItem().name:((crop(item.slice(5))||{}).name||'')+' seed';
     return void act('fiji_farm_buy',{p_item:item,p_qty:qty},'Bought '+qty+' × '+label+' ✔');
+  }
+  if(a==='mbuy'){
+    if(!wallet())return toast('Connect your wallet first');
+    const qty=qtyOf(b),id=Number(b.dataset.listing);
+    const l=mkt.list.find(x=>Number(x.listing_id)===id);
+    if(!l)return toast('This listing is gone. Refreshing…'),loadMarket();
+    const c=crop(l.crop_id)||{name:l.crop_id,crop_emoji:'🥬'};
+    const total=Number(l.unit_price)*qty;
+    const ok=await askConfirm({
+      emoji:c.crop_emoji,
+      title:'Buy '+qty+' × '+c.name+'?',
+      text:'From '+l.seller_name+'. You both earn BunXP.',
+      price:total,
+      balance:st?Number(st.points):null,
+      confirmLabel:'Buy'
+    });
+    if(!ok)return;
+    return void marketAct('buy',{listing:id,qty},d=>{
+      const x=d&&d.bought&&d.bought.xp;
+      return 'Bought '+qty+' × '+c.name+' ✔'+(x?' · +'+fmtN(x)+' BunXP':'');
+    });
+  }
+  if(a==='msell'){
+    if(!wallet())return toast('Connect your wallet first');
+    const qty=qtyOf(b),id=b.dataset.crop,c=crop(id);
+    return void marketAct('list',{crop:id,qty},'Listed '+qty+' × '+(c?c.name:id)+' 💰 (posted to chat)');
+  }
+  if(a==='mcancel'){
+    const id=Number(b.dataset.listing);
+    return void marketAct('cancel',{listing:id},'Listing cancelled. Items returned ✔');
   }
   if(a==='plant'){
     const id=b.dataset.crop,p=view.plot;
@@ -480,7 +657,10 @@ setInterval(()=>{
   const w=wallet()||null;
   if(w===lastWallet)return;
   lastWallet=w;
-  st=null;publish();render();
+  st=null;publish();
+  if(sess.wallet!==w)sess={token:null,wallet:null,exp:0};
+  mkt={list:[],mine:[],loading:false,err:''};
+  render();
   if(w&&onBurrow())loadState();
 },1500);
 new MutationObserver(()=>{if(onBurrow()&&wallet())loadState()}).observe(sec,{attributes:true,attributeFilter:['class']});
@@ -489,5 +669,5 @@ loadCatalog().then(render).catch(e=>{console.warn('farm catalog unavailable (is 
 render();
 if(onBurrow()&&wallet())loadState();
 
-window.FIJI_FARM={inventoryItems,refresh:loadState,open:openModal};
+window.FIJI_FARM={inventoryItems,refresh:loadState,open:openModal,refreshMarket:loadMarket};
 })();
