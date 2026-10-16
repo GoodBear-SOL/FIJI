@@ -996,7 +996,28 @@ async function memePair(sym,chain){
  if(!p){try{p=await findPair(sym,chain,[sym])}catch(e){}}
  return p&&liq(p)>=10000?p:null;
 }
-async function loadFiji(){const d=await ds('/token-pairs/v1/solana/'+encodeURIComponent(CFG.FIJI_MINT));return best(Array.isArray(d)?d:[])}
+/* FIJI card only: Pump.fun bonding-curve pairs come from DexScreener with no liquidity field.
+   For those, show the real SOL held in the curve (in USD) instead of $0.
+   This only fills in the object used by the Burrow card. Buy/Sell on the Trade Pad
+   fetch their own pair data and are not touched by this. */
+async function loadFiji(){
+ const d=await ds('/token-pairs/v1/solana/'+encodeURIComponent(CFG.FIJI_MINT));
+ const p=best(Array.isArray(d)?d:[]);
+ if(p&&!liq(p)&&p.dexId==='pumpfun'){
+  try{
+   const [pda]=solanaWeb3.PublicKey.findProgramAddressSync(
+    [new TextEncoder().encode('bonding-curve'),new solanaWeb3.PublicKey(CFG.FIJI_MINT).toBytes()],
+    new solanaWeb3.PublicKey('6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P'));
+   const acc=await conn.getAccountInfo(pda);
+   const solUsd=num(p.priceUsd)/num(p.priceNative);
+   if(acc&&acc.data.length>=49&&solUsd>0){
+    const dv=new DataView(acc.data.buffer,acc.data.byteOffset,acc.data.byteLength);
+    p.liquidity={usd:Number(dv.getBigUint64(32,true))/1e9*solUsd};
+   }
+  }catch(e){}
+ }
+ return p;
+}
 async function loadHot(){
  const b=await ds('/token-boosts/top/v1'),by={};
  (Array.isArray(b)?b:[]).slice(0,40).forEach(t=>{if(/^[a-z0-9-]+$/i.test(t.chainId||'')&&t.tokenAddress)(by[t.chainId]=by[t.chainId]||[]).push(t.tokenAddress)});
@@ -1057,7 +1078,7 @@ function renderHero(p){
   <div class="mk-hp"><div><div class="small">FIJI price</div><div class="mk-price big">${fp(p.priceUsd)}</div></div><div class="mk-chips">${chips(pc)}</div></div>${wave(p)}
   <div class="mk-hs">
    <div><b>${fm(p.marketCap||p.fdv)}</b><span class="small">market cap</span></div>
-   <div><b>${fm(liq(p))}</b><span class="small">liquidity</span></div>
+   <div><b>${liq(p)?fm(liq(p)):'–'}</b><span class="small">liquidity</span></div>
    <div><b>${fm(p.volume&&p.volume.h24)}</b><span class="small">volume 24h</span></div>
    <div><b>${t.buys==null?'–':t.buys} / ${t.sells==null?'–':t.sells}</b><span class="small">buys / sells 24h</span></div>
   </div>
@@ -1262,4 +1283,3 @@ go('home');
 
 </body>
 </html>
-
