@@ -1142,10 +1142,14 @@ async function refreshPortfolioSoon(mint){
   }
 }
 
+/* BUN claim: the server re-checks the transaction on-chain, so it is safe to call
+   this even when the browser could not confirm the trade itself. It keeps retrying
+   while the server cannot see the transaction yet or the network hiccups. */
 async function claimTradePoints(sig,mint){
   const wallet=walletAddress();
   if(!wallet||!sig)return;
-  for(let i=0;i<5;i++){
+  const MAX_TRIES=10;
+  for(let i=0;i<MAX_TRIES;i++){
     try{
       const res=await routerPost('/claim',{wallet,signature:sig,mint});
       if(res?.awarded){
@@ -1157,9 +1161,9 @@ async function claimTradePoints(sig,mint){
       return;
     }catch(e){
       const m=String(e.message||e);
-      if(/not found yet|could not read/i.test(m)&&i<4){await sleep(3000);continue}
+      if(/not found yet|could not read|timed out|failed to fetch|load failed|networkerror|HTTP 5\d\d/i.test(m)&&i<MAX_TRIES-1){await sleep(4000);continue}
       console.warn('Trade points claim failed',e);
-      toast(m);
+      toast('BUN claim failed: '+m);
       return;
     }
   }
@@ -1237,6 +1241,9 @@ async function executeTrade(){
     }else if(conf.status==='unknown'){
       if(UI)UI.result({ok:null,info,sig,title:'Still confirming',text:'We could not confirm it yet. Check Solscan to see if it went through.'});
       else toast('Sent, but could not confirm yet');
+      // The server checks the transaction itself, so still try to claim the BUN
+      // (runs in the background so the popup does not wait).
+      claimTradePoints(sig,mint);
     }else{
       if(UI)UI.result({ok:true,info,sig,title:buy?'Buy successful':'Sell successful',text:'Your trade is confirmed on Solana.'});
       else toast('Trade confirmed ✔');
