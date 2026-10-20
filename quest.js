@@ -136,7 +136,7 @@ async function load(){
 
 /* ---------- sign in + cook through the farm-market edge function ---------- */
 async function edge(body){
-  const {data,error}=await db().functions.invoke('farm-market',{body});
+  const {data,error}=await db().functions.invoke('clever-api',{body});
   if(error){
     let j=null;
     try{j=await error.context.json()}catch(e){}
