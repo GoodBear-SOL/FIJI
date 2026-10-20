@@ -337,10 +337,13 @@ harvestSound.preload = 'auto';
 function plotHtml(p,now,waterQty){
   const n=p.plot_no;
   if(!p.crop_id){
-    return '<div class="fm-plot empty"><span class="fm-pic big"><span class="fm-em">🟫</span></span><b>Plot '+n+'</b>'+
+    return '<div class="fm-plot empty">'+
+      pic('./plot.png', '🟫', 'big')+
+      '<b>Plot '+n+'</b>'+
       '<span class="small">Empty</span>'+
       '<button class="btn sm" type="button" data-a="pick" data-plot="'+n+'">🌱 Plant</button></div>';
   }
+
   const c=crop(p.crop_id)||{name:p.crop_id,waterings:Number(p.waterings_done)||1,grow_hours:24,
     seed_emoji:'🌱',crop_emoji:'🥬',seed_img:'',crop_img:''};
   const need=Number(c.waterings)||1,done=Number(p.waterings_done)||0;
