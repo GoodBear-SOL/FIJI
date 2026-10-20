@@ -338,7 +338,7 @@ function plotHtml(p,now,waterQty){
   const n=p.plot_no;
   if(!p.crop_id){
     return '<div class="fm-plot empty">'+
-      pic('./plot.png', '🟫', 'big')+
+      pic('plot.png', '🟫', 'big')+
       '<b>Plot '+n+'</b>'+
       '<span class="small">Empty</span>'+
       '<button class="btn sm" type="button" data-a="pick" data-plot="'+n+'">🌱 Plant</button></div>';
