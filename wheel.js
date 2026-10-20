@@ -15,7 +15,7 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 
 const SIZE=320;
 const COLORS=['#FFF3C4','#BFE3FF','#B8F5D2','#FFD0D8'];
-const DEFAULT_STATUS={used:0,limit:5,cost:100};
+const DEFAULT_STATUS={used:0,limit:5,cost:50};
 
 let prizes=[];
 let totalW=0;
@@ -36,7 +36,8 @@ css.textContent=`
 .wh-pointer{position:absolute;top:-14px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:26px solid var(--ink);z-index:3;filter:drop-shadow(0 2px 0 rgba(0,0,0,.2))}
 .wh-rim{position:absolute;inset:0;border:4px solid var(--ink);border-radius:50%;box-shadow:0 6px 0 var(--ink);overflow:hidden;background:#fff}
 #whCanvas{width:100%;height:100%;display:block;transition:transform 4.6s cubic-bezier(.12,.72,.08,1)}
-.wh-hub{position:absolute;left:50%;top:50%;width:54px;height:54px;transform:translate(-50%,-50%);border-radius:50%;border:4px solid var(--ink);background:var(--sun);z-index:2;display:flex;align-items:center;justify-content:center;font-size:24px}
+.wh-hub{position:absolute;left:50%;top:50%;width:54px;height:54px;transform:translate(-50%,-50%);border-radius:50%;border:4px solid var(--ink);background:var(--sun);z-index:2;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.wh-hub img{width:100%;height:100%;object-fit:contain;display:block}
 .wh-info{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:6px 0 10px}
 .wh-res{min-height:56px;margin:8px 0;padding:8px 12px;border:2.5px dashed var(--ink);border-radius:16px;background:#fff;font:600 18px Fredoka,sans-serif;display:flex;align-items:center;justify-content:center}
 .wh-res.win{background:#B8F5D2}
@@ -77,7 +78,7 @@ modal.innerHTML=
  '<div class="sticker wh-sheet" role="dialog" aria-modal="true" aria-label="Lucky Wheel">'+
   '<div class="wh-head"><h3>🎡 Lucky Wheel</h3><button class="btn sm alt" type="button" data-a="close" aria-label="Close">✕</button></div>'+
   '<div class="wh-info" id="whInfo"></div>'+
-  '<div class="wh-stage"><div class="wh-pointer"></div><div class="wh-rim"><canvas id="whCanvas"></canvas></div><div class="wh-hub">🐰</div></div>'+
+  '<div class="wh-stage"><div class="wh-pointer"></div><div class="wh-rim"><canvas id="whCanvas"></canvas></div><div class="wh-hub"><img src="BUN%20COIN.png" alt="BUN Coin"></div></div>'+
   '<div class="wh-res" id="whRes">Press spin and good luck!</div>'+
   '<button class="btn full" type="button" id="whSpin" data-a="spin">Spin</button>'+
   '<details class="wh-odds"><summary>See prizes and odds</summary><table id="whOdds"></table></details>'+
@@ -158,7 +159,7 @@ async function loadStatus(){
     const {data,error}=await db().rpc('fiji_wheel_status',{p_wallet:w});
     if(error)throw error;
     if(w!==wallet())return;
-    status={used:Number(data.used)||0,limit:Number(data.limit)||5,cost:Number(data.cost)||100};
+    status={used:Number(data.used)||0,limit:Number(data.limit)||5,cost:Number(data.cost)||50};
   }catch(e){console.warn('wheel status failed',e)}
   paintInfo();
 }
