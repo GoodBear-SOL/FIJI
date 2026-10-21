@@ -1092,34 +1092,20 @@ async function verifyFijiHolder() {
 const FIJI_MIN_HOLD = 2_000_000;
 let fijiAutoCheckId = 0;
 
-function setFijiHolderStatus(message) {
-  let el = $('fijiHolderStatus');
+function setFijiHolderStatus(type, text) {
+  const el = $('holder');
+  if (!el) return;
 
-  if (!message) {
-    if (el) el.remove();
+  if (!type) {
+    el.innerHTML = '';
     return;
   }
 
-  if (!el) {
-    const connectButton = $('cbtn');
-    if (!connectButton) return;
-
-    el = document.createElement('span');
-    el.id = 'fijiHolderStatus';
-    el.className = 'small';
-
-    el.style.cssText =
-      'display:inline-block;max-width:260px;font-size:12px;' +
-      'line-height:1.4;margin-left:8px;white-space:normal;';
-
-    connectButton.insertAdjacentElement('afterend', el);
-  }
-
-  el.textContent = message;
+  const cls = type === 'yes' ? 'pill g' : 'pill';
+  el.innerHTML = `<span class="${cls}">${esc(text)}</span>`;
 }
 
 function clearFijiHolderStatus() {
-
   fijiAutoCheckId++;
   setFijiHolderStatus('');
 }
@@ -1193,7 +1179,7 @@ async function readFijiTokenBalance(address) {
 async function autoDetectFijiHolder(address) {
   const checkId = ++fijiAutoCheckId;
 
-  setFijiHolderStatus('Checking FIJI holdings...');
+  setFijiHolderStatus('info', 'Checking FIJI LABS holdings…');
 
   let balance;
   let lastError;
@@ -1212,42 +1198,19 @@ async function autoDetectFijiHolder(address) {
     }
   }
 
-  if (
-    checkId !== fijiAutoCheckId ||
-    wallet !== address
-  ) {
-    return;
-  }
+  if (checkId !== fijiAutoCheckId || wallet !== address) return;
 
   if (lastError) {
     console.error('Automatic FIJI balance check failed:', lastError);
-
-    setFijiHolderStatus(
-      'Could not check FIJI holdings. The balance is unverified.'
-    );
-
+    setFijiHolderStatus('info', 'Could not check FIJI LABS holdings');
     return;
   }
 
-  const formatted = Number(balance).toLocaleString('en-US', {
-    maximumFractionDigits: 6
-  });
-
   if (balance >= FIJI_MIN_HOLD) {
-    setFijiHolderStatus(
-      `✅ FIJI holder detected · ${formatted} FIJI`
-    );
+    setFijiHolderStatus('yes', 'You hold FIJI LABS token🤑');
   } else {
-    setFijiHolderStatus(
-      `${formatted} FIJI · Below the 2,000,000 FIJI threshold`
-    );
+    setFijiHolderStatus('no', 'You need to get FIJI LABS💰');
   }
-
-  console.info('Automatic FIJI holder detection:', {
-    wallet: address,
-    balance,
-    qualifies: balance >= FIJI_MIN_HOLD
-  });
 }
 
 
@@ -1320,7 +1283,6 @@ async function loadAssets(){
   const rows=[...a.value,...b.value].map(x=>x.account.data.parsed.info).filter(i=>i.tokenAmount.uiAmount>0);
   const f=rows.find(i=>i.mint==CFG.FIJI_MINT);
   $('wstat').innerHTML=`Connected as <b>${short(wallet)}</b>`;
-  $('holder').innerHTML=f?`<span class="pill g">🐰 FIJI holder · ${f.tokenAmount.uiAmount.toLocaleString()} FIJI</span>`:`<span class="pill">No FIJI yet</span>`;
   $('rank').textContent=f?'Holder 🐰':'Visitor';
   $('assets').innerHTML='<tr><th>Asset</th><th>Balance</th></tr><tr><td>◎ SOL</td><td>'+(sol/1e9).toFixed(4)+'</td></tr>'+
    rows.map(i=>`<tr><td>${i.mint==CFG.FIJI_MINT?'💧 FIJI':short(i.mint)}</td><td>${i.tokenAmount.uiAmount.toLocaleString()}</td></tr>`).join('');
