@@ -859,7 +859,6 @@ async function afterConnect(o, r) {
 
   loadAssets();
 
-  // Automatically check FIJI holdings after wallet connection.
   void autoDetectFijiHolder(wallet);
 
   window.FIJI_TRADE?.walletChanged?.(wallet);
@@ -887,8 +886,6 @@ async function afterConnect(o, r) {
   }
 }
 
- 
-/* ---------- FIJI HOLDER VERIFICATION ---------- */
 
 const FIJI_HOLDER_ENDPOINT =
   CFG.SUPABASE_URL.replace(/\/+$/, '') +
@@ -934,7 +931,6 @@ function fijiBytesToBase64(bytes) {
 async function fijiSignHolderMessage(message, expectedWallet) {
   const messageBytes = new TextEncoder().encode(message);
 
-  // Wallet Standard signing, including compatible Solana wallets.
   const signFeature =
     provider?.features?.['solana:signMessage'];
 
@@ -963,7 +959,6 @@ async function fijiSignHolderMessage(message, expectedWallet) {
     return Uint8Array.from(result.signature);
   }
 
-  // Legacy wallet adapters, such as injected Phantom providers.
   if (typeof provider?.signMessage === 'function') {
     const result = await provider.signMessage(messageBytes, 'utf8');
     const signature = result?.signature ?? result;
@@ -1005,7 +1000,6 @@ async function verifyFijiHolder() {
   try {
     toast('Requesting a holder verification message...');
 
-    // Request a unique, short-lived challenge for this wallet.
     const challenge = await fijiHolderRequest({
       action: 'nonce',
       wallet: verifyWallet
@@ -1019,7 +1013,6 @@ async function verifyFijiHolder() {
       throw new Error('The server returned an invalid verification challenge.');
     }
 
-    // This signs a message only. It does not authorize a token transfer.
     const signature = await fijiSignHolderMessage(
       challenge.message,
       verifyWallet
@@ -1096,8 +1089,6 @@ async function verifyFijiHolder() {
 }
 
 
-/* ---------- AUTOMATIC FIJI HOLDER DETECTION ---------- */
-
 const FIJI_MIN_HOLD = 2_000_000;
 let fijiAutoCheckId = 0;
 
@@ -1128,8 +1119,7 @@ function setFijiHolderStatus(message) {
 }
 
 function clearFijiHolderStatus() {
-  // Invalidate any outstanding request so an old result cannot overwrite
-  // the status of a newly connected wallet.
+
   fijiAutoCheckId++;
   setFijiHolderStatus('');
 }
@@ -1142,7 +1132,6 @@ async function readFijiTokenBalance(address) {
   const owner = new solanaWeb3.PublicKey(address);
   const mint = new solanaWeb3.PublicKey(CFG.FIJI_MINT);
 
-  // Uses the Solana RPC connection already configured in index.html.
   const response = await conn.getParsedTokenAccountsByOwner(
     owner,
     { mint },
@@ -1182,7 +1171,6 @@ async function readFijiTokenBalance(address) {
     totalRaw += BigInt(token.amount);
   }
 
-  // A successful RPC response with no matching token accounts means zero.
   if (decimals === null) return 0;
 
   const divisor = 10n ** BigInt(decimals);
@@ -1210,7 +1198,6 @@ async function autoDetectFijiHolder(address) {
   let balance;
   let lastError;
 
-  // Retry once for a temporary network/RPC failure.
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       balance = await readFijiTokenBalance(address);
@@ -1416,10 +1403,7 @@ async function memePair(sym,chain){
  if(!p){try{p=await findPair(sym,chain,[sym])}catch(e){}}
  return p&&liq(p)>=10000?p:null;
 }
-/* FIJI card only: Pump.fun bonding-curve pairs come from DexScreener with no liquidity field.
-   For those, show the real SOL held in the curve (in USD) instead of $0.
-   This only fills in the object used by the Burrow card. Buy/Sell on the Trade Pad
-   fetch their own pair data and are not touched by this. */
+
 async function loadFiji(){
  const d=await ds('/token-pairs/v1/solana/'+encodeURIComponent(CFG.FIJI_MINT));
  const p=best(Array.isArray(d)?d:[]);
@@ -1566,7 +1550,6 @@ function startMarket(){
 }
 function stopMarket(){clearInterval(MK.timer);clearInterval(MK.tick)}
 
-/* market detail sheet with DexScreener chart */
 function closePair(){document.querySelectorAll('.mk-modal').forEach(m=>m.remove())}
 document.addEventListener('keydown',e=>{if(e.key=='Escape')closePair()});
 function openPair(k){
