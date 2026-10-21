@@ -764,11 +764,22 @@ async function connectWallet(o,opts){
   const p=o.legacy;
   const r=await p.connect(opts?.silent?{onlyIfTrusted:true}:undefined);
   p.on?.('disconnect',clearWallet);
-  p.on?.('accountChanged',pk=>{
-   if(!pk)return clearWallet();
-   wallet=pk.toString();provider=p;
-   $('cbtn').textContent=short(wallet)+' ✕';
-   loadAssets();window.FIJI_TRADE?.walletChanged?.(wallet);
+  p.on?.('accountChanged', pk => {
+    if (!pk) {
+      clearFijiHolderStatus();
+      return clearWallet();
+    }
+  
+    wallet = pk.toString();
+    provider = p;
+  
+    $('cbtn').textContent = short(wallet) + ' ✕';
+  
+    loadAssets();
+  
+    void autoDetectFijiHolder(wallet);
+  
+    window.FIJI_TRADE?.walletChanged?.(wallet);
   });
   const pk=r?.publicKey||p.publicKey;
   if(!pk)throw new Error('Wallet connected but no public key was returned');
@@ -834,19 +845,48 @@ function setProfile(p){
 
  updateRank(pts);
 }
-async function afterConnect(o,r){
- wallet=r.addr;provider=r.provider;cur={off:r.off};
- try{localStorage.setItem('fiji_wallet',o.name)}catch(e){}
- $('cbtn').textContent=short(wallet)+' ✕';
- loadAssets();
- window.FIJI_TRADE?.walletChanged?.(wallet);
- if(!db)return toast('Wallet connected (Supabase not set up yet)');
- try{
-  const {data,error}=await db.rpc('fiji_ensure_profile',{p_wallet:wallet,p_ref:new URLSearchParams(location.search).get('ref')});
-  if(error)throw error;
-  setProfile(data);toast('Wallet connected 🔗');
- }catch(e){toast('Connected, but Supabase failed: '+(e.message||e))}
+
+async function afterConnect(o, r) {
+  wallet = r.addr;
+  provider = r.provider;
+  cur = { off: r.off };
+
+  try {
+    localStorage.setItem('fiji_wallet', o.name);
+  } catch (e) {}
+
+  $('cbtn').textContent = short(wallet) + ' ✕';
+
+  loadAssets();
+
+  // Automatically check FIJI holdings after wallet connection.
+  void autoDetectFijiHolder(wallet);
+
+  window.FIJI_TRADE?.walletChanged?.(wallet);
+
+  if (!db) {
+    toast('Wallet connected. Checking FIJI holdings...');
+    return;
+  }
+
+  try {
+    const { data, error } = await db.rpc(
+      'fiji_ensure_profile',
+      {
+        p_wallet: wallet,
+        p_ref: new URLSearchParams(location.search).get('ref')
+      }
+    );
+
+    if (error) throw error;
+
+    setProfile(data);
+    toast('Wallet connected 🔗');
+  } catch (e) {
+    toast('Connected, but Supabase failed: ' + (e.message || e));
+  }
 }
+
  
 /* ---------- FIJI HOLDER VERIFICATION ---------- */
 
@@ -1055,22 +1095,174 @@ async function verifyFijiHolder() {
   }
 }
 
-window.addEventListener('load', () => {
-  const connectButton = $('cbtn');
 
-  if (!connectButton || $('fijiHolderVerifyBtn')) return;
+/* ---------- AUTOMATIC FIJI HOLDER DETECTION ---------- */
 
-  const button = document.createElement('button');
+const FIJI_MIN_HOLD = 2_000_000;
+let fijiAutoCheckId = 0;
 
-  button.id = 'fijiHolderVerifyBtn';
-  button.type = 'button';
-  button.className = 'btn sm alt';
-  button.textContent = 'Verify FIJI Holder';
-  button.title = 'Verify your FIJI balance using a signed message';
-  button.addEventListener('click', verifyFijiHolder);
+function setFijiHolderStatus(message) {
+  let el = $('fijiHolderStatus');
 
-  connectButton.insertAdjacentElement('afterend', button);
-});
+  if (!message) {
+    if (el) el.remove();
+    return;
+  }
+
+  if (!el) {
+    const connectButton = $('cbtn');
+    if (!connectButton) return;
+
+    el = document.createElement('span');
+    el.id = 'fijiHolderStatus';
+    el.className = 'small';
+
+    el.style.cssText =
+      'display:inline-block;max-width:260px;font-size:12px;' +
+      'line-height:1.4;margin-left:8px;white-space:normal;';
+
+    connectButton.insertAdjacentElement('afterend', el);
+  }
+
+  el.textContent = message;
+}
+
+function clearFijiHolderStatus() {
+  // Invalidate any outstanding request so an old result cannot overwrite
+  // the status of a newly connected wallet.
+  fijiAutoCheckId++;
+  setFijiHolderStatus('');
+}
+
+async function readFijiTokenBalance(address) {
+  if (!address) {
+    throw new Error('No connected wallet address.');
+  }
+
+  const owner = new solanaWeb3.PublicKey(address);
+  const mint = new solanaWeb3.PublicKey(CFG.FIJI_MINT);
+
+  // Uses the Solana RPC connection already configured in index.html.
+  const response = await conn.getParsedTokenAccountsByOwner(
+    owner,
+    { mint },
+    'confirmed'
+  );
+
+  if (!Array.isArray(response?.value)) {
+    throw new Error('Invalid Solana token-account response.');
+  }
+
+  let totalRaw = 0n;
+  let decimals = null;
+
+  for (const item of response.value) {
+    const info = item?.account?.data?.parsed?.info;
+
+    if (info?.mint !== CFG.FIJI_MINT) continue;
+
+    const token = info.tokenAmount;
+
+    if (
+      !token ||
+      typeof token.amount !== 'string' ||
+      !/^\d+$/.test(token.amount) ||
+      !Number.isInteger(token.decimals) ||
+      token.decimals < 0 ||
+      token.decimals > 18
+    ) {
+      throw new Error('Invalid FIJI token balance data.');
+    }
+
+    if (decimals !== null && decimals !== token.decimals) {
+      throw new Error('Inconsistent FIJI token decimals.');
+    }
+
+    decimals = token.decimals;
+    totalRaw += BigInt(token.amount);
+  }
+
+  // A successful RPC response with no matching token accounts means zero.
+  if (decimals === null) return 0;
+
+  const divisor = 10n ** BigInt(decimals);
+  const whole = totalRaw / divisor;
+  const fraction = totalRaw % divisor;
+
+  const balanceString = decimals === 0
+    ? whole.toString()
+    : `${whole}.${fraction.toString().padStart(decimals, '0')}`;
+
+  const balance = Number(balanceString);
+
+  if (!Number.isFinite(balance) || balance < 0) {
+    throw new Error('Invalid FIJI balance.');
+  }
+
+  return balance;
+}
+
+async function autoDetectFijiHolder(address) {
+  const checkId = ++fijiAutoCheckId;
+
+  setFijiHolderStatus('Checking FIJI holdings...');
+
+  let balance;
+  let lastError;
+
+  // Retry once for a temporary network/RPC failure.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      balance = await readFijiTokenBalance(address);
+      lastError = null;
+      break;
+    } catch (error) {
+      lastError = error;
+
+      if (attempt === 0) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+  }
+
+  if (
+    checkId !== fijiAutoCheckId ||
+    wallet !== address
+  ) {
+    return;
+  }
+
+  if (lastError) {
+    console.error('Automatic FIJI balance check failed:', lastError);
+
+    setFijiHolderStatus(
+      'Could not check FIJI holdings. The balance is unverified.'
+    );
+
+    return;
+  }
+
+  const formatted = Number(balance).toLocaleString('en-US', {
+    maximumFractionDigits: 6
+  });
+
+  if (balance >= FIJI_MIN_HOLD) {
+    setFijiHolderStatus(
+      `✅ FIJI holder detected · ${formatted} FIJI`
+    );
+  } else {
+    setFijiHolderStatus(
+      `${formatted} FIJI · Below the 2,000,000 FIJI threshold`
+    );
+  }
+
+  console.info('Automatic FIJI holder detection:', {
+    wallet: address,
+    balance,
+    qualifies: balance >= FIJI_MIN_HOLD
+  });
+}
+
 
 const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 const MOBILE_WALLETS=[
@@ -1097,12 +1289,16 @@ function pickMobile(){
  d.querySelector('.wx').onclick=()=>d.remove();
  d.onclick=e=>{if(e.target===d)d.remove()};
 }
+
 async function connect(){
  if(wallet){
   try{await cur?.off()}catch(e){}
   try{localStorage.removeItem('fiji_wallet')}catch(e){}
-  clearWallet();return toast('Disconnected');
+  clearWallet();
+  clearFijiHolderStatus();
+  return toast('Disconnected');
  }
+
  const list=await waitForWallets();
  if(!list.length){
  if(isMobile)return pickMobile();
