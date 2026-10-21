@@ -847,7 +847,231 @@ async function afterConnect(o,r){
   setProfile(data);toast('Wallet connected 🔗');
  }catch(e){toast('Connected, but Supabase failed: '+(e.message||e))}
 }
-/* ---------- MOBILE: open the site inside a wallet app ---------- */
+ 
+/* ---------- FIJI HOLDER VERIFICATION ---------- */
+
+const FIJI_HOLDER_ENDPOINT =
+  CFG.SUPABASE_URL.replace(/\/+$/, '') +
+  '/functions/v1/holder-check';
+
+async function fijiHolderRequest(body) {
+  const response = await fetch(FIJI_HOLDER_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'apikey': CFG.SUPABASE_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+
+  let payload;
+
+  try {
+    payload = await response.json();
+  } catch {
+    throw new Error('The verification server returned an invalid response.');
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      payload?.error || `Verification failed (HTTP ${response.status}).`
+    );
+  }
+
+  return payload;
+}
+
+function fijiBytesToBase64(bytes) {
+  let binary = '';
+
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+
+  return btoa(binary);
+}
+
+async function fijiSignHolderMessage(message, expectedWallet) {
+  const messageBytes = new TextEncoder().encode(message);
+
+  // Wallet Standard signing, including compatible Solana wallets.
+  const signFeature =
+    provider?.features?.['solana:signMessage'];
+
+  if (signFeature && typeof signFeature.signMessage === 'function') {
+    const account = provider.accounts?.find(
+      item => item.address === expectedWallet
+    );
+
+    if (!account) {
+      throw new Error(
+        'The connected wallet account was not found. Reconnect and try again.'
+      );
+    }
+
+    const signed = await signFeature.signMessage({
+      account,
+      message: messageBytes
+    });
+
+    const result = Array.isArray(signed) ? signed[0] : signed;
+
+    if (!result?.signature) {
+      throw new Error('The wallet did not return a message signature.');
+    }
+
+    return Uint8Array.from(result.signature);
+  }
+
+  // Legacy wallet adapters, such as injected Phantom providers.
+  if (typeof provider?.signMessage === 'function') {
+    const result = await provider.signMessage(messageBytes, 'utf8');
+    const signature = result?.signature ?? result;
+
+    if (!signature || typeof signature.length !== 'number') {
+      throw new Error('The wallet did not return a message signature.');
+    }
+
+    return Uint8Array.from(signature);
+  }
+
+  throw new Error(
+    'This wallet does not support message signing. Try a compatible Solana wallet.'
+  );
+}
+
+function fijiFormatTokenBalance(value) {
+  return Number(value).toLocaleString('en-US', {
+    maximumFractionDigits: 6
+  });
+}
+
+async function verifyFijiHolder() {
+  if (!wallet || !provider) {
+    toast('Connect your Solana wallet first.');
+    return;
+  }
+
+  const verifyWallet = wallet;
+  const button = $('fijiHolderVerifyBtn');
+
+  if (button?.disabled) return;
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Verifying...';
+  }
+
+  try {
+    toast('Requesting a holder verification message...');
+
+    // Request a unique, short-lived challenge for this wallet.
+    const challenge = await fijiHolderRequest({
+      action: 'nonce',
+      wallet: verifyWallet
+    });
+
+    if (
+      challenge.wallet !== verifyWallet ||
+      typeof challenge.nonce !== 'string' ||
+      typeof challenge.message !== 'string'
+    ) {
+      throw new Error('The server returned an invalid verification challenge.');
+    }
+
+    // This signs a message only. It does not authorize a token transfer.
+    const signature = await fijiSignHolderMessage(
+      challenge.message,
+      verifyWallet
+    );
+
+    if (wallet !== verifyWallet) {
+      throw new Error(
+        'Your connected wallet changed during verification. Please try again.'
+      );
+    }
+
+    const result = await fijiHolderRequest({
+      action: 'check',
+      wallet: verifyWallet,
+      nonce: challenge.nonce,
+      signature: fijiBytesToBase64(signature)
+    });
+
+    const data = result?.data;
+
+    if (!data) {
+      throw new Error('The server did not return a verification result.');
+    }
+
+    if (data.result === 'dry_run' && data.enabled === false) {
+      const balance = fijiFormatTokenBalance(data.balance);
+
+      if (data.qualifies) {
+        toast(
+          `Read-only check passed: ${balance} FIJI. ` +
+          'Meets the 2,000,000 FIJI threshold. No progress was changed.'
+        );
+      } else {
+        toast(
+          `Read-only check complete: ${balance} FIJI. ` +
+          'Below the 2,000,000 FIJI threshold. No progress was changed.'
+        );
+      }
+
+      console.info('FIJI holder verification (read-only):', {
+        wallet: verifyWallet,
+        balance: data.balance,
+        qualifies: data.qualifies,
+        enabled: data.enabled
+      });
+
+      return;
+    }
+
+    if (data.result === 'recent') {
+      toast('This wallet was checked recently. No new check was performed.');
+      return;
+    }
+
+    toast(
+      `Holder verification result: ${String(data.result || 'completed')}.`
+    );
+
+  } catch (error) {
+    const message = String(error?.message || error);
+
+    if (/reject|denied|cancel/i.test(message)) {
+      toast('Message signing was cancelled. No verification was completed.');
+    } else {
+      console.error('FIJI holder verification failed:', error);
+      toast(message);
+    }
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'Verify FIJI Holder';
+    }
+  }
+}
+
+window.addEventListener('load', () => {
+  const connectButton = $('cbtn');
+
+  if (!connectButton || $('fijiHolderVerifyBtn')) return;
+
+  const button = document.createElement('button');
+
+  button.id = 'fijiHolderVerifyBtn';
+  button.type = 'button';
+  button.className = 'btn sm alt';
+  button.textContent = 'Verify FIJI Holder';
+  button.title = 'Verify your FIJI balance using a signed message';
+  button.addEventListener('click', verifyFijiHolder);
+
+  connectButton.insertAdjacentElement('afterend', button);
+});
+
 const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 const MOBILE_WALLETS=[
  {name:'Phantom', em:'👻', link:(u,o)=>`https://phantom.app/ul/browse/${u}?ref=${o}`},
