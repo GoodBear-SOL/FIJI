@@ -10,7 +10,7 @@ if(!inv||!pts||!C.getWallet){
   return;
 }
 
-const COIN_FILE='BUN COIN.png';
+const COIN_FILE='bun-coin.png';
 const COIN_SRC=encodeURI(COIN_FILE);
 const BURST=10;
 const COUNT_MS=900;
