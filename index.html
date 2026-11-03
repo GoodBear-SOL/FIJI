@@ -384,6 +384,26 @@ th{font-family:Fredoka}
 footer .soc{justify-content:center;gap:10px;margin-bottom:16px}
 footer .soc a{width:40px;height:40px;box-shadow:0 3px 0 var(--ink)}
 footer .soc svg{width:19px;height:19px}
+
+/* ===== Account gear + dropdown ===== */
+.acct{position:relative;flex:none}
+#cbtn.gear{width:44px;height:44px;min-height:0;padding:0;border-radius:50%;font-size:22px;line-height:1;display:flex;align-items:center;justify-content:center;background:var(--sun);color:var(--ink)}
+#cbtn.gear.open{transform:translateY(2px);box-shadow:0 2px 0 var(--ink)}
+.acct-menu{display:none;position:absolute;right:0;top:calc(100% + 12px);z-index:50;width:268px;max-width:calc(100vw - 28px);
+ background:#fff;border:3px solid var(--ink);border-radius:22px;box-shadow:0 6px 0 var(--ink);padding:8px;gap:4px}
+.acct-menu.open{display:grid}
+.am-row{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;text-align:left;padding:10px 12px;border-radius:14px;font:600 16px Fredoka;color:var(--ink);cursor:pointer;min-width:0}
+.am-row:hover{background:var(--sun)}
+.am-ic{font-size:20px;line-height:1;flex:none;width:26px;text-align:center}
+.am-t{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.15}
+.am-t b{font:700 16px Fredoka;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.am-t small{font:600 11px Nunito;opacity:.65}
+.am-sw{margin-left:auto;font:600 12px Fredoka;border:2px solid var(--ink);border-radius:99px;padding:1px 10px;background:#B8F5D2;flex:none}
+.am-sw.off{background:#FFD0D8}
+.am-sep{height:2px;border-top:2px dashed var(--line);margin:2px 6px}
+.am-row.danger{color:var(--dni)}
+.am-row.danger:hover{background:#FFD0D8}
+#bag{scroll-margin-top:90px}
 </style>
 </head>
 
@@ -394,7 +414,30 @@ footer .soc svg{width:19px;height:19px}
  <div class="logo"><img src="fiji.png" alt="">fiji</div>
 </div>
  <div id="links"></div>
- <button class="btn sm" id="cbtn" onclick="connect()">Connect wallet</button>
+ <div class="acct" id="acct">
+  <button class="btn sm" id="cbtn" onclick="acctClick()">Connect wallet</button>
+  <div class="acct-menu" id="acctMenu" role="menu">
+   <button type="button" class="am-row" role="menuitem" onclick="acctAction('copy')">
+    <span class="am-ic">👛</span>
+    <span class="am-t"><b id="acctAddr">—</b><small>Wallet address · tap to copy</small></span>
+   </button>
+   <div class="am-sep"></div>
+   <button type="button" class="am-row" role="menuitem" onclick="acctAction('wallet')">
+    <span class="am-ic">🐰</span><span class="am-t"><b>My Wallet</b></span>
+   </button>
+   <button type="button" class="am-row" role="menuitem" onclick="acctAction('portfolio')">
+    <span class="am-ic">📊</span><span class="am-t"><b>Portfolio</b></span>
+   </button>
+   <button type="button" class="am-row" role="menuitem" onclick="acctAction('sound')">
+    <span class="am-ic" id="acctSoundIc">🔊</span><span class="am-t"><b>Sound</b></span>
+    <span class="am-sw" id="acctSoundState">On</span>
+   </button>
+   <div class="am-sep"></div>
+   <button type="button" class="am-row danger" role="menuitem" onclick="acctAction('disconnect')">
+    <span class="am-ic">🔌</span><span class="am-t"><b>Disconnect</b></span>
+   </button>
+  </div>
+ </div>
 </div></div>
 
 <main class="wrap">
@@ -667,6 +710,34 @@ footer .soc svg{width:19px;height:19px}
 
 <script>
 
+/* ===== Global sound control =====
+   Runs first, so every audio element (including new Audio() objects created by
+   bgmusic.js, wheel.js, shop.js, etc.) is tracked and obeys one mute switch. */
+const SND={muted:false,els:new Set()};
+try{SND.muted=localStorage.getItem('fiji_muted')==='1'}catch(e){}
+(function(){
+ const origPlay=HTMLMediaElement.prototype.play;
+ HTMLMediaElement.prototype.play=function(){
+  SND.els.add(this);
+  this.muted=SND.muted;
+  return origPlay.apply(this,arguments);
+ };
+})();
+function setMuted(m){
+ SND.muted=!!m;
+ try{localStorage.setItem('fiji_muted',SND.muted?'1':'0')}catch(e){}
+ document.querySelectorAll('audio,video').forEach(e=>{e.muted=SND.muted});
+ SND.els.forEach(e=>{e.muted=SND.muted});
+ renderSound();
+ try{window.dispatchEvent(new CustomEvent('fiji:sound',{detail:{muted:SND.muted}}))}catch(e){}
+}
+function renderSound(){
+ const ic=document.getElementById('acctSoundIc'),st=document.getElementById('acctSoundState');
+ if(ic)ic.textContent=SND.muted?'🔇':'🔊';
+ if(st){st.textContent=SND.muted?'Off':'On';st.classList.toggle('off',SND.muted)}
+}
+window.FIJI_SOUND={isMuted:()=>SND.muted,setMuted,toggle:()=>setMuted(!SND.muted)};
+
 const CFG = {
   SUPABASE_URL: 'https://tmceqqciccnnlxjiobgc.supabase.co',
   SUPABASE_KEY: 'sb_publishable_gLpE849jARFKW0tWaYWTIA_czyAawtu',
@@ -681,7 +752,7 @@ const conn=new solanaWeb3.Connection(CFG.RPC,'confirmed');
 const TOKEN='TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',TOKEN22='TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
 let wallet=null,provider=null,cur=null,taps=0;
 
-window.FIJI_CORE={CFG,$,toast,go,loadAssets,setProfile,
+window.FIJI_CORE={CFG,$,toast,go,loadAssets,setProfile,updateRank,
  getWallet:()=>wallet,getProvider:()=>provider,getConnection:()=>conn,getSupabase:()=>db};
 
 const pages=['home','wallet','earn','trade','board'];
@@ -697,7 +768,7 @@ function go(p){
  if(p=='board')loadBoard();
  if(p=='wallet')loadAssets();
  if(p=='home')startMarket();else stopMarket();
- if(p=='earn'&&wallet&&db)updateRank(Number($('spts').textContent)||0);
+ if(p=='earn'&&wallet&&db)updateRank();
  if(p=='trade')window.FIJI_TRADE?.start?.();else window.FIJI_TRADE?.stop?.();
 }
 
@@ -710,6 +781,77 @@ async function safeCopy(t){
 }
 function copyMint(){safeCopy(CFG.FIJI_MINT);toast('Contract copied📝')}
 function copyReferral(){if(!$('ref').value)return toast('Connect your wallet first');safeCopy($('ref').value);toast('Referral link copied 🤝')}
+
+/* ===== Account button (gear) + dropdown ===== */
+function closeAcct(){
+ const m=$('acctMenu'),b=$('cbtn');
+ if(m)m.classList.remove('open');
+ if(b){b.classList.remove('open');b.setAttribute('aria-expanded','false')}
+}
+function renderAcct(){
+ const b=$('cbtn');
+ if(!b)return;
+ if(wallet){
+  b.textContent='⚙️';
+  b.classList.add('gear');
+  b.setAttribute('aria-label','Account menu');
+  b.setAttribute('aria-haspopup','menu');
+  b.setAttribute('aria-expanded','false');
+  const a=$('acctAddr');if(a)a.textContent=short(wallet);
+  renderSound();
+ }else{
+  closeAcct();
+  b.textContent='Connect wallet';
+  b.classList.remove('gear');
+  b.removeAttribute('aria-label');
+  b.removeAttribute('aria-haspopup');
+  b.removeAttribute('aria-expanded');
+ }
+}
+function acctClick(){
+ if(!wallet)return connect();
+ const m=$('acctMenu'),b=$('cbtn'),open=!m.classList.contains('open');
+ if(!open)return closeAcct();
+ renderSound();
+ m.classList.add('open');
+ b.classList.add('open');
+ b.setAttribute('aria-expanded','true');
+}
+async function disconnectWallet(){
+ try{await cur?.off()}catch(e){}
+ try{localStorage.removeItem('fiji_wallet')}catch(e){}
+ clearWallet();
+ clearFijiHolderStatus();
+ toast('Disconnected');
+}
+function acctAction(a){
+ if(a==='copy'){
+  if(!wallet)return;
+  safeCopy(wallet);toast('Wallet address copied 📋');
+  return;
+ }
+ if(a==='sound'){
+  setMuted(!SND.muted);
+  toast(SND.muted?'Sound off 🔇':'Sound on 🔊');
+  return;
+ }
+ closeAcct();
+ if(a==='wallet'){go('wallet');return}
+ if(a==='portfolio'){
+  go('wallet');
+  setTimeout(()=>{
+   const t=$('bag')||$('wstat');
+   if(t&&t.scrollIntoView)t.scrollIntoView({behavior:'smooth',block:'start'});
+  },400);
+  return;
+ }
+ if(a==='disconnect'){disconnectWallet();return}
+}
+document.addEventListener('click',e=>{
+ const m=$('acctMenu');
+ if(m&&m.classList.contains('open')&&!$('acct').contains(e.target))closeAcct();
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAcct()});
 
 const WS=[];
 (function(){
@@ -754,7 +896,7 @@ function waitForWallets(ms=3000){
 
 function clearWallet(){
  wallet=null;provider=null;cur=null;
- $('cbtn').textContent='Connect wallet';
+ renderAcct();
  $('wstat').textContent='Connect a Solana wallet (Jupiter, Phantom, Solflare, Backpack) to see your assets and whether you hold FIJI.';
  $('holder').innerHTML='';$('assets').innerHTML='';
  $('myrank').textContent='–';
@@ -775,7 +917,7 @@ async function connectWallet(o,opts){
     wallet = pk.toString();
     provider = p;
   
-    $('cbtn').textContent = short(wallet) + ' ✕';
+    renderAcct();
   
     loadAssets();
   
@@ -813,28 +955,33 @@ function pick(list){
   d.querySelector('.wx').onclick=x;d.onclick=e=>{if(e.target===d)x()};
  });
 }
-async function updateRank(pts){
+
+/* Rank on the Earn tab = BunXP rank, the same number the BunXP leaderboard shows.
+   Uses fiji_my_bunxp (bunxp.sql). Wallets with 0 BunXP are not on the board, so they show "–". */
+async function updateRank(){
  const el=$('myrank');
  if(!el)return;
  if(!wallet||!db){
   el.textContent='–';
   return;
  }
-
+ const w=wallet;
  try{
-  const {count,error}=await db
-   .from('fiji_profiles')
-   .select('wallet',{count:'exact',head:true})
-   .gt('points',pts);
-
+  const {data,error}=await db.rpc('fiji_my_bunxp',{p_wallet:w});
   if(error)throw error;
-
-  el.textContent='#'+((count||0)+1);
+  if(w!==wallet)return;
+  el.textContent=(data&&data.rank)?'#'+data.rank:'–';
  }catch(e){
   console.warn('Rank lookup failed',e);
-  el.textContent='–';
+  if(w===wallet)el.textContent='–';
  }
 }
+/* keep the Earn rank fresh while that tab is open */
+setInterval(()=>{
+ if(document.hidden||!wallet||!db)return;
+ const earn=$('earn');
+ if(earn&&earn.classList.contains('on'))updateRank();
+},20000);
 
 function setProfile(p){
  if(!p)return;
@@ -845,7 +992,7 @@ function setProfile(p){
  $('streak').textContent=p.streak??0;
  $('ref').value=location.origin+location.pathname+'?ref='+(p.ref_code||'');
 
- updateRank(pts);
+ updateRank();
 }
 
 async function afterConnect(o, r) {
@@ -857,7 +1004,7 @@ async function afterConnect(o, r) {
     localStorage.setItem('fiji_wallet', o.name);
   } catch (e) {}
 
-  $('cbtn').textContent = short(wallet) + ' ✕';
+  renderAcct();
 
   loadAssets();
 
@@ -1244,11 +1391,7 @@ function pickMobile(){
 
 async function connect(){
  if(wallet){
-  try{await cur?.off()}catch(e){}
-  try{localStorage.removeItem('fiji_wallet')}catch(e){}
-  clearWallet();
-  clearFijiHolderStatus();
-  return toast('Disconnected');
+  return disconnectWallet();
  }
 
  toast('Looking for wallets…');
@@ -1626,7 +1769,30 @@ function trRefresh(){
  });
 })();
 
+/* ===== Remove the "Weekly Quests" coming-soon card =====
+   Stopgap sweep: it is injected by one of the other .js files, so this removes it
+   wherever it appears. Delete the card from that file's source when you find it. */
+(function(){
+ function sweep(){
+  const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+  const hits=[];let n;
+  while((n=w.nextNode())){
+   if(n.nodeValue.trim().toLowerCase()==='weekly quests')hits.push(n);
+  }
+  hits.forEach(t=>{
+   const box=t.parentElement&&t.parentElement.closest('.sticker,.card,.cs');
+   if(box&&!box.matches('main,section')&&box.textContent.length<500)box.remove();
+  });
+ }
+ let tm=0;
+ const queue=()=>{clearTimeout(tm);tm=setTimeout(sweep,60)};
+ new MutationObserver(queue).observe(document.body,{childList:true,subtree:true});
+ window.addEventListener('load',sweep);
+ sweep();
+})();
+
 $('mint').textContent='5D3Nafx9SV2TNd6KLmnyWi71QQTGZaGJBAqghk4Tpump';
+renderSound();
 try{go('home')}catch(e){console.error(e);try{startMarket()}catch(x){}}
 </script>
 
