@@ -381,15 +381,13 @@ th{font-family:Fredoka}
  *{scroll-behavior:auto!important;animation:none!important;transition:none!important}
 }
 </style>
-
-<link rel="stylesheet" href="halloween.css?v=1"> 
 </head>
 
 <body>
 
 <div class="nav"><div class="sticker">
  <div class="brand">
- <div class="logo"><img src="fiji-v2.png" alt="">fiji</div>
+ <div class="logo"><img src="fiji.png" alt="">fiji</div>
  <div class="soc">
   <a href="https://x.com/Fiji_labs" target="_blank" rel="noopener" aria-label="X"><svg viewBox="0 0 24 24"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg></a>
   <a href="https://t.me/boost/fijiwara" target="_blank" rel="noopener" aria-label="Telegram"><svg viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg></a>
@@ -415,7 +413,7 @@ th{font-family:Fredoka}
    </div>
   </div>
    <div class="home-bg" aria-hidden="true">
-    <img src="fiji-v2.png" alt="">
+    <img src="fiji.png" alt="">
     <span class="hb-drop" style="top:18%;left:12%">💧</span>
     <span class="hb-drop" style="top:62%;right:10%;animation-delay:1.2s">💦</span>
     <span class="hb-drop" style="top:80%;left:30%;animation-delay:2s">💧</span>
@@ -469,7 +467,7 @@ th{font-family:Fredoka}
  <div class="stats sticker card"><div><b id="spts">0</b>BUN</div><div><b id="myrank">–</b>rank</div><div><b id="streak">0</b>day streak</div><div><b id="rank">–</b>status</div></div>
  <div class="grid">
   <div class="sticker card"><div class="em">📅</div><h3>Daily check-in</h3><p>+10 and streak bonus</p><br><button class="btn sm" onclick="doEarn('daily')">Check in</button></div>
-  <div class="sticker card" style="text-align:center"><h3>🎮 Splash Tap</h3><p>Tap Fiji 10 times for +1 💧 water and +10 BunXP (5 plays/day)</p><img id="pad" src="fiji-v2.png" alt="Tap Fiji" onclick="tap()" draggable="false"><div class="bar"><i id="tb"></i></div></div>
+  <div class="sticker card" style="text-align:center"><h3>🎮 Splash Tap</h3><p>Tap Fiji 10 times for +1 💧 water and +10 BunXP (5 plays/day)</p><img id="pad" src="fiji.png" alt="Tap Fiji" onclick="tap()" draggable="false"><div class="bar"><i id="tb"></i></div></div>
   <div class="sticker card"><h3>🤝Referral Rewards</h3><p>Get a +100 BUN when your referred friend successfully buys a token on the Trade Pad (Min 0.01 SOL each)</p><input id="ref" readonly placeholder="Connect wallet first"><button class="btn sm alt" onclick="copyReferral()">Copy link</button></div>
    <div class="sticker card"><div class="em">⚡</div><h3>Trade &amp; earn</h3><p>+50 BUN for your every successful buy or sell on the Trade Pad (Min 0.01 SOL)</p></div>
  </div>
@@ -549,7 +547,7 @@ th{font-family:Fredoka}
 
    <div class="sticker selected-card">
     <div class="selected-head">
-     <img id="tradeDetailIcon" class="selected-icon" src="fiji-v2.png" alt="">
+     <img id="tradeDetailIcon" class="selected-icon" src="fiji.png" alt="">
      <div class="selected-name"><h3 id="tradeDetailSymbol">Select a token</h3><p id="tradeDetailName">Choose a token from the live feed.</p></div>
      <button class="star-btn" id="tradeStar" onclick="tradeToggleWatch()">☆</button>
     </div>
@@ -1303,7 +1301,7 @@ let hurtOK=false;const hurtImg=new Image();hurtImg.onload=()=>hurtOK=true;hurtIm
 function tap(){
  if(!wallet)return toast('Connect your wallet first');
  const p=$('pad');p.classList.remove('hurt');void p.offsetWidth;p.classList.add('hurt');
- if(hurtOK){p.src='fiji-hurt.png';setTimeout(()=>p.src='fiji-v2.png',250)}
+ if(hurtOK){p.src='fiji-hurt.png';setTimeout(()=>p.src='fiji.png',250)}
  $('tb').style.width=(++taps*10)+'%';
  if(taps>=10){taps=0;setTimeout(()=>$('tb').style.width='0',300);doEarn('game')}
 }
@@ -1442,7 +1440,7 @@ function renderHero(p){
  const k=key(p);MK.pairs[k]=p;h.dataset.k=k;
  const pc=p.priceChange||{},m=cls(pc.h24),t=(p.txns&&p.txns.h24)||{};
  const say={up:'splashy day! 💦',dn:'drip drip… stay with me 💧',flat:'calm pond today 🌿'}[m];
- h.innerHTML=`<div class="mk-hrow"><img class="mk-fj ${m}" src="fiji-v2.png" alt="Fiji"><div class="mk-say">${say}</div></div>
+ h.innerHTML=`<div class="mk-hrow"><img class="mk-fj ${m}" src="fiji.png" alt="Fiji"><div class="mk-say">${say}</div></div>
   <div class="mk-hp"><div><div class="small">FIJI price</div><div class="mk-price big">${fp(p.priceUsd)}</div></div><div class="mk-chips">${chips(pc)}</div></div>${wave(p)}
   <div class="mk-hs">
    <div><b>${fm(p.marketCap||p.fdv)}</b><span class="small">market cap</span></div>
@@ -1648,9 +1646,8 @@ go('home');
 <script src="info-popups.js?v=1"></script>
 <script src="bunxp.js?v=1"></script>
 <script src="wheel.js?v=4"></script>
-<script src="bgmusic.js?v=4"></script>
+<script src="bgmusic.js?v=3"></script>
 <script src="tc-gate.js?v=1"></script>
-<script src="halloween.js?v=2"></script>
 
 </body>
 </html>
