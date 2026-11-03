@@ -63,6 +63,14 @@ css.textContent=`
 .ch-gate .btn{margin:6px 4px}
 .lb-me{background:#FFF6CF}
 
+.ch-confirm{position:fixed;inset:0;background:rgba(18,48,92,.45);z-index:360;display:flex;align-items:center;justify-content:center;padding:16px}
+.ch-confirm .sticker{max-width:360px;width:100%;padding:22px;text-align:center}
+.ch-confirm .em{font-size:40px}
+.ch-confirm h3{font-size:22px;margin:8px 0 4px}
+.ch-confirm p{margin-bottom:4px}
+.ch-confirm .acts{display:flex;gap:10px;margin-top:16px}
+.ch-confirm .acts .btn{flex:1}
+
 /* floating chat icon + popup */
 #chFab{position:fixed;right:20px;bottom:22px;z-index:350;width:62px;height:62px;border-radius:50%;border:3px solid var(--ink);background:var(--sun);box-shadow:0 5px 0 var(--ink);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;font-size:28px;line-height:1;transition:transform .1s,box-shadow .1s;-webkit-tap-highlight-color:transparent}
 #chFab:hover{transform:translateY(2px);box-shadow:0 3px 0 var(--ink)}
@@ -117,6 +125,8 @@ function saveSeen(){
   try{localStorage.setItem(seenKey(wallet),String(seen))}catch(e){}
 }
 
+/* "Clear chat" is per user and per device: we only remember the id of the last message
+   that was on screen when they cleared. Nothing is deleted for anyone else. */
 const clearKey=w=>'fiji_chat_clear_'+w;
 function readCleared(w){
   if(!w)return 0;
@@ -207,7 +217,7 @@ function mount(phase){
     const i=q('#chName');if(i&&isOpen)i.focus();
   }else{
     host.innerHTML='<div class="sticker ch-card">'+
-      '<div class="ch-head"><span>💬 Fiji Chat</span><span class="ch-hr"><span>@'+esc(me.username)+' ·</span><button data-act="edit">change</button><button data-act="clear" title="Clear the chat for you only">clear</button>'+CLOSE_BTN+'</span></div>'+
+      '<div class="ch-head"><span>💬 Fiji Chat</span><span class="ch-hr"><span>@'+esc(me.username)+' ·</span><button data-act="edit">change</button><button data-act="clear" title="Clear the chat for you only">Clear Chat</button>'+CLOSE_BTN+'</span></div>'+
       '<div class="ch-list" id="chList"></div>'+
       '<div class="ch-replybar" id="chReply"></div>'+
       '<div class="ch-send"><input id="chIn" maxlength="300" autocomplete="off" placeholder="Write a message…"><button class="btn sm" data-act="send">Send</button></div>'+
@@ -282,9 +292,36 @@ function stop(){
   if(chan){try{db.removeChannel(chan)}catch(e){}chan=null}
 }
 
-function clearChat(){
+function askConfirm(o){
+  return new Promise(resolve=>{
+    const d=document.createElement('div');
+    d.className='ch-confirm';
+    d.innerHTML='<div class="sticker"><div class="em">'+(o.emoji||'🧹')+'</div>'+
+      '<h3>'+esc(o.title||'Are you sure?')+'</h3>'+
+      '<p class="small">'+esc(o.text||'')+'</p>'+
+      '<div class="acts"><button type="button" class="btn alt" data-c="no">'+esc(o.cancelLabel||'Cancel')+'</button>'+
+      '<button type="button" class="btn" data-c="yes">'+esc(o.okLabel||'Confirm')+'</button></div></div>';
+    const close=ok=>{d.remove();resolve(ok)};
+    d.addEventListener('click',e=>{
+      if(e.target===d)return close(false);
+      const b=e.target.closest('[data-c]');
+      if(b)close(b.dataset.c==='yes');
+    });
+    const onKey=e=>{if(e.key==='Escape'){document.removeEventListener('keydown',onKey);close(false)}};
+    document.addEventListener('keydown',onKey);
+    document.body.appendChild(d);
+  });
+}
+
+async function clearChat(){
   if(!me||!msgs.size){toast('Nothing to clear 🐰');return}
-  if(!window.confirm('Clear the chat for you? Other players will still see their messages.'))return;
+  const ok=await askConfirm({
+    emoji:'🧹',
+    title:'Clear chat?',
+    text:'This clears the chat for you only. Other players will still see their messages.',
+    okLabel:'Clear Chat'
+  });
+  if(!ok)return;
   const maxId=[...msgs.keys()].reduce((m,x)=>Math.max(m,x),0);
   cleared=Math.max(cleared,maxId);
   saveCleared();
