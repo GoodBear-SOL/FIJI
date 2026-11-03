@@ -214,7 +214,9 @@ css.textContent = `
 
 @media(prefers-reduced-motion:reduce){
   #whCanvas{
-    transition-duration:.01s!important;
+    transition-property: transform !important;
+    transition-duration: 4.6s !important;
+    transition-timing-function: cubic-bezier(.12,.72,.08,1) !important;
   }
 }
 `;
