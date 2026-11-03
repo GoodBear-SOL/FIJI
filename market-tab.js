@@ -20,26 +20,51 @@ css.textContent=`
 .cs-tile{border:2.5px dashed var(--ink);border-radius:18px;background:var(--soft);padding:16px 8px;font:600 15px Fredoka;opacity:.8}
 .cs-tile span{display:block;font-size:30px;margin-bottom:2px}
 
-/* wallet table */
-table.wt{min-width:680px}
-.wt th,.wt td{white-space:nowrap;word-break:normal;text-align:right;padding:10px 8px;vertical-align:middle}
-.wt th:first-child,.wt td:first-child{text-align:left}
-.wt th{font-size:13px;letter-spacing:.06em;text-transform:uppercase;opacity:.75}
-.wt-tok{display:flex;align-items:center;gap:10px}
-.wt-tok img,.wt-ph{width:36px;height:36px;border-radius:50%;border:2.5px solid var(--ink);object-fit:cover;background:var(--sb);flex:none;display:flex;align-items:center;justify-content:center;font-size:17px}
-.wt-tok b{display:block;font:600 17px Fredoka;line-height:1.1}
-.wt-tok span.n{display:block;font-size:12px;opacity:.65;max-width:130px;overflow:hidden;text-overflow:ellipsis}
-.wt .up{color:var(--upi)}
-.wt .dn{color:var(--dni)}
-.wt .st{display:inline-block;border:2px solid var(--ink);border-radius:99px;padding:1px 10px;font:600 13px Fredoka}
-.wt .st.up{background:#B8F5D2}
-.wt .st.dn{background:#FFD0D8}
-.wt .st.flat{background:var(--sb)}
-.wt tr.tot td{border-top:3px solid var(--ink);border-bottom:0;font:600 16px Fredoka}
-.wt tr.clk{cursor:pointer}
-.wt tr.clk:hover td{background:#FFF6CF}
-.wt-act{display:flex;gap:6px;justify-content:flex-end}
-.wt-act .btn{padding:4px 12px;font-size:14px;min-height:0}
+/* ===== Bunny Bag (compact, no sideways scroll) ===== */
+#wallet .card{overflow-x:hidden}
+#assets{display:none}
+.bag-total{background:linear-gradient(135deg,var(--sun),#FFE88A);border:3px solid var(--ink);border-radius:22px;
+ padding:14px 16px;margin-bottom:12px;box-shadow:0 4px 0 var(--ink);
+ display:flex;justify-content:space-between;align-items:center;gap:10px}
+.bag-total .lbl{font:600 13px Fredoka;letter-spacing:.08em;text-transform:uppercase;opacity:.75}
+.bag-total b{display:block;font:700 clamp(28px,8vw,38px)/1.05 Fredoka;word-break:break-all}
+.bag-total .pill{font-size:14px;padding:2px 12px;white-space:nowrap}
+.bag-total .pill.up{background:#B8F5D2;color:var(--upi)}
+.bag-total .pill.dn{background:#FFD0D8;color:var(--dni)}
+.bag-total .pill.flat{background:#fff}
+.bag-list{display:grid;gap:8px}
+.bg-row{background:#fff;border:2.5px solid var(--ink);border-radius:18px;overflow:hidden;box-shadow:0 3px 0 var(--ink)}
+.bg-main{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;min-width:0}
+.bg-main:active{background:#FFF6CF}
+.bg-main img,.bg-ph{width:40px;height:40px;border-radius:50%;border:2.5px solid var(--ink);object-fit:cover;background:var(--sb);flex:none;display:flex;align-items:center;justify-content:center;font-size:19px}
+.bg-l{flex:1;min-width:0;line-height:1.2}
+.bg-l b{display:block;font:600 17px Fredoka;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bg-l span{display:block;font-size:13px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bg-r{text-align:right;flex:none;max-width:48%;line-height:1.2}
+.bg-r b{display:block;font:700 17px Fredoka;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bg-chg{display:inline-block;border:2px solid var(--ink);border-radius:99px;padding:0 9px;margin-top:2px;font:600 12px Fredoka;white-space:nowrap}
+.bg-chg.up{background:#B8F5D2;color:var(--upi)}
+.bg-chg.dn{background:#FFD0D8;color:var(--dni)}
+.bg-chg.flat{background:var(--sb)}
+.bg-more{display:none;padding:10px 12px 12px;border-top:2px dashed var(--line);background:var(--soft)}
+.bg-row.open .bg-more{display:block}
+.bg-det{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.bg-det div{background:#fff;border:2px dashed var(--line);border-radius:12px;padding:6px 8px;min-width:0}
+.bg-det b{display:block;font:600 14px Fredoka;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bg-det span{font-size:11px;opacity:.65}
+.bg-det .up{color:var(--upi)}
+.bg-det .dn{color:var(--dni)}
+.bg-acts{display:flex;gap:8px}
+.bg-acts .btn{flex:1;padding:8px 10px;font-size:15px;min-height:0}
+.bg-acts .btn[data-wa=buy]{background:#7CF0A8;color:var(--ink)}
+.bg-acts .btn[data-wa=sell]{background:#FFD0D8;color:var(--ink)}
+.bag-empty{padding:18px;text-align:center;border:2px dashed var(--line);border-radius:17px;background:var(--soft)}
+@media(max-width:420px){
+ .bag-total{padding:12px 14px}
+ .bg-main{padding:9px 10px;gap:8px}
+ .bg-main img,.bg-ph{width:36px;height:36px}
+ .bg-l b,.bg-r b{font-size:16px}
+}
 `;
 document.head.appendChild(css);
 
@@ -48,6 +73,7 @@ const USDC='EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 const FIJI=C.CFG.FIJI_MINT;
 const PINNED=[SOL,USDC,FIJI];
 const FALLBACK={[SOL]:'◎',[USDC]:'💵'};
+const REFRESH_MS=3000;
 
 const num=x=>{const n=parseFloat(x);return isFinite(n)?n:null};
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -62,13 +88,23 @@ function money(n){
   const s=a>=1000?a.toLocaleString(undefined,{maximumFractionDigits:0}):a>=1?a.toFixed(2):a>0?a.toFixed(4):'0.00';
   return (n<0?'-':'')+'$'+s;
 }
+function priceFmt(n){
+  if(n===null)return '—';
+  if(n>=1)return '$'+n.toLocaleString(undefined,{maximumFractionDigits:2});
+  if(n>=0.01)return '$'+n.toFixed(4);
+  if(n<=0)return '$0';
+  return '$'+n.toFixed(Math.min(12,2-Math.floor(Math.log10(n))));
+}
 function amount(n){
-  return n>=1000?n.toLocaleString(undefined,{maximumFractionDigits:2}):n.toLocaleString(undefined,{maximumFractionDigits:4});
+  if(n>=1e9)return (n/1e9).toFixed(2)+'B';
+  if(n>=1e6)return (n/1e6).toFixed(2)+'M';
+  if(n>=1000)return n.toLocaleString(undefined,{maximumFractionDigits:2});
+  return n.toLocaleString(undefined,{maximumFractionDigits:4});
 }
 function pnlText(v){
   if(v===null)return '—';
   if(Math.abs(v)<0.005)return '$0.00';
-  return (v>0?'↑ +':'↓ -')+money(Math.abs(v));
+  return (v>0?'+':'-')+money(Math.abs(v));
 }
 function pctText(v){
   if(v===null)return '—';
@@ -76,8 +112,9 @@ function pctText(v){
 }
 
 const cache=new Map();
-async function getPairs(mints){
-  const need=mints.filter(m=>{const c=cache.get(m);return !c||Date.now()-c.t>25000});
+async function getPairs(mints,ttl){
+  const life=ttl||25000;
+  const need=mints.filter(m=>{const c=cache.get(m);return !c||Date.now()-c.t>life});
   for(let i=0;i<need.length;i+=30){
     const chunk=need.slice(i,i+30).filter(m=>/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(m));
     if(!chunk.length)continue;
@@ -90,21 +127,57 @@ async function getPairs(mints){
         if(a&&(!best[a]||liqOf(p)>liqOf(best[a])))best[a]=p;
       });
       chunk.forEach(m=>cache.set(m,{t:Date.now(),pair:best[m]||null}));
-    }catch(e){console.warn('wallet table: price lookup failed',e)}
+    }catch(e){console.warn('wallet: price lookup failed',e)}
   }
   const out={};
   mints.forEach(m=>{const c=cache.get(m);out[m]=c?c.pair:null});
   return out;
 }
 
-const tbl=$('assets');
-if(tbl){
-  tbl.classList.add('wt');
-  tbl.insertAdjacentHTML('afterend','<p class="small" style="margin-top:10px">PNL and Status show the last 24 hours at current prices. Prices from DexScreener.</p>');
+/* ===== Bunny Bag rendering ===== */
+const oldTbl=$('assets');
+const bag=document.createElement('div');
+bag.id='bag';
+if(oldTbl){
+  oldTbl.after(bag);
+  bag.insertAdjacentHTML('afterend','<p class="small" id="bagNote" style="margin-top:10px;display:none">PNL and Status show the last 24 hours at current prices. Tap a coin for details. Prices from DexScreener.</p>');
+}
+
+let curKey='',openMint=null,lastVal={};
+
+function setText(el,t){if(el&&el.textContent!==t)el.textContent=t}
+function setCls(el,base,k){if(el){const c=base+' '+k;if(el.className!==c)el.className=c}}
+
+function buildRows(list){
+  const html=list.map(r=>{
+    const fb=FALLBACK[r.mint]||'🪙';
+    const pic=r.img?`<img src="${esc(r.img)}" alt="" loading="lazy" data-fb="${fb}">`:`<span class="bg-ph">${fb}</span>`;
+    const canTrade=r.mint!==SOL;
+    const acts=canTrade
+      ?`<div class="bg-acts"><button class="btn sm" type="button" data-wa="buy">Buy</button>${r.amt>0?'<button class="btn sm alt" type="button" data-wa="sell">Sell</button>':''}</div>`
+      :'<div class="small">SOL is what you pay with.</div>';
+    return `<div class="bg-row${r.mint===openMint?' open':''}" data-mint="${esc(r.mint)}">
+      <div class="bg-main">${pic}
+        <div class="bg-l"><b>${esc(r.sym)}</b><span data-f="amt"></span></div>
+        <div class="bg-r"><b data-f="val"></b><span class="bg-chg flat" data-f="chg"></span></div>
+      </div>
+      <div class="bg-more">
+        <div class="bg-det"><div><b data-f="price"></b><span>Price</span></div><div><b data-f="pnl"></b><span>PNL (24h)</span></div></div>
+        ${acts}
+      </div></div>`;
+  }).join('');
+  bag.innerHTML=`<div class="bag-total"><div><div class="lbl">Total balance</div><b data-f="tot">$0.00</b></div><span class="pill flat" data-f="totchg">—</span></div><div class="bag-list">${html}</div>`;
+  bag.querySelectorAll('img[data-fb]').forEach(i=>{
+    i.addEventListener('error',()=>{
+      const sp=document.createElement('span');
+      sp.className='bg-ph';sp.textContent=i.dataset.fb;
+      i.replaceWith(sp);
+    },{once:true});
+  });
 }
 
 function paint(rows,pairs){
-  if(!tbl)return;
+  if(!oldTbl)return;
   const list=rows.map(r=>{
     const pr=pairs[r.mint]||null;
     let price=pr?num(pr.priceUsd):null;
@@ -115,9 +188,8 @@ function paint(rows,pairs){
     const pnl=(val!==null&&c!==null)?val-val/(1+c/100):null;
     const bt=pr&&pr.baseToken||{};
     const sym=r.mint===SOL?'SOL':r.mint===USDC?'USDC':r.mint===FIJI?'FIJI':(bt.symbol||shortMint(r.mint));
-    const name=r.mint===SOL?'Solana':r.mint===USDC?'USD Coin':r.mint===FIJI?'Fiji':(bt.name||'Unknown token');
     const img=r.mint===FIJI?'fiji.png':safeImg(pr&&pr.info&&pr.info.imageUrl);
-    return {...r,sym,name,img,price,chg,val,pnl,pin:PINNED.indexOf(r.mint)}
+    return {...r,sym,img,price,chg,val,pnl,pin:PINNED.indexOf(r.mint)}
   });
 
   list.sort((a,b)=>{
@@ -131,39 +203,68 @@ function paint(rows,pairs){
   list.forEach(r=>{if(r.val!==null)totVal+=r.val;if(r.pnl!==null)totPnl+=r.pnl});
   const prev=totVal-totPnl,totPct=prev>0?totPnl/prev*100:null;
 
-  const body=list.map(r=>{
-    const k=dir(r.pnl),s=dir(r.chg);
-    const fb=FALLBACK[r.mint]||'🪙';
-    const pic=r.img?`<img src="${esc(r.img)}" alt="" loading="lazy" data-fb="${fb}">`:`<span class="wt-ph">${fb}</span>`;
-    const canTrade=r.mint!==SOL;
-    const acts=canTrade
-      ?`<div class="wt-act"><button class="btn sm" type="button" data-wa="buy">Buy</button>${r.amt>0?'<button class="btn sm alt" type="button" data-wa="sell">Sell</button>':''}</div>`
-      :'<span class="small">—</span>';
-    return `<tr class="wt-row${canTrade?' clk':''}" data-mint="${esc(r.mint)}">
-      <td><div class="wt-tok">${pic}<div><b>${esc(r.sym)}</b><span class="n">${esc(r.name)}</span></div></div></td>
-      <td>${r.amt>0?amount(r.amt):'0'}</td>
-      <td>${r.val===null?'—':money(r.val)}</td>
-      <td class="${k}">${pnlText(r.pnl)}</td>
-      <td><span class="st ${s}">${pctText(r.chg)}</span></td>
-      <td>${acts}</td>
-    </tr>`;
-  }).join('');
+  // Rebuild only when the set of coins (or their icons) changes; otherwise update in place (no flicker)
+  const key=list.map(r=>r.mint+'|'+(r.img?1:0)+'|'+(r.amt>0?1:0)).join(',');
+  if(key!==curKey){curKey=key;buildRows(list)}
 
-  const tk=dir(totPnl);
-  tbl.innerHTML=`<thead><tr><th>Ticker</th><th>Hold</th><th>Balance</th><th>PNL (24h)</th><th>Status</th><th>Trade</th></tr></thead>
-    <tbody>${body}
-    <tr class="tot"><td>Total</td><td></td><td>${money(totVal)}</td><td class="${tk}">${pnlText(totPnl)}</td><td><span class="st ${dir(totPct)}">${pctText(totPct)}</span></td><td></td></tr></tbody>`;
+  setText(bag.querySelector('[data-f=tot]'),money(totVal));
+  const tc=bag.querySelector('[data-f=totchg]');
+  if(tc){
+    setText(tc,pnlText(totPnl)+(totPct===null?'':' · '+pctText(totPct)));
+    setCls(tc,'pill',dir(totPct===null?null:totPct));
+  }
 
-  tbl.querySelectorAll('img[data-fb]').forEach(i=>{
-    i.addEventListener('error',()=>{
-      const sp=document.createElement('span');
-      sp.className='wt-ph';sp.textContent=i.dataset.fb;
-      i.replaceWith(sp);
-    },{once:true});
+  list.forEach(r=>{
+    const row=bag.querySelector('.bg-row[data-mint="'+r.mint+'"]');
+    if(!row)return;
+    const f=n=>row.querySelector('[data-f='+n+']');
+    setText(f('amt'),amount(r.amt)+' '+r.sym);
+    const vt=r.val===null?'—':money(r.val);
+    setText(f('val'),vt);
+    setText(f('chg'),pctText(r.chg));
+    setCls(f('chg'),'bg-chg',dir(r.chg));
+    setText(f('price'),priceFmt(r.price));
+    const pe=f('pnl');setText(pe,pnlText(r.pnl));if(pe)pe.className=dir(r.pnl);
+
+    // soft flash when value moves
+    const old=lastVal[r.mint];
+    if(old!==undefined&&r.val!==null&&Math.abs(r.val-old)>1e-9){
+      const m=row.querySelector('.bg-main');
+      m.classList.remove('fl-up','fl-dn');void m.offsetWidth;
+      m.classList.add(r.val>old?'fl-up':'fl-dn');
+    }
+    if(r.val!==null)lastVal[r.mint]=r.val;
   });
+  const n=$('bagNote');if(n)n.style.display='block';
 }
 
 let seq=0;
+async function draw(p){
+  if(!oldTbl)return;
+  if(!(C.getWallet&&C.getWallet())){
+    seq++;curKey='';lastVal={};openMint=null;bag.innerHTML='';
+    const n=$('bagNote');if(n)n.style.display='none';
+    return;
+  }
+  const my=++seq;
+  let solAmt=num(p&&p.sol)||0;
+  const hold=new Map();
+  ((p&&p.tokens)||[]).forEach(t=>{
+    if(!t||!t.mint)return;
+    const a=num(t.tokenAmount&&t.tokenAmount.uiAmount)||0;
+    if(t.mint===SOL){solAmt+=a;return}
+    hold.set(t.mint,(hold.get(t.mint)||0)+a);
+  });
+  const extra=[...hold.keys()].filter(m=>PINNED.indexOf(m)<0).slice(0,60);
+  const mints=PINNED.concat(extra);
+  const rows=mints.map(m=>({mint:m,amt:m===SOL?solAmt:(hold.get(m)||0)}));
+
+  if(!bag.firstChild)paint(rows,{});
+  const pairs=await getPairs(mints,2500);
+  if(my!==seq)return;
+  paint(rows,pairs);
+}
+
 async function openAsset(mint,action){
   if(mint===SOL)return C.toast('SOL is what you pay with. Pick a token to trade.');
   if(!T||typeof window.tradeSelectByKey!=='function')return C.toast('Trade Pad is still loading');
@@ -179,46 +280,41 @@ async function openAsset(mint,action){
     C.toast('Could not open this token right now 💧');
   }
 }
-if(tbl){
-  tbl.addEventListener('click',e=>{
-    const tr=e.target.closest('tr[data-mint]');if(!tr)return;
-    const b=e.target.closest('[data-wa]');
-    openAsset(tr.dataset.mint,b?b.dataset.wa:'buy');
-  });
-}
-async function draw(p){
-  if(!tbl)return;
-  if(!(C.getWallet&&C.getWallet())){tbl.innerHTML='';return}
-  const my=++seq;
-  let solAmt=num(p&&p.sol)||0;
-  const hold=new Map();
-  ((p&&p.tokens)||[]).forEach(t=>{
-    if(!t||!t.mint)return;
-    const a=num(t.tokenAmount&&t.tokenAmount.uiAmount)||0;
-    if(t.mint===SOL){solAmt+=a;return}
-    hold.set(t.mint,(hold.get(t.mint)||0)+a);
-  });
-  const extra=[...hold.keys()].filter(m=>PINNED.indexOf(m)<0).slice(0,60);
-  const mints=PINNED.concat(extra);
-  const rows=mints.map(m=>({mint:m,amt:m===SOL?solAmt:(hold.get(m)||0)}));
 
-  paint(rows,{});
-  const pairs=await getPairs(mints);
-  if(my!==seq)return;
-  paint(rows,pairs);
-}
+bag.addEventListener('click',e=>{
+  const row=e.target.closest('.bg-row');if(!row)return;
+  const b=e.target.closest('[data-wa]');
+  if(b){openAsset(row.dataset.mint,b.dataset.wa);return}
+  // tap a row to open / close its details (one open at a time)
+  const was=row.classList.contains('open');
+  bag.querySelectorAll('.bg-row.open').forEach(r=>r.classList.remove('open'));
+  openMint=was?null:row.dataset.mint;
+  if(!was)row.classList.add('open');
+});
 
 if(T){
   const prevPortfolio=T.portfolioUpdated;
   T.portfolioUpdated=function(p){
     const r=typeof prevPortfolio==='function'?prevPortfolio.apply(T,arguments):undefined;
-    draw(p).catch(e=>console.warn('wallet table failed',e));
+    draw(p).catch(e=>console.warn('wallet bag failed',e));
     return r;
   };
 }else{
-  console.warn('market-tab: tradepad.js not loaded, wallet table will not update');
+  console.warn('market-tab: tradepad.js not loaded, wallet bag will not update');
 }
 
+/* Silent auto-refresh every 3s (only while the Burrow tab is open, the tab is visible, and a wallet is connected) */
+let refreshing=false;
+setInterval(async()=>{
+  if(refreshing||document.hidden)return;
+  if(!sec.classList.contains('on'))return;
+  if(!(C.getWallet&&C.getWallet()))return;
+  refreshing=true;
+  try{await C.loadAssets()}catch(e){}
+  finally{refreshing=false}
+},REFRESH_MS);
+
+/* ===== Buy / Sell FIJI on the home hero ===== */
 function addActs(){
   if(hero.querySelector('.fj-act')||!hero.querySelector('.mk-hp'))return;
   const row=document.createElement('div');
