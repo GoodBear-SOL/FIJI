@@ -428,11 +428,17 @@ th{font-family:Fredoka}
 
  </div>
 
+ <div class="tag">Fiji status</div>
+ <h2>How is Fiji doing?</h2>
+ <div class="mk-live small"><span class="live"><i></i><span id="mkAgo">loading…</span></span><button class="btn sm alt" onclick="refreshMarket(true)">Refresh</button></div>
+ <div class="sticker card mk-hero" id="mkHero"><div class="mk-empty">Fetching Fiji…🌐</div></div>
+ <p class="small" style="margin-top:14px">FIJI data from DexScreener, refreshed about every 30 seconds. For fun and information only, not financial advice. Always check the contract address. Looking for other coins? Open the <a href="#" onclick="go('trade');tradeSetMode('all');return false" style="color:var(--blue)">All coins</a> tab in the Trade Pad.</p>
+ 
  <div class="tag">what you can do</div>
  <h2>One place. Less confusion.</h2>
  <div class="grid">
   <div class="sticker card"><div class="em">⚡</div><h3>Trade Pad</h3>Discover new, trending and migrated Solana tokens and trade them. Browse coins from every chain in All coins.</div>
-  <div class="sticker card"><div class="em">🐰</div><h3>Burrow</h3>Your wallet, FIJI status, and what's coming: Shop, Mining and NFTs.</div>
+  <div class="sticker card"><div class="em">🐰</div><h3>Burrow</h3>Your wallet and farming status</div>
   <div class="sticker card"><div class="em">📅</div><h3>Daily visit</h3>Check in and grow a streak bonus.</div>
   <div class="sticker card"><div class="em">🤝</div><h3>Referrals</h3>Bring a friend, both of you win.</div>
   <div class="sticker card"><div class="em">🎮</div><h3>Games</h3>Quick splash games for bonus BUN.</div>
@@ -445,11 +451,7 @@ th{font-family:Fredoka}
 </section>
 
 <section class="pg" id="wallet">
- <div class="tag">Fiji status</div>
- <h2>How is Fiji doing?</h2>
- <div class="mk-live small"><span class="live"><i></i><span id="mkAgo">loading…</span></span><button class="btn sm alt" onclick="refreshMarket(true)">Refresh</button></div>
- <div class="sticker card mk-hero" id="mkHero"><div class="mk-empty">Fetching Fiji…🌐</div></div>
- <p class="small" style="margin-top:14px">FIJI data from DexScreener, refreshed about every 30 seconds. For fun and information only, not financial advice. Always check the contract address. Looking for other coins? Open the <a href="#" onclick="go('trade');tradeSetMode('all');return false" style="color:var(--blue)">All coins</a> tab in the Trade Pad.</p>
+ 
 
  <div class="tag">My wallet</div>
  <h2>Your Bunny Bag</h2>
@@ -692,7 +694,8 @@ function go(p){
  scrollTo({top:0});
    
  if(p=='board')loadBoard();
- if(p=='wallet'){loadAssets();startMarket()}else stopMarket();
+ if(p=='wallet')loadAssets();
+ if(p=='home')startMarket();else stopMarket();
  if(p=='earn'&&wallet&&db)updateRank(Number($('spts').textContent)||0);
  if(p=='trade')window.FIJI_TRADE?.start?.();else window.FIJI_TRADE?.stop?.();
 }
@@ -1490,7 +1493,7 @@ async function refreshList(loading){
 }
 async function refreshMarket(manual){
  if(MK.busy)return;MK.busy=true;if(manual)MK.cache={};
- const wantFiji=$('wallet').classList.contains('on'),wantAll=false;
+ const wantFiji=$('home').classList.contains('on'),wantAll=false;
  const [f,m]=await Promise.allSettled([
   wantFiji?loadFiji():Promise.resolve(null),
   wantAll?Promise.all(MAJORS.map(x=>findPair(x.q,x.chain,x.match).catch(()=>null))):Promise.resolve(null),
@@ -1632,7 +1635,7 @@ go('home');
 <script src="tradepad-popup.js?v=2"></script>
 <script src="popup-unify.js?v=2"></script>
 <script src="tradepad-gate.js?v=2"></script>
-<script src="market-tab.js?v=3"></script>
+<script src="market-tab.js?v=4"></script>
 <script src="reward-box.js?v=3"></script>
 <script src="bun-coin.js?v=3"></script>
 <script src="quest.js?v=2"></script>
