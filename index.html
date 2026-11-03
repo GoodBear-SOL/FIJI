@@ -400,6 +400,10 @@ footer .soc svg{width:19px;height:19px}
 .am-t small{font:600 11px Nunito;opacity:.65}
 .am-sw{margin-left:auto;font:600 12px Fredoka;border:2px solid var(--ink);border-radius:99px;padding:1px 10px;background:#B8F5D2;flex:none}
 .am-sw.off{background:#FFD0D8}
+.am-vol{display:flex;align-items:center;gap:8px;padding:0 12px 8px 14px;font:600 13px Fredoka}
+.am-vol input[type=range]{flex:1;margin:0;padding:0;border:0;border-radius:99px;height:8px;accent-color:var(--blue);background:transparent;cursor:pointer}
+.am-vol input[type=range]:focus{box-shadow:none}
+.am-vol #acctVolPct{min-width:38px;text-align:right}
 .am-sep{height:2px;border-top:2px dashed var(--line);margin:2px 6px}
 .am-row.danger{color:var(--dni)}
 .am-row.danger:hover{background:#FFD0D8}
@@ -423,15 +427,13 @@ footer .soc svg{width:19px;height:19px}
    </button>
    <div class="am-sep"></div>
    <button type="button" class="am-row" role="menuitem" onclick="acctAction('wallet')">
-    <span class="am-ic">🐰</span><span class="am-t"><b>My Wallet</b></span>
-   </button>
-   <button type="button" class="am-row" role="menuitem" onclick="acctAction('portfolio')">
-    <span class="am-ic">📊</span><span class="am-t"><b>Portfolio</b></span>
+    <span class="am-ic">💰</span><span class="am-t"><b>My Bunny Bag</b></span>
    </button>
    <button type="button" class="am-row" role="menuitem" onclick="acctAction('sound')">
     <span class="am-ic" id="acctSoundIc">🔊</span><span class="am-t"><b>Sound</b></span>
     <span class="am-sw" id="acctSoundState">On</span>
    </button>
+   <div class="am-vol"><span>🔈</span><input type="range" id="acctVol" min="0" max="100" step="1" value="30" aria-label="Music volume" oninput="acctVol(this.value)"><span id="acctVolPct">30%</span></div>
    <div class="am-sep"></div>
    <button type="button" class="am-row danger" role="menuitem" onclick="acctAction('disconnect')">
     <span class="am-ic">🔌</span><span class="am-t"><b>Disconnect</b></span>
@@ -447,7 +449,7 @@ footer .soc svg{width:19px;height:19px}
   <div>
    <span class="eyebrow">Check-in · Discover · Play · Refer</span>
    <h1>A fuzzy bunny friend <span>with a little something extra.</span></h1>
-   <p>Meet FIJI, a pure meme with a little home of its own.🐰💙 FIJI gives the community a place to play, aim like a sniper, invite fellow bunnies, and earn BUN! Hop in🐰</p>
+   <p>Meet FIJI, a pure meme with a little home of its own.🐰💙</p>
    <div class="btns">
     <button class="btn" onclick="go('trade')">Open Trade Pad</button>
     <button class="btn alt" onclick="go('wallet')">Open the Burrow</button>
@@ -465,7 +467,7 @@ footer .soc svg{width:19px;height:19px}
   <div class="tag" style="margin:0">the contract</div>
   <h2>Official Contract Address</h2>
   <div class="mint"><code id="mint">5D3Nafx9SV2TNd6KLmnyWi71QQTGZaGJBAqghk4Tpump</code><button class="btn sm alt" onclick="copyMint()">Copy</button></div>
-  <p class="small">FIJI is a community-driven crypto token with real value and market potential. However, all digital assets carry risks, and nothing here constitutes financial advice. Always DYOR (Do Your Own Research) and trade responsibly 🐰💙</p>
+  <p class="small">FIJI is a community-driven crypto token with real value and market potential. However, all digital assets carry risks. Always DYOR (Do Your Own Research) and trade responsibly 🐰💙</p>
 
  </div>
 
@@ -479,7 +481,7 @@ footer .soc svg{width:19px;height:19px}
  <h2>One place. Less confusion.</h2>
  <div class="grid">
   <div class="sticker card"><div class="em">⚡</div><h3>Trade Pad</h3>Discover new, trending and migrated Solana tokens and trade them. Browse coins from every chain in All coins.</div>
-  <div class="sticker card"><div class="em">🐰</div><h3>Burrow</h3>Your wallet and farming status</div>
+  <div class="sticker card"><div class="em">🥕</div><h3>Burrow</h3>Your wallet and farming status</div>
   <div class="sticker card"><div class="em">📅</div><h3>Daily visit</h3>Check in and grow a streak bonus.</div>
   <div class="sticker card"><div class="em">🤝</div><h3>Referrals</h3>Bring a friend, both of you win!</div>
   <div class="sticker card"><div class="em">🎮</div><h3>Games</h3>Splash Tap, Lucky Wheel, and even more exciting features are on the way!</div>
@@ -516,7 +518,7 @@ footer .soc svg{width:19px;height:19px}
  <div class="trade-head">
   <div>
    <div class="tag" style="margin-top:0">solana trade pad</div>
-   <h1>Spot it. Check it. Hop in.🐰</h1>
+   <h1>Spot it. Check it. Hop in.</h1>
    <p class="small">Stay on the hop with live New, Trending, Bonding, and Migrated Solana tokens — fresh discoveries, updated in real time. 🐰</p>
   </div>
    
@@ -574,7 +576,7 @@ footer .soc svg{width:19px;height:19px}
   <div class="mk-bar"><div class="mk-pills" id="mkTf"></div><div class="mk-pills" id="mkSort"></div></div>
   <p class="small" id="mkNote" style="margin-bottom:12px"></p>
   <div class="grid" id="mkGrid"></div>
-  <p class="small" style="margin-top:14px">Market data from DexScreener, refreshed about every 30 seconds. Trading on the Trade Pad works for <b>Solana</b> coins only. Other chains are view-only. For fun and information only, not financial advice. Meme coins can lose value fast, and look-alike tokens exist, so always check the contract address.</p>
+  <p class="small" style="margin-top:14px">Trading on the Trade Pad works for <b>Solana</b> coins only. Other chains are view-only. For fun and information only, not financial advice. Meme coins can lose value fast, and look-alike tokens exist, so always check the contract address.</p>
  </div>
 
  <div class="tlayout">
@@ -710,9 +712,6 @@ footer .soc svg{width:19px;height:19px}
 
 <script>
 
-/* ===== Global sound control =====
-   Runs first, so every audio element (including new Audio() objects created by
-   bgmusic.js, wheel.js, shop.js, etc.) is tracked and obeys one mute switch. */
 const SND={muted:false,els:new Set()};
 try{SND.muted=localStorage.getItem('fiji_muted')==='1'}catch(e){}
 (function(){
@@ -735,6 +734,17 @@ function renderSound(){
  const ic=document.getElementById('acctSoundIc'),st=document.getElementById('acctSoundState');
  if(ic)ic.textContent=SND.muted?'🔇':'🔊';
  if(st){st.textContent=SND.muted?'Off':'On';st.classList.toggle('off',SND.muted)}
+ const vol=document.getElementById('acctVol'),pct=document.getElementById('acctVolPct');
+ if(vol&&window.FIJI_MUSIC&&window.FIJI_MUSIC.getVolume){
+  const v=Math.round(window.FIJI_MUSIC.getVolume()*100);
+  vol.value=v;
+  if(pct)pct.textContent=v+'%';
+ }
+}
+function acctVol(v){
+ if(window.FIJI_MUSIC&&window.FIJI_MUSIC.setVolume)window.FIJI_MUSIC.setVolume(Number(v)/100);
+ if(Number(v)>0&&SND.muted)setMuted(false);
+ else renderSound();
 }
 window.FIJI_SOUND={isMuted:()=>SND.muted,setMuted,toggle:()=>setMuted(!SND.muted)};
 
@@ -782,7 +792,6 @@ async function safeCopy(t){
 function copyMint(){safeCopy(CFG.FIJI_MINT);toast('Contract copied📝')}
 function copyReferral(){if(!$('ref').value)return toast('Connect your wallet first');safeCopy($('ref').value);toast('Referral link copied 🤝')}
 
-/* ===== Account button (gear) + dropdown ===== */
 function closeAcct(){
  const m=$('acctMenu'),b=$('cbtn');
  if(m)m.classList.remove('open');
@@ -837,14 +846,6 @@ function acctAction(a){
  }
  closeAcct();
  if(a==='wallet'){go('wallet');return}
- if(a==='portfolio'){
-  go('wallet');
-  setTimeout(()=>{
-   const t=$('bag')||$('wstat');
-   if(t&&t.scrollIntoView)t.scrollIntoView({behavior:'smooth',block:'start'});
-  },400);
-  return;
- }
  if(a==='disconnect'){disconnectWallet();return}
 }
 document.addEventListener('click',e=>{
@@ -956,8 +957,6 @@ function pick(list){
  });
 }
 
-/* Rank on the Earn tab = BunXP rank, the same number the BunXP leaderboard shows.
-   Uses fiji_my_bunxp (bunxp.sql). Wallets with 0 BunXP are not on the board, so they show "–". */
 async function updateRank(){
  const el=$('myrank');
  if(!el)return;
@@ -976,7 +975,6 @@ async function updateRank(){
   if(w===wallet)el.textContent='–';
  }
 }
-/* keep the Earn rank fresh while that tab is open */
 setInterval(()=>{
  if(document.hidden||!wallet||!db)return;
  const earn=$('earn');
@@ -1769,9 +1767,7 @@ function trRefresh(){
  });
 })();
 
-/* ===== Remove the "Weekly Quests" coming-soon card =====
-   Stopgap sweep: it is injected by one of the other .js files, so this removes it
-   wherever it appears. Delete the card from that file's source when you find it. */
+
 (function(){
  function sweep(){
   const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
@@ -1815,7 +1811,7 @@ try{go('home')}catch(e){console.error(e);try{startMarket()}catch(x){}}
 <script src="info-popups.js?v=1"></script>
 <script src="bunxp.js?v=1"></script>
 <script src="wheel.js?v=6"></script>
-<script src="bgmusic.js?v=3"></script>
+<script src="bgmusic.js?v=4"></script>
 <script src="tc-gate.js?v=1"></script>
 <script src="swap-icons.js?v=2"></script>
 
