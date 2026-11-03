@@ -327,7 +327,7 @@ farm.innerHTML=
   '<button class="btn" type="button" data-a="market">Open Market</button></div>'+
   '<div class="sticker card" style="margin-top:14px"><div class="fm-stats" id="fmStats"></div>'+
   '<div class="fm-grid" id="fmField"></div>'+
-  '<p class="small fm-note">Water a plant until its bar is full, wait for the timer, then harvest it. Seeds and water are bought in the Market. BUN is for fun and has no cash value.</p></div>';
+  '<p class="small fm-note">Water a plant until its bar is full, wait for the timer, then harvest it. Seeds and water are bought in the Market.</p></div>';
 const anchor=$('rwInv')||($('assets')&&$('assets').closest('.card'));
 if(anchor)anchor.after(farm);else sec.appendChild(farm);
 
