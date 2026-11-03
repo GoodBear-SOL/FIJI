@@ -710,8 +710,6 @@ async function safeCopy(t){
 }
 function copyMint(){safeCopy(CFG.FIJI_MINT);toast('Contract copied📝')}
 function copyReferral(){if(!$('ref').value)return toast('Connect your wallet first');safeCopy($('ref').value);toast('Referral link copied 🤝')}
-const lines=["you opened the Trade Pad. nice choice.","new tokens move fast. keep your eyes open.","check the contract before you chase the splash.","find it. check it. then decide.","drink some water. then check the chart."];
-let li=0;function say(){$('line').textContent='“'+lines[li++%lines.length]+'”'}say();
 
 const WS=[];
 (function(){
