@@ -43,13 +43,6 @@ table.wt{min-width:680px}
 `;
 document.head.appendChild(css);
 
-const tags=sec.querySelectorAll(':scope > .tag');
-const walletTag=tags[1];
-if(walletTag){
-  const wH2=walletTag.nextElementSibling,wCard=wH2&&wH2.nextElementSibling;
-  if(wH2&&wCard)sec.prepend(walletTag,wH2,wCard);
-}
-
 const SOL='So11111111111111111111111111111111111111112';
 const USDC='EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 const FIJI=C.CFG.FIJI_MINT;
@@ -274,6 +267,6 @@ soon.innerHTML=`<div class="tag">coming soon to the burrow</div>
    <div class="grid"><div class="cs-tile"><span>🐰</span>Mystery bunny</div><div class="cs-tile"><span>💧</span>Mystery drop</div></div></div>
  </div>
  <p class="small" style="margin-top:14px">Nothing here is live yet and no rewards are promised.</p>`;
-hero.after(soon);
+sec.appendChild(soon);
 
 })();
