@@ -2,9 +2,10 @@
 'use strict';
 
 const C=window.FIJI_CORE||{};
+
 const marker=document.getElementById('line');
 const quote=marker&&marker.closest('.quote');
-if(!C.CFG||!quote){console.warn('chat: load after the core script');return}
+if(!C.CFG){console.warn('chat: load after the core script');return}
 const db=C.getSupabase&&C.getSupabase();
 
 const EMOJI=['👍','❤️','😂','😮','😢','😡'];
@@ -86,7 +87,7 @@ host.className='ch-pop';
 host.id='chPop';
 host.setAttribute('role','dialog');
 host.setAttribute('aria-label','Fiji Chat');
-const h2=quote.previousElementSibling,tag=h2&&h2.previousElementSibling;
+const h2=quote&&quote.previousElementSibling,tag=h2&&h2.previousElementSibling;
 [tag,h2,quote].forEach(el=>el&&el.remove());
 document.body.appendChild(host);
 
@@ -102,6 +103,7 @@ let wallet=null,me=null,editing=false;
 let replyTo=null,pickerFor=null,lastHtml='',forceBottom=false;
 let chan=null,poll=null,live=false,kickT=null,busy=false;
 let isOpen=false,seen=null,unread=0;
+let cleared=0;
 const msgs=new Map(),rx=new Map();
 const q=s=>host.querySelector(s);
 const isMobile=()=>window.matchMedia&&window.matchMedia('(max-width:760px)').matches;
@@ -114,6 +116,17 @@ function saveSeen(){
   if(!wallet||seen===null)return;
   try{localStorage.setItem(seenKey(wallet),String(seen))}catch(e){}
 }
+
+const clearKey=w=>'fiji_chat_clear_'+w;
+function readCleared(w){
+  if(!w)return 0;
+  try{const v=Number(localStorage.getItem(clearKey(w)));return isFinite(v)&&v>0?v:0}catch(e){return 0}
+}
+function saveCleared(){
+  if(!wallet)return;
+  try{localStorage.setItem(clearKey(wallet),String(cleared))}catch(e){}
+}
+
 function paintBadge(prev){
   const b=$badge();
   if(!b)return;
@@ -194,10 +207,10 @@ function mount(phase){
     const i=q('#chName');if(i&&isOpen)i.focus();
   }else{
     host.innerHTML='<div class="sticker ch-card">'+
-      '<div class="ch-head"><span>💬 Fiji Chat</span><span class="ch-hr"><span>@'+esc(me.username)+' ·</span><button data-act="edit">change</button>'+CLOSE_BTN+'</span></div>'+
+      '<div class="ch-head"><span>💬 Fiji Chat</span><span class="ch-hr"><span>@'+esc(me.username)+' ·</span><button data-act="edit">change</button><button data-act="clear" title="Clear the chat for you only">clear</button>'+CLOSE_BTN+'</span></div>'+
       '<div class="ch-list" id="chList"></div>'+
       '<div class="ch-replybar" id="chReply"></div>'+
-      '<div class="ch-send"><input id="chIn" maxlength="300" autocomplete="off" placeholder="Write a message…"><button class="btn sm alt" data-act="sell" title="Sell your vegetables">💰 Sell</button><button class="btn sm" data-act="send">Send</button></div>'+
+      '<div class="ch-send"><input id="chIn" maxlength="300" autocomplete="off" placeholder="Write a message…"><button class="btn sm" data-act="send">Send</button></div>'+
       NOTE+'</div>';
     lastHtml='';forceBottom=true;paintReply();render();
   }
@@ -241,7 +254,8 @@ async function load(){
   const {data,error}=await db.from('fiji_chat_messages').select('*').order('id',{ascending:false}).limit(LIMIT);
   if(error)throw error;
   msgs.clear();
-  (data||[]).forEach(m=>msgs.set(Number(m.id),m));
+  /* hide anything this user has cleared (their view only) */
+  (data||[]).forEach(m=>{if(Number(m.id)>cleared)msgs.set(Number(m.id),m)});
   const ids=[...msgs.keys()];
   rx.clear();
   if(ids.length){
@@ -266,6 +280,20 @@ function start(){
 function stop(){
   clearInterval(poll);poll=null;live=false;
   if(chan){try{db.removeChannel(chan)}catch(e){}chan=null}
+}
+
+function clearChat(){
+  if(!me||!msgs.size){toast('Nothing to clear 🐰');return}
+  if(!window.confirm('Clear the chat for you? Other players will still see their messages.'))return;
+  const maxId=[...msgs.keys()].reduce((m,x)=>Math.max(m,x),0);
+  cleared=Math.max(cleared,maxId);
+  saveCleared();
+  msgs.clear();rx.clear();
+  replyTo=null;pickerFor=null;lastHtml='';forceBottom=true;
+  paintReply();render();
+  seen=Math.max(seen||0,maxId);saveSeen();
+  unread=0;paintBadge(0);
+  toast('Chat cleared for you 🧹');
 }
 
 async function saveName(){
@@ -312,8 +340,8 @@ host.addEventListener('click',ev=>{
   else if(a==='save')saveName();
   else if(a==='cancel'){editing=false;mount('chat')}
   else if(a==='edit'){editing=true;mount('name')}
+  else if(a==='clear')clearChat();
   else if(a==='send')send();
-  else if(a==='sell')openMarket('sell');
   else if(a==='market')openMarket('veg');
   else if(a==='open'){pickerFor=pickerFor===id?null:id;render()}
   else if(a==='pick')react(id,b.dataset.e);
@@ -338,6 +366,7 @@ async function onWallet(){
   const w=wallet;
   stop();me=null;replyTo=null;pickerFor=null;editing=false;msgs.clear();rx.clear();lastHtml='';
   seen=null;unread=0;paintBadge(0);
+  cleared=readCleared(w);
   if(!w)return mount('connect');
   try{
     const {data}=await db.from('fiji_profiles').select('username').eq('wallet',w).maybeSingle();
