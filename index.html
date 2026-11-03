@@ -421,7 +421,7 @@ footer .soc svg{width:19px;height:19px}
  <div class="sticker card">
   <div class="tag" style="margin:0">the contract</div>
   <h2>Official Contract Address</h2>
-  <div class="mint"><code id="mint"></code><button class="btn sm alt" onclick="copyMint()">Copy</button></div>
+  <div class="mint"><code id="mint">5D3Nafx9SV2TNd6KLmnyWi71QQTGZaGJBAqghk4Tpump</code><button class="btn sm alt" onclick="copyMint()">Copy</button></div>
   <p class="small">FIJI is a community-driven crypto token with real value and market potential. However, all digital assets carry risks, and nothing here constitutes financial advice. Always DYOR (Do Your Own Research) and trade responsibly 🐰💙</p>
 
  </div>
@@ -1251,6 +1251,7 @@ async function connect(){
   return toast('Disconnected');
  }
 
+ toast('Looking for wallets…');
  const list=await waitForWallets();
  if(!list.length){
  if(isMobile)return pickMobile();
@@ -1626,7 +1627,7 @@ function trRefresh(){
 })();
 
 $('mint').textContent='5D3Nafx9SV2TNd6KLmnyWi71QQTGZaGJBAqghk4Tpump';
-go('home');
+try{go('home')}catch(e){console.error(e);try{startMarket()}catch(x){}}
 </script>
 
 
