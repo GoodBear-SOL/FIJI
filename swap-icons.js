@@ -1,10 +1,6 @@
 (function(){
 'use strict';
 
-/* Fixes the Swap box icons:
-   - SOL icon: built-in logo (no solana.svg file needed)
-   - Token icon: real logo of the selected token (FIJI uses fiji.png) */
-
 const C=window.FIJI_CORE||{},T=window.FIJI_TRADE;
 const FIJI=(C.CFG&&C.CFG.FIJI_MINT)||'';
 const $=id=>document.getElementById(id);
@@ -23,7 +19,25 @@ const SOL_URI='data:image/svg+xml;utf8,'+encodeURIComponent(SOL_SVG);
 const css=document.createElement('style');
 css.textContent=`
 .swap-dot{overflow:hidden;padding:0}
-.swap-dot img.tk-ic{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
+.swap-dot{
+  width:32px;
+  height:32px;
+  min-width:32px;
+  min-height:32px;
+  overflow:hidden;
+  padding:0;
+  border-radius:50%;
+  flex-shrink:0;
+}
+
+.swap-dot img.tk-ic{
+  width:100%;
+  height:100%;
+  aspect-ratio:1 / 1;
+  object-fit:cover;
+  border-radius:50%;
+  display:block;
+}
 `;
 document.head.appendChild(css);
 
@@ -48,7 +62,6 @@ function paintDot(dot,src,fallback){
 }
 
 function sync(){
-  /* any leftover Solana images (balance chip, nav balance) */
   document.querySelectorAll('img.solana-icon,.sol-icon img').forEach(i=>{
     if(i.getAttribute('src')!==SOL_URI)i.setAttribute('src',SOL_URI);
   });
@@ -62,10 +75,9 @@ function sync(){
   let tok='';
   const p=T&&T.getState&&T.getState().selected;
   if(p&&p.baseToken){
-    tok=p.baseToken.address===FIJI?'fiji.png':https(p.info&&p.info.imageUrl);
+    tok=https(p.info&&p.info.imageUrl);
   }
 
-  /* BUY: pay SOL, receive token.  SELL: pay token, receive SOL. */
   paintDot(payDot,sell?tok:SOL_URI,'💧');
   paintDot(recDot,sell?SOL_URI:tok,'💧');
 }
