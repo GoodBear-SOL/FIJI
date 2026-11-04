@@ -40,6 +40,11 @@ let mkt={list:[],mine:[],loading:false,err:''};
 let sess={token:null,wallet:null,exp:0};
 const nowMs=()=>Date.now()+skew;
 
+/* Phase 1 end (set by phase-end.js). After it: no selling to players, burn crops for BUN instead. */
+const phaseEnded=()=>Boolean(window.FIJI_PHASE&&window.FIJI_PHASE.ended&&window.FIJI_PHASE.ended());
+const burnPct=()=>Number(window.FIJI_PHASE&&window.FIJI_PHASE.burnPct?window.FIJI_PHASE.burnPct():50)||50;
+const burnValue=(base,qty)=>Math.floor(Number(base)*qty*burnPct()/100+1e-9);
+
 const MIN_FIJI_TO_SELL=2000000;
 let hold={w:null,amt:null,t:0};
 async function loadHold(force){
@@ -413,13 +418,13 @@ function askConfirm(o){
   return new Promise(resolve=>{
     if(cfResolve)cfResolve(false);
     cfResolve=resolve;
-    const low=o.balance!=null&&o.balance<o.price;
+    const low=!o.gain&&o.balance!=null&&o.balance<o.price;
     cfBox.innerHTML=
       '<div class="fm-cfem">'+(o.emoji||'🟫')+'</div>'+
       '<h3>'+esc(o.title)+'</h3>'+
       '<p class="small">'+esc(o.text||'')+'</p>'+    
-      '<div class="fm-cfprice"><img src="./bun-coin.png" class="bun-icon" alt=""> '+fmtN(o.price)+' BUN</div>'+
-      (o.balance!=null
+      '<div class="fm-cfprice"><img src="./bun-coin.png" class="bun-icon" alt=""> '+(o.gain?'+':'')+fmtN(o.price)+' BUN</div>'+
+      (!o.gain&&o.balance!=null
         ?'<div class="fm-cfbal'+(low?' low':'')+'">'+(low?'Not enough BUN. You have ':'Your balance: ')+fmtN(o.balance)+' BUN</div>'
         :'')+
       '<div class="fm-cfacts">'+
@@ -447,6 +452,7 @@ function buyRow(o){
     '<button class="btn sm" type="button" data-a="buy" data-item="'+esc(o.id)+'" data-price="'+o.price+'">Buy · '+fmtN(o.price)+'</button></div></div>';
 }
 function vegBody(){
+  if(phaseEnded())return '<div class="fm-soon"><b>Player market closed</b><p>Vegetables are no longer sold between players. You can still buy seeds and water, and burn your harvest for BUN in the 🔥 Burn tab.</p></div>';
   if(mkt.err)return '<div class="fm-empty">'+esc(mkt.err)+'</div>';
   if(mkt.loading&&!mkt.list.length)return '<div class="fm-empty">Loading listings…</div>';
   const me=wallet();
@@ -468,7 +474,24 @@ function vegBody(){
       '</div>';
   }).join('');
 }
+function burnBody(){
+  const me=wallet();
+  if(!me)return '<div class="fm-empty">Connect your wallet to burn vegetables 🐰</div>';
+  let html='<div class="fm-soon"><b>🔥 Burn your vegetables</b><p>Selling vegetables has closed. Burn a vegetable to get '+fmtN(burnPct())+'% of its value back in BUN. Burned vegetables are gone for good.</p></div>';
+  const rows=cat.crops.map(c=>{
+    const have=cropQty(c);
+    if(have<1)return '';
+    return '<div class="fm-row">'+pic(c.crop_img,c.crop_emoji)+
+      '<div class="fm-info"><b>'+esc(c.name)+'</b><span>You have: '+fmtN(have)+'</span>'+
+      '<span>Worth '+fmtN(c.base_value)+' BUN each · burn returns '+fmtN(burnPct())+'%</span></div>'+
+      '<div class="fm-buy"><input class="fm-q" type="number" min="1" max="'+Math.min(99,have)+'" value="1" inputmode="numeric" data-base="'+c.base_value+'">'+
+      '<button class="btn sm" type="button" data-a="mburn" data-crop="'+esc(c.id)+'" data-base="'+c.base_value+'" data-pre="Burn · +">Burn · +'+fmtN(burnValue(c.base_value,1))+'</button></div></div>';
+  }).join('');
+  html+=rows||'<div class="fm-empty">You have no harvested vegetables to burn 🌱</div>';
+  return html;
+}
 function sellBody(){
+  if(phaseEnded())return burnBody();
   const me=wallet();
   if(!me)return '<div class="fm-empty">Connect your wallet to sell vegetables 🐰</div>';
   const ok=canSell();
@@ -533,7 +556,7 @@ function renderModal(){
   }
   const tab=(k,l)=>'<button class="mk-p'+(view.tab===k?' on':'')+'" type="button" data-a="tab" data-tab="'+k+'">'+l+'</button>';
   sheet.innerHTML=headHtml('🛍️ Market')+
-    '<div class="fm-tabs">'+tab('seeds','🌱 Seeds')+tab('water','💧 Water')+tab('veg','🥕 Buy veg')+tab('sell','💰 Sell')+'</div>'+
+    '<div class="fm-tabs">'+tab('seeds','🌱 Seeds')+tab('water','💧 Water')+tab('veg','🥕 Buy veg')+tab('sell',phaseEnded()?'🔥 Burn':'💰 Sell')+'</div>'+
     '<div class="fm-body">'+marketBody()+'</div>';
 }
 function openModal(mode,tab,plot){
@@ -555,8 +578,10 @@ modal.addEventListener('input',e=>{
   if(!q)return;
   const maxQ=Number(q.max)||99;
   const qty=Math.min(maxQ,Math.max(1,parseInt(q.value,10)||1));
-  const btn=q.parentNode.querySelector('button[data-price]');
-  if(btn)btn.textContent=(btn.dataset.pre||'Buy · ')+fmtN(Number(q.dataset.price)*qty);
+  const btn=q.parentNode.querySelector('button[data-price],button[data-base]');
+  if(!btn)return;
+  if(q.dataset.base)btn.textContent=(btn.dataset.pre||'Burn · +')+fmtN(burnValue(q.dataset.base,qty));
+  else btn.textContent=(btn.dataset.pre||'Buy · ')+fmtN(Number(q.dataset.price)*qty);
 });
 function qtyOf(b){
   const row=b.closest('.fm-buy'),q=row&&row.querySelector('.fm-q');
@@ -609,10 +634,30 @@ async function onClick(e){
   }
   if(a==='msell'){
     if(!wallet())return toast('Connect your wallet first');
+    if(phaseEnded())return toast('Selling has closed. Burn your vegetables instead 🔥');
     await loadHold(true);
     if(!canSell())return toast('You need '+fmtN(MIN_FIJI_TO_SELL)+' FIJI to sell crops 🔒');
     const qty=qtyOf(b),id=b.dataset.crop,c=crop(id);
     return void marketAct('list',{crop:id,qty},'Listed '+qty+' × '+(c?c.name:id)+' 💰 (posted to chat)');
+  }
+  if(a==='mburn'){
+    if(!wallet())return toast('Connect your wallet first');
+    const qty=qtyOf(b),id=b.dataset.crop,c=crop(id);
+    if(!c)return;
+    const gain=burnValue(c.base_value,qty);
+    const ok=await askConfirm({
+      emoji:'🔥',
+      title:'Burn '+qty+' × '+c.name+'?',
+      text:'This cannot be undone. You get '+burnPct()+'% of the value back in BUN.',
+      price:gain,
+      gain:true,
+      confirmLabel:'Burn'
+    });
+    if(!ok)return;
+    return void act('fiji_burn_crop',{p_crop:id,p_qty:qty},d=>{
+      const x=d&&d.burned;
+      return 'Burned '+qty+' × '+c.name+' 🔥'+(x?' · +'+fmtN(x.bun)+' BUN':'');
+    });
   }
   if(a==='mcancel'){
     const id=Number(b.dataset.listing);
@@ -698,5 +743,5 @@ loadCatalog().then(render).catch(e=>{console.warn('farm catalog unavailable (is 
 render();
 if(onBurrow()&&wallet())loadState();
 
-window.FIJI_FARM={inventoryItems,refresh:loadState,open:openModal,refreshMarket:loadMarket};
+window.FIJI_FARM={inventoryItems,refresh:loadState,open:openModal,refreshMarket:loadMarket,render};
 })();
