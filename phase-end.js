@@ -1,9 +1,6 @@
 (function(){
 'use strict';
 
-/* Phase 1 end: countdown on the Board, Phase 2 notice on Earn, airdrop request in the Burrow.
-   Load AFTER shop.js and bunxp.js. */
-
 const C=window.FIJI_CORE||{};
 const $=id=>document.getElementById(id);
 const board=$('board'),burrow=$('wallet'),earn=$('earn');
@@ -42,7 +39,6 @@ css.textContent=`
 `;
 document.head.appendChild(css);
 
-/* ---------- time helpers ---------- */
 function fmtLeft(ms){
   const s=Math.max(0,Math.floor(ms/1000));
   const d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60),x=s%60;
@@ -58,7 +54,6 @@ function whenText(){
   return est+(mine?' · your time: '+mine:'');
 }
 
-/* ---------- countdown card (Board) ---------- */
 const card=document.createElement('div');
 card.id='phCard';
 card.className='sticker card ph-card';
@@ -98,15 +93,13 @@ function paintCard(){
   }
 }
 
-/* ---------- Earn banner ---------- */
 const banner=document.createElement('div');
 banner.className='sticker card ph-banner';
-banner.textContent='🏁 Phase 1 has ended. Activities no longer give BUN. They now earn BunXP only, saved separately from your Phase 1 total.';
+banner.textContent='🏁 Phase 1 is over! Activities now earn BunXP only, tracked separately from your Phase 1 total.';
 const eh2=earn&&earn.querySelector('h2');
 if(eh2)eh2.after(banner);
 function paintBanner(){banner.style.display=ended()?'block':'none'}
 
-/* ---------- Airdrop request (Burrow) ---------- */
 const air=document.createElement('div');
 air.id='phAir';
 air.style.display='none';
@@ -119,7 +112,7 @@ function buildAir(){
   airBuilt=true;
   $('phAirBody').innerHTML=
     '<div class="ph-stats" id="phAirPills"></div>'+
-    '<p class="small">Choose how much of your BUN you want to receive in the airdrop. The BUN you submit is set aside right away and shows as pending until it is withdrawn.</p>'+
+    '<p class="small">Choose your BUN airdrop amount. Submitted BUN will be reserved immediately and marked as Pending until withdrawn.</p>'+
     '<div class="ph-row"><input id="phAmt" type="number" min="1" step="1" inputmode="numeric" placeholder="Amount of BUN">'+
     '<button class="btn sm alt" type="button" data-a="max">Max</button></div>'+
     '<button class="btn full" type="button" id="phAirBtn" data-a="submit">Submit request</button>'+
@@ -212,7 +205,6 @@ air.addEventListener('click',e=>{
   }else if(b.dataset.a==='submit')submit();
 });
 
-/* ---------- status loading ---------- */
 function fire(){
   paintBanner();paintAir();
   listeners.forEach(f=>{try{f(ended())}catch(e){}});
