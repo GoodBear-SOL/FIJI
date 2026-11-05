@@ -14,6 +14,7 @@ const COIN_FILE='bun-coin.png';
 const COIN_SRC=encodeURI(COIN_FILE);
 const BURST=10;
 const COUNT_MS=900;
+const SYNC_MS=4000;
 
 const css=document.createElement('style');
 css.textContent=`
@@ -185,9 +186,59 @@ function read(){
   first=false;
 }
 
+/* ===== NEW: read the real BUN balance from the database =====
+   BUN can change on the server without any click on this page
+   (a buyer buys your crops, a burn, an airdrop request, an admin gift).
+   This asks Supabase for the current balance and writes it into #spts,
+   so the inventory panel always shows the real number. */
+let syncBusy=false,syncSeq=0;
+
+async function fetchBun(w){
+  const db=C.getSupabase&&C.getSupabase();
+  if(!db)return null;
+  try{
+    const {data,error}=await db.from('fiji_profiles').select('points').eq('wallet',w).maybeSingle();
+    if(!error&&data&&Number.isFinite(Number(data.points)))return Number(data.points);
+  }catch(e){}
+  try{
+    const {data,error}=await db.rpc('fiji_farm_state',{p_wallet:w});
+    if(!error&&data&&Number.isFinite(Number(data.points)))return Number(data.points);
+  }catch(e){}
+  return null;
+}
+
+async function syncBun(){
+  const w=C.getWallet();
+  if(!w||syncBusy)return;
+  syncBusy=true;
+  const my=++syncSeq;
+  try{
+    const v=await fetchBun(w);
+    if(v===null||my!==syncSeq||w!==C.getWallet())return;
+    if(String(pts.textContent).trim()!==String(v))pts.textContent=v;
+    read();
+  }finally{
+    syncBusy=false;
+  }
+}
+
+const burrow=$('wallet');
+const burrowOn=()=>Boolean(burrow&&burrow.classList.contains('on'));
+let lastW=null;
+
+setInterval(()=>{
+  const w=C.getWallet()||null;
+  if(w!==lastW){lastW=w;if(w)syncBun();return}
+  if(w&&!document.hidden&&burrowOn())syncBun();
+},SYNC_MS);
+
+if(burrow)new MutationObserver(()=>{if(burrowOn())syncBun()}).observe(burrow,{attributes:true,attributeFilter:['class']});
+document.addEventListener('fiji:quest-cooked',()=>setTimeout(syncBun,800));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncBun()});
+
 new MutationObserver(read).observe(pts,{childList:true,characterData:true,subtree:true});
 setInterval(read,1000);
 read();
 
-window.FIJI_BUNCOIN={refresh:read,spin:()=>{restart('spin');burst()}};
+window.FIJI_BUNCOIN={refresh:()=>{read();syncBun()},spin:()=>{restart('spin');burst()}};
 })();
