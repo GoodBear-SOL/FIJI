@@ -1441,7 +1441,7 @@ async function doEarn(t){
  const {data,error}=await db.rpc(fn,{p_wallet:wallet});
  if(error)return toast(error.message);
  setProfile(data);
- if(data.reward)toast('Day '+data.reward.day+': +'+data.reward.bun+' BUN, +'+data.reward.xp+' BunXP');
+ if(data.reward)toast('Day '+data.reward.day+(data.reward.bun>0?': +'+data.reward.bun+' BUN, +':': +')+data.reward.xp+' BunXP');
  else toast('BUN earned ⭐');
  try{window.FIJI_BUNXP.refresh()}catch(e){}
 }
@@ -1809,11 +1809,11 @@ try{go('home')}catch(e){console.error(e);try{startMarket()}catch(x){}}
 <script src="trade-all.js?v=2"></script>
 <script src="all-coins.js?v=2"></script>
 <script src="gifts.js"></script>
-<script src="splash-tap.js?v=1"></script>
+<script src="splash-tap.js?v=2"></script>
 <script src="chat.js?v=4"></script>
 <script src="earn-tab.js?v=2"></script>
 <script src="info-popups.js?v=1"></script>
-<script src="bunxp.js?v=1"></script>
+<script src="bunxp.js?v=2"></script>
 <script src="wheel.js?v=6"></script>
 <script src="bgmusic.js?v=4"></script>
 <script src="tc-gate.js?v=1"></script>
