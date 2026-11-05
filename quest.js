@@ -299,7 +299,7 @@ function renderDetail(id){
 }
 function detailPerks(id,p){
   if(id==='farming')return '<li>🌱 Buy seeds and water in the Market</li><li>🧺 Plant, water and harvest your plots</li><li>⭐ Earn BunXP for every watering and harvest</li><li>⏳ Access lasts '+nf(p.days)+' days from purchase</li>';
-  if(id==='cooking')return '<li>🍳 A new dish every 12 hours</li><li>🥕 Cook it with vegetables you harvested</li><li>⭐ Rewards BunXP only, added to your Phase 2 BunXP</li><li>⏳ Access lasts '+nf(p.days)+' days from purchase</li>';
+  if(id==='cooking')return '<li>🍳 A new dish every 12 hours</li><li>🥕 Cook it with vegetables you harvested</li><li>⭐ Rewards BUN and BunXP</li><li>⏳ Access lasts '+nf(p.days)+' days from purchase</li>';
   return '<li>⏳ Access lasts '+nf(p.days)+' days from purchase</li>';
 }
 
@@ -560,9 +560,9 @@ function paintCook(){
       '</div>'+
     '</div>'+
     '<div class="qs-list">'+rows+'</div>'+
-    '<div class="qs-rew"><span class="pill">⭐ +'+nf(st.bunxp)+' BunXP</span></div>'+
+    '<div class="qs-rew">'+(Number(st.bun_reward)>0?'<span class="pill">🪙 +'+nf(st.bun_reward)+' BUN</span>':'')+'<span class="pill">⭐ +'+nf(st.bunxp)+' BunXP</span></div>'+
     btn+
-    '<p class="qs-note">One cook per dish. Same recipe for every player. Cooking rewards BunXP only and counts toward your Phase 2 BunXP. BunXP is for gameplay only.</p>';
+    '<p class="qs-note">One cook per dish. Same recipe for every player. CCooking rewards BUN and BunXP, and BunXP counts toward your Phase 2 total. BUN and BunXP are for gameplay only.</p>';
   tickCook();
 }
 function tickCook(){
@@ -677,7 +677,7 @@ function showDone(c){
     '<div class="tag" style="margin:0">quest complete</div>'+
     '<h3>'+esc(c.dish_name||'Yummy dish')+' is ready!</h3>'+
     '<p>You cooked today\'s dish 🐰</p>'+
-    '<div class="qs-rew"><span class="pill">⭐ +'+nf(c.xp)+' BunXP</span></div>'+
+    '<div class="qs-rew">'+(Number(c.bun)>0?'<span class="pill">🪙 +'+nf(c.bun)+' BUN</span>':'')+'<span class="pill">⭐ +'+nf(c.xp)+' BunXP</span></div>'+
     '<button class="btn" data-x>Yay!</button></div>';
   const close=()=>d.remove();
   d.addEventListener('click',e=>{if(e.target===d||e.target.closest('[data-x]'))close()});
