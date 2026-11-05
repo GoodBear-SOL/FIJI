@@ -79,7 +79,7 @@ function paintCard(){
       card.innerHTML=
         '<div class="tag" style="margin:0">phase one</div>'+
         '<h3>✅ Phase 1 has ended</h3>'+
-        '<p class="ph-note">The leaderboard below is final. BUN is no longer earned, and new BunXP is saved separately from your Phase 1 total.</p>'+
+        '<p class="ph-note">Phase 2 is live!</p>'+
         '<div class="ph-pills" id="phMe"></div>'+
         '<p class="small" id="phWhen"></p>';
     }
@@ -95,7 +95,7 @@ function paintCard(){
 
 const banner=document.createElement('div');
 banner.className='sticker card ph-banner';
-banner.textContent='🏁 Phase 1 is over! Activities now earn BunXP only, tracked separately from your Phase 1 total.';
+banner.textContent='🏁 Phase 2 started!';
 const eh2=earn&&earn.querySelector('h2');
 if(eh2)eh2.after(banner);
 function paintBanner(){banner.style.display=ended()?'block':'none'}
