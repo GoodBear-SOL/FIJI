@@ -966,7 +966,7 @@ async function updateRank(){
  }
  const w=wallet;
  try{
-  const {data,error}=await db.rpc('fiji_my_bunxp',{p_wallet:w});
+  const {data,error}=await db.rpc('fiji_my_phase2',{p_wallet:w});
   if(error)throw error;
   if(w!==wallet)return;
   el.textContent=(data&&data.rank)?'#'+data.rank:'–';
