@@ -1,14 +1,6 @@
 (function(){
 'use strict';
 
-/* QUEST HUB (Burrow)
-   - Only wallets holding the minimum FIJI (1,000,000) can see the quests.
-   - Each quest is a 7-day subscription paid in FIJI to the treasury address.
-       Farming Crops : 50,000 FIJI   (the Bunny Field lives inside this quest)
-       Cooking       : 100,000 FIJI  (daily dish, rewards BunXP only)
-   - Prices, days and treasury come from the database (quest-sub.sql).
-   Load AFTER reward-box.js and bun-coin.js. Order relative to shop.js does not matter. */
-
 const C=window.FIJI_CORE||{};
 const $=id=>document.getElementById(id);
 const inv=$('rwInv');
@@ -26,7 +18,6 @@ const TK='fiji_quest_tok';
 const PAY_URL=C.CFG.SUPABASE_URL.replace(/\/+$/,'')+'/functions/v1/quest-pay';
 const ATA_PROGRAM='ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
 
-/* fallbacks, the database values win once loaded */
 const S={
   min_hold:1000000,
   treasury:'EZebVdUUxPYjUaBvrAewkAeDWXsw6pJ9tdhXQG6Z33mE',
@@ -112,20 +103,17 @@ css.textContent=`
 `;
 document.head.appendChild(css);
 
-/* ---------------- hub shell (placed above the Inventory) ---------------- */
 const hub=document.createElement('div');
 hub.id='qsHub';
 hub.innerHTML='<div class="tag">quests</div><h2>Quest Board</h2><div class="sticker card" id="qhBody"></div>';
 inv.before(hub);
 const body=$('qhBody');
 
-/* the cooking recipe card (kept alive between renders) */
 const root=document.createElement('div');
 root.className='qs-card';
 root.id='qsRoot';
 root.innerHTML='<div class="small">Loading today\'s dish…</div>';
 
-/* ---------------- helpers ---------------- */
 const prod=id=>S.products.find(p=>p.id===id)||null;
 const nowMs=()=>Date.now()+S.offset;
 function subOf(id){
@@ -156,7 +144,6 @@ function stashFarm(){
   if(f.parentElement!==sec)sec.appendChild(f);
 }
 
-/* ---------------- FIJI balance ---------------- */
 async function loadHold(force){
   const w=wallet();
   if(!w){hold=null;return}
@@ -175,9 +162,13 @@ async function loadHold(force){
 }
 
 /* ---------------- subscription status ---------------- */
-async function loadStatus(){
+async function loadStatus(force){
   const c=db();
-  if(!c||statusBusy)return;
+  if(!c)return;
+  if(statusBusy){
+    if(!force)return;
+    for(let i=0;i<40&&statusBusy;i++)await new Promise(r=>setTimeout(r,150));
+  }
   statusBusy=true;
   try{
     const {data,error}=await c.rpc('fiji_quest_sub_status',{p_wallet:wallet()||''});
@@ -196,9 +187,9 @@ async function loadStatus(){
   }
   statusBusy=false;lastStatusAt=Date.now();
   render();
+  resumePending();
 }
 
-/* ---------------- rendering ---------------- */
 function renderKey(){
   const w=wallet()||'';
   const subs=S.subs.map(s=>s.quest_id+s.expires_at).join(',');
@@ -291,7 +282,7 @@ function renderDetail(id){
 
   body.innerHTML=back+
     '<div class="qh-sub"><span class="pill g">✅ Active</span><b>Access ends in <span class="qh-left" data-end="'+Date.parse(s.expires_at)+'">…</span></b>'+
-    '<span class="grow"></span><button class="btn sm alt" type="button" data-act="buy" data-q="'+esc(id)+'"'+(buying?' disabled':'')+'>+'+nf(p.days)+' days · '+nf(p.price_fiji)+'</button></div>'+
+    '</div>'+
     '<div id="qhHost"></div>';
   const host=$('qhHost');
   if(id==='cooking'){
@@ -300,8 +291,9 @@ function renderDetail(id){
   }else if(id==='farming'){
     const f=farmEl();
     if(f){f.classList.add('qs-live');host.appendChild(f)}
-    else host.innerHTML='<div class="empty-state">The Bunny Field is loading…</div>';
+    else host.innerHTML='<div class="empty-state">The Bunny Field could not load. Refresh the page.</div>';
     try{window.FIJI_FARM&&window.FIJI_FARM.refresh&&window.FIJI_FARM.refresh()}catch(e){}
+    try{window.FIJI_FARM&&window.FIJI_FARM.render&&window.FIJI_FARM.render()}catch(e){}
   }
   tick();
 }
@@ -319,7 +311,37 @@ function tick(){
   });
 }
 
-/* ---------------- buying a quest with FIJI ---------------- */
+const PK='fiji_quest_pending';
+const TERMINAL=/already used|too old|failed on-chain|does not match|not signed|invalid/i;
+function getPending(){
+  try{const o=JSON.parse(localStorage.getItem(PK)||'null');return o&&o.w&&o.q&&o.sig?o:null}catch(e){return null}
+}
+function setPending(o){
+  try{if(o)localStorage.setItem(PK,JSON.stringify(o));else localStorage.removeItem(PK)}catch(e){}
+}
+function applyGrant(g){
+  if(!g||!g.quest_id||!g.expires_at)return;
+  S.subs=S.subs.filter(x=>x.quest_id!==g.quest_id).concat([{quest_id:g.quest_id,expires_at:g.expires_at}]);
+  lastKey='';
+}
+let resuming=false;
+async function resumePending(){
+  const p=getPending(),w=wallet();
+  if(!p||!w||p.w!==w||buying||resuming)return;
+  resuming=true;
+  try{
+    const g=await verifyPayment(w,p.q,p.sig);
+    setPending(null);
+    applyGrant(g);
+    toast('✅ Your payment was confirmed. Quest unlocked!');
+    await loadStatus(true);
+  }catch(e){
+    const m=String((e&&e.message)||e);
+    if(TERMINAL.test(m))setPending(null);
+    if(/already used/i.test(m))await loadStatus(true);
+  }
+  resuming=false;
+}
 const B58='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 function b58(bytes){
   const a=Array.from(bytes);
@@ -465,30 +487,43 @@ async function buy(id){
   if(!w){if(typeof window.connect==='function')window.connect();return}
   const p=prod(id);
   if(!p)return;
-  await loadHold(true);
-  if(hold<S.min_hold)return toast('You need '+nf(S.min_hold)+' FIJI to buy quests 🔒');
-  if(hold<Number(p.price_fiji))return toast('Not enough FIJI for this quest');
-  if(!(await confirmBox(p)))return;
-
+  const pend=getPending();
+  if(pend&&pend.w===w){
+    toast('A payment is still being confirmed. Please wait a moment…');
+    resumePending();
+    return;
+  }
   buying=true;render();
   try{
+    await loadStatus(true);
+    if(subOf(id)){toast('You already have this quest. You can renew it after it ends.');return}
+    await loadHold(true);
+    if(hold===null||hold<S.min_hold){toast('You need '+nf(S.min_hold)+' FIJI to buy quests 🔒');return}
+    if(hold<Number(p.price_fiji)){toast('Not enough FIJI for this quest');return}
+    if(!(await confirmBox(p)))return;
+
     toast('Approve the payment in your wallet…');
     const sig=await sendPayment(w,p);
+    setPending({w,q:id,sig,t:Date.now()});
     toast('Payment sent. Confirming… ⏳');
     await waitConfirmed(sig);
-    await verifyPayment(w,id,sig);
+    const g=await verifyPayment(w,id,sig);
+    setPending(null);
+    applyGrant(g);
     toast('✅ '+p.name+' unlocked for '+nf(p.days)+' days!');
     holdAt=0;
-    await loadStatus();
+    await loadStatus(true);
     loadHold(true);
     try{window.FIJI_FARM&&window.FIJI_FARM.refresh&&window.FIJI_FARM.refresh()}catch(e){}
     if(id==='cooking')loadCook();
   }catch(e){
     const m=e&&e.message?e.message:String(e);
     console.warn('quest payment failed',e);
+    if(TERMINAL.test(m))setPending(null);
     toast(e&&e.code===4001||/reject|denied|cancel/i.test(m)?'Payment cancelled. Nothing was sent.':m);
+  }finally{
+    buying=false;lastKey='';render();
   }
-  buying=false;lastKey='';render();
 }
 
 /* ---------------- Cooking quest (daily dish, BunXP only) ---------------- */
@@ -649,7 +684,6 @@ function showDone(c){
   document.body.appendChild(d);
 }
 
-/* ---------------- clicks ---------------- */
 function onClick(e){
   const b=e.target.closest('[data-act]');
   if(!b)return;
@@ -665,12 +699,10 @@ function onClick(e){
 body.addEventListener('click',onClick);
 root.addEventListener('click',onClick);
 
-/* ---------------- keep it fresh ---------------- */
 let wasOn=false;
 setInterval(()=>{
   tick();tickCook();
 
-  // an active pass just ran out
   const now=nowMs();
   if(S.subs.some(s=>Date.parse(s.expires_at)<=now)){
     S.subs=S.subs.filter(s=>Date.parse(s.expires_at)>now);
