@@ -1437,9 +1437,13 @@ async function loadAssets(){
 async function doEarn(t){
  if(!wallet)return toast('Connect your wallet first');
  if(!db)return toast('Supabase not set up yet');
- const {data,error}=await db.rpc('fiji_earn',{p_wallet:wallet,p_type:t});
+ const fn=t==='daily'?'fiji_daily_checkin':'fiji_earn';
+ const {data,error}=await db.rpc(fn,{p_wallet:wallet});
  if(error)return toast(error.message);
- setProfile(data);toast('BUN earned ⭐');
+ setProfile(data);
+ if(data.reward)toast('Day '+data.reward.day+': +'+data.reward.bun+' BUN, +'+data.reward.xp+' BunXP');
+ else toast('BUN earned ⭐');
+ try{window.FIJI_BUNXP.refresh()}catch(e){}
 }
 let hurtOK=false;const hurtImg=new Image();hurtImg.onload=()=>hurtOK=true;hurtImg.src='fiji-hurt.png';
 function tap(){
