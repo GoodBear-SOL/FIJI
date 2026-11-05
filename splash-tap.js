@@ -87,7 +87,8 @@ async function splashReward(){
   if(!db||!w)return;
   const {data,error}=await db.rpc('fiji_splash_reward',{p_wallet:w});
   if(error)return C.toast(error.message);
-  C.toast('💧 +1 water · ⭐ +10 BunXP ('+data.plays_left+' plays left today)');
+  if(data.profile&&C.setProfile)C.setProfile(data.profile);
+  C.toast('💧 +1 water · +'+data.bun+' BUN · ⭐ +'+data.xp+' BunXP ('+data.plays_left+' plays left)');
   if(window.FIJI_BUNXP&&window.FIJI_BUNXP.refresh)window.FIJI_BUNXP.refresh();
 }
 
