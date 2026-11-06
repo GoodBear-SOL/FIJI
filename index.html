@@ -475,9 +475,7 @@ footer .soc svg{width:19px;height:19px}
  <h2>How is Fiji doing?</h2>
  <div class="mk-live small"><span class="live"><i></i><span id="mkAgo">loading…</span></span><button class="btn sm alt" onclick="refreshMarket(true)">Refresh</button></div>
  <div class="sticker card mk-hero" id="mkHero"><div class="mk-empty">Fetching Fiji…🌐</div></div>
-    <div class="sticker card" style="margin-top:18px;padding:10px;background:#0b0e11">
-     <div id="fijiCandles" style="height:360px"></div>
-   </div>
+
  
  <p class="small" style="margin-top:14px">Looking for other coins? Open the <a href="#" onclick="go('trade');tradeSetMode('all');return false" style="color:var(--blue)">All coins</a> tab in the Trade Pad.</p>
  
@@ -1587,7 +1585,49 @@ function flashEl(el){
  if(n!==null)MK.last[el.dataset.k]=n;
 }
 function flash(root){root.querySelectorAll('[data-k]').forEach(flashEl)}
+function getCandleEl(){
+ if(!FC.el){
+  FC.el=document.createElement('div');
+  FC.el.id='fijiCandles';
+  FC.el.style.cssText='height:340px;border-radius:16px;overflow:hidden;background:#0b0e11;margin:12px 0';
+ }
+ return FC.el;
+}
+
 function renderHero(p){
+ const h=$('mkHero');
+ if(!p){h.innerHTML='<div class="mk-empty">Fiji isn’t showing on DexScreener yet. Check back soon ⚠️</div>';return}
+ const k=key(p);MK.pairs[k]=p;h.dataset.k=k;
+ const pc=p.priceChange||{},m=cls(pc.h24),t=(p.txns&&p.txns.h24)||{};
+ const say={up:'splashy day! 💦',dn:'drip drip… stay with me 💧',flat:'calm pond today 🌿'}[m];
+ const keep=[...h.querySelectorAll('button')].filter(b=>/^(buy|sell)\s+fiji/i.test(b.textContent.trim()));
+ h.innerHTML=`<div class="mk-hrow"><img class="mk-fj ${m}" src="fiji.png" alt="Fiji"><div class="mk-say">${say}</div></div>
+  <div class="small">FIJI price</div><div class="mk-price big">${fp(p.priceUsd)}</div>
+  <div class="mk-hs">
+   <div><b>${fm(p.marketCap||p.fdv)}</b><span class="small">market cap</span></div>
+   <div><b>${liq(p)?fm(liq(p)):'–'}</b><span class="small">liquidity</span></div>
+   <div><b>${fm(p.volume&&p.volume.h24)}</b><span class="small">volume 24h</span></div>
+   <div><b>${t.buys==null?'–':t.buys} / ${t.sells==null?'–':t.sells}</b><span class="small">buys / sells 24h</span></div>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0">
+   <div class="mk-chips">${chips(pc)}</div>
+   <div id="fijiBtnSlot" class="mk-acts"></div>
+  </div>
+  <div id="fijiChartSlot"></div>`;
+ const slot=$('fijiBtnSlot');
+ keep.forEach(b=>slot.appendChild(b));
+ $('fijiChartSlot').replaceWith(getCandleEl());
+ flashEl(h);
+ loadCandles(p);
+}
+
+new MutationObserver(()=>{
+ const s=$('fijiBtnSlot');if(!s)return;
+ document.querySelectorAll('#mkHero button').forEach(b=>{
+  if(!s.contains(b)&&/^(buy|sell)\s+fiji/i.test(b.textContent.trim()))s.appendChild(b);
+ });
+}).observe($('mkHero'),{childList:true,subtree:true});
+ function renderHeroOld(p){
  const h=$('mkHero');
  if(!p){h.innerHTML='<div class="mk-empty">Fiji isn’t showing on DexScreener yet. Check back soon ⚠️</div>';return}
  const k=key(p);MK.pairs[k]=p;h.dataset.k=k;
