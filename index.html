@@ -475,6 +475,10 @@ footer .soc svg{width:19px;height:19px}
  <h2>How is Fiji doing?</h2>
  <div class="mk-live small"><span class="live"><i></i><span id="mkAgo">loading…</span></span><button class="btn sm alt" onclick="refreshMarket(true)">Refresh</button></div>
  <div class="sticker card mk-hero" id="mkHero"><div class="mk-empty">Fetching Fiji…🌐</div></div>
+    <div class="sticker card" style="margin-top:18px;padding:10px;background:#0b0e11">
+     <div id="fijiCandles" style="height:360px"></div>
+   </div>
+ 
  <p class="small" style="margin-top:14px">Looking for other coins? Open the <a href="#" onclick="go('trade');tradeSetMode('all');return false" style="color:var(--blue)">All coins</a> tab in the Trade Pad.</p>
  
  <div class="tag">what you can do</div>
@@ -709,6 +713,7 @@ footer .soc svg{width:19px;height:19px}
 
 <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 
 <script>
 
@@ -1598,6 +1603,7 @@ function renderHero(p){
   </div>
   <button class="btn sm" data-open="${esc(k)}" onclick="openPair(this.dataset.open)">See chart</button>`;
  flashEl(h);
+ loadCandles(p);
 }
 function renderMajors(a){
  if(!a)return;MK.maj=a;
@@ -1660,6 +1666,47 @@ function startMarket(){
 }
 function stopMarket(){clearInterval(MK.timer);clearInterval(MK.tick)}
 
+let FC={chart:null,candle:null,vol:null,supply:null};
+
+function initCandles(){
+ if(FC.chart||!window.LightweightCharts)return;
+ FC.chart=LightweightCharts.createChart($('fijiCandles'),{
+  autoSize:true,
+  layout:{background:{color:'#0b0e11'},textColor:'#9aa4b2'},
+  grid:{vertLines:{color:'#1a1f26'},horzLines:{color:'#1a1f26'}},
+  timeScale:{timeVisible:true,secondsVisible:false,borderColor:'#2a313b'},
+  rightPriceScale:{borderColor:'#2a313b'},
+  crosshair:{mode:0}
+ });
+ FC.candle=FC.chart.addCandlestickSeries({
+  upColor:'#2FCB7B',downColor:'#FF5C7A',
+  borderUpColor:'#2FCB7B',borderDownColor:'#FF5C7A',
+  wickUpColor:'#2FCB7B',wickDownColor:'#FF5C7A',
+  priceFormat:{type:'custom',minMove:1,formatter:v=>fm(v)}
+ });
+ FC.vol=FC.chart.addHistogramSeries({priceFormat:{type:'volume'},priceScaleId:''});
+ FC.vol.priceScale().applyOptions({scaleMargins:{top:0.8,bottom:0}});
+}
+
+async function loadCandles(p){
+ if(!p||!p.pairAddress)return;
+ initCandles();
+ if(!FC.candle)return;
+ const price=num(p.priceUsd),mc=num(p.marketCap||p.fdv);
+ FC.supply=(price&&mc)?mc/price:1e9;
+ try{
+  const r=await fetch('https://api.geckoterminal.com/api/v2/networks/solana/pools/'
+   +encodeURIComponent(p.pairAddress)+'/ohlcv/minute?aggregate=1&limit=300');
+  if(!r.ok)throw new Error('GeckoTerminal '+r.status);
+  const j=await r.json();
+  const list=(j.data&&j.data.attributes&&j.data.attributes.ohlcv_list)||[];
+  const rows=list.slice().sort((a,b)=>a[0]-b[0]);
+  FC.candle.setData(rows.map(c=>({time:c[0],open:c[1]*FC.supply,high:c[2]*FC.supply,low:c[3]*FC.supply,close:c[4]*FC.supply})));
+  FC.vol.setData(rows.map(c=>({time:c[0],value:c[5],color:c[4]>=c[1]?'#2FCB7B66':'#FF5C7A66'})));
+  FC.chart.timeScale().fitContent();
+ }catch(e){console.error('candles',e)}
+}
+ 
 function closePair(){document.querySelectorAll('.mk-modal').forEach(m=>m.remove())}
 document.addEventListener('keydown',e=>{if(e.key=='Escape')closePair()});
 function openPair(k){
