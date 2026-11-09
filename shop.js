@@ -527,15 +527,17 @@ function marketBody(){
   if(!cat)return '<div class="fm-empty">'+(failed?'The market is not available right now 💧':'Loading the market…')+'</div>';
   if(view.tab==='water'){
     const w=waterItem();
-    return buyRow({id:'water',img:w.img,emoji:w.emoji,name:w.name,price:w.price,
-      l1:'Used to water your plants',l2:'You have: '+fmtN(own('water'))});
+    return '<div class="fm-soon"><b>Water is paid with real BUN</b><p>The BUN is sent from your wallet to the project wallet.</p></div>'+
+      buyRow({id:'water',img:w.img,emoji:w.emoji,name:w.name,price:Number(w.price_bun)||0,
+      l1:'Used to water your plants · price in BUN tokens',l2:'You have: '+fmtN(own('water'))});
   }
   if(view.tab==='veg')return vegBody();
   if(view.tab==='sell')return sellBody();
-  return cat.crops.map(c=>buyRow({
-    id:'seed:'+c.id,img:c.seed_img,emoji:c.seed_emoji,name:c.name+' seed',price:c.seed_price,
+  const seedNote='<div class="fm-soon"><b>Seeds are paid with real BUN</b><p>The BUN is sent from your wallet to the project wallet. Make sure you hold enough BUN tokens.</p></div>';
+  return seedNote+cat.crops.map(c=>buyRow({
+    id:'seed:'+c.id,img:c.seed_img,emoji:c.seed_emoji,name:c.name+' seed',price:Number(c.seed_price_bun)||0,
     l1:esc(c.waterings)+' watering'+(c.waterings===1?'':'s')+' · ready '+esc(c.grow_hours)+'h after the last one',
-    l2:'You have: '+fmtN(own('seed:'+c.id))+' · worth '+fmtN(c.base_value)+' BUN grown'
+    l2:'You have: '+fmtN(own('seed:'+c.id))+' · price in BUN tokens'
   })).join('');
 }
 function pickBody(){
@@ -556,11 +558,13 @@ function renderModal(){
   }
   const tab=(k,l)=>'<button class="mk-p'+(view.tab===k?' on':'')+'" type="button" data-a="tab" data-tab="'+k+'">'+l+'</button>';
   sheet.innerHTML=headHtml('🛍️ Market')+
-    '<div class="fm-tabs">'+tab('seeds','🌱 Seeds')+tab('water','💧 Water')+tab('veg','🥕 Buy veg')+tab('sell',phaseEnded()?'🔥 Burn':'💰 Sell')+'</div>'+
+    '<div class="fm-tabs">'+tab('seeds','🌱 Seeds')+tab('water','💧 Water')+(phaseEnded()?'':tab('sell','💰 Sell'))+'</div>'+
     '<div class="fm-body">'+marketBody()+'</div>';
 }
 function openModal(mode,tab,plot){
-  view={open:true,mode:mode||'market',tab:tab||view.tab||'seeds',plot:plot==null?null:plot};
+  let t=tab||view.tab||'seeds';
+  if(t==='veg'||(t==='sell'&&phaseEnded()))t='seeds';
+  view={open:true,mode:mode||'market',tab:t,plot:plot==null?null:plot};
   modal.classList.add('on');
   renderModal();
   if(!cat||(wallet()&&!st))loadState();
@@ -608,6 +612,16 @@ async function onClick(e){
   if(a==='buy'){
     const qty=qtyOf(b);
     const item=b.dataset.item;
+    if(item==='water'||item.indexOf('seed:')===0){
+      if(!window.FIJI_SEEDPAY)return toast('Payments are still loading. Try again in a moment 🌱');
+      if(item==='water'){
+        const wi=waterItem();
+        return void window.FIJI_SEEDPAY.buy({item:'water',name:wi.name,emoji:wi.emoji,qty,unit:Number(wi.price_bun)||0});
+      }
+      const sc=crop(item.slice(5));
+      if(!sc)return;
+      return void window.FIJI_SEEDPAY.buy({item:item,name:sc.name+' seed',emoji:sc.seed_emoji,qty,unit:Number(sc.seed_price_bun)||0});
+    }
     const label=item==='water'?waterItem().name:((crop(item.slice(5))||{}).name||'')+' seed';
     return void act('fiji_farm_buy',{p_item:item,p_qty:qty},'Bought '+qty+' × '+label+' ✔');
   }
