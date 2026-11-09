@@ -21,6 +21,7 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g,c=>({
 const SIZE = 320;
 const COLORS = ['#FFF3C4','#BFE3FF','#B8F5D2','#FFD0D8'];
 const DEFAULT_STATUS = {used:0,limit:5,cost:50};
+const PAUSED = true;
 
 let prizes = [];
 let totalW = 0;
@@ -231,8 +232,8 @@ card.id = 'whCard';
 card.innerHTML =
   '<div class="em">🎡</div>'+
   '<h3>Lucky Wheel</h3>'+
-  '<p>Spin for veggies, seeds, water or the BUN jackpot. Costs BUN, limited spins per day.</p><br>'+
-  '<button class="btn sm" type="button" data-a="open">Spin the wheel</button>';
+  '<p>'+(PAUSED?'The Lucky Wheel is temporarily paused. It will be back soon!':'Spin for veggies, seeds, water or the BUN jackpot. Costs BUN, limited spins per day.')+'</p><br>'+
+  '<button class="btn sm" type="button" data-a="open"'+(PAUSED?' disabled':'')+'>'+(PAUSED?'⏸ Paused':'Spin the wheel')+'</button>';
 
 function mountCard(){
   const grid = sec.querySelector('.grid');
@@ -499,6 +500,7 @@ async function loadStatus(){
 
 
 async function openWheel(){
+  if(PAUSED)return toast('The Lucky Wheel is paused for now ⏸');
   if(open)return;
 
   open = true;
