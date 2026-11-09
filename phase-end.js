@@ -74,7 +74,7 @@ function paintCard(){
         '<p class="small" id="phWhen"></p>'+
         '<p class="ph-note">When the timer reaches zero, activities stop giving BUN and give BunXP only.</p>'+
         '<p class="ph-note">BunXP earned after that is saved separately, so the Phase 1 leaderboard stays exactly as it is.</p>'+
-        '<p class="ph-note">Vegetables can no longer be sold. You can burn them for BUN instead, and request your BUN airdrop in the Burrow.</p>';
+        '<p class="ph-note">Vegetables can no longer be sold. BUN you collected in the game is shown as Pending BUN airdrop at the top of your Burrow.</p>';
     }else{
       card.innerHTML=
         '<div class="tag" style="margin:0">phase one</div>'+
@@ -124,7 +124,8 @@ const STAT={
   rejected:{t:'↩️ Returned to your BUN',c:'ph-bad'}
 };
 function paintAir(){
-  if(!ended()){air.style.display='none';return}
+  air.style.display='none';
+  return;
   air.style.display='block';
   buildAir();
   const w=wallet(),d=ph.data||{},reqs=Array.isArray(d.requests)?d.requests:[];
