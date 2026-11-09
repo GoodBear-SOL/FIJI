@@ -15,6 +15,7 @@ const COIN_SRC=encodeURI(COIN_FILE);
 const BURST=10;
 const COUNT_MS=900;
 const SYNC_MS=4000;
+const BUN_MINT='6jPrsxYj29kEYMSPDi9uwFBH3iMd9UTCyZby85x2pump';
 
 const css=document.createElement('style');
 css.textContent=`
@@ -44,6 +45,9 @@ css.textContent=`
 .bc-mini:after{content:"";position:absolute;left:5px;top:3px;width:5px;height:8px;border-radius:50% 50% 40% 40%;background:#12305C}
 .bc-rain{position:absolute;top:-8px;width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#FFF1A8,#FFD21F 55%,#C98F00);border:2px solid var(--ink);pointer-events:none;z-index:3;animation:bcRain 1.3s ease-in forwards}
 .bc-panel{position:relative;overflow:visible}
+.bc-pend{display:flex;align-items:center;gap:14px;padding:12px 14px;margin:0 0 14px;background:#FFF6CF;border:3px dashed var(--ink);border-radius:22px}
+.bc-pend .em{font-size:40px;line-height:1}
+.bc-pnum{font:700 clamp(26px,7vw,36px)/1.05 Fredoka,sans-serif;word-break:break-all}
 @keyframes bcFloat{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-7px) rotate(2deg)}}
 @keyframes bcGlow{0%,100%{opacity:.45;transform:scale(.92)}50%{opacity:.95;transform:scale(1.12)}}
 @keyframes bcShine{0%,55%{left:-60%}85%,100%{left:130%}}
@@ -86,7 +90,7 @@ panel.innerHTML=
   '<div class="bc-float"><button type="button" class="bc-coin" id="bcCoin" aria-label="BUN coin. Tap to spin it."><span id="bcFace"></span><span class="bc-shine"></span></button></div>'+
  '</div>'+
  '<div class="bc-info">'+
-  '<div class="bc-label">Total BUN earned</div>'+
+  '<div class="bc-label">BUN in your wallet</div>'+
   '<div class="bc-num" id="bcNum">0</div>'+
   '<div class="small bc-sub" id="bcSub">Connect your wallet to see your BUN.</div>'+
  '</div>';
@@ -95,6 +99,15 @@ const card=inv.querySelector('.card');
 if(card)card.prepend(panel);else inv.appendChild(panel);
 
 const coin=$('bcCoin'),face=$('bcFace'),numEl=$('bcNum'),sub=$('bcSub');
+const pend=document.createElement('div');
+pend.className='bc-pend';
+pend.style.display='none';
+pend.innerHTML='<div class="em">🪂</div><div><div class="bc-label">Pending BUN airdrop</div><div class="bc-pnum" id="bcPend">0</div>'+
+  '<div class="small">BUN you collected in the game. It is reviewed and airdropped to your wallet. For fun, no cash value.</div></div>';
+const burrowSec=$('wallet');
+const burrowH2=burrowSec&&burrowSec.querySelector('h2');
+if(burrowSec){if(burrowH2)burrowH2.after(pend);else burrowSec.prepend(pend)}
+const pendEl=pend.querySelector('#bcPend');
 
 function useFallback(){face.innerHTML=FALLBACK_SVG}
 (function loadFace(){
@@ -169,13 +182,35 @@ function countTo(to){
   raf=requestAnimationFrame(step);
 }
 
+let walletBun=0,bunAt=0,bunBusy=false,bunFor=null;
+
+async function loadWalletBun(force){
+  const w=C.getWallet();
+  if(!w){walletBun=0;bunFor=null;read();return}
+  if(bunBusy||(!force&&bunFor===w&&Date.now()-bunAt<12000))return;
+  bunBusy=true;
+  try{
+    const r=await C.getConnection().getParsedTokenAccountsByOwner(
+      new solanaWeb3.PublicKey(w),{mint:new solanaWeb3.PublicKey(BUN_MINT)});
+    if(w!==C.getWallet())return;
+    walletBun=r.value.reduce((s,a)=>s+(Number(a.account.data.parsed.info.tokenAmount.uiAmount)||0),0);
+    bunFor=w;bunAt=Date.now();
+  }catch(e){console.warn('bun-coin: wallet BUN lookup failed',e)}
+  finally{bunBusy=false}
+  read();
+}
+
 function read(){
   const connected=Boolean(C.getWallet());
+  const v=connected?Math.floor(walletBun):0;
+
+  // game BUN (#spts) is now the pending airdrop
   const n=connected?Number(String(pts.textContent).replace(/[^\d.-]/g,'')):0;
-  const v=Number.isFinite(n)&&n>0?n:0;
+  pendEl.textContent=fmt(Number.isFinite(n)&&n>0?n:0);
+  pend.style.display=connected?'flex':'none';
 
   sub.textContent=connected
-    ?'Yours to use on future purchases. For fun, no cash value.'
+    ?'Your real BUN token balance, read from your wallet.'
     :'Connect your wallet to see your BUN.';
 
   if(v===target&&!first)return;
@@ -186,11 +221,6 @@ function read(){
   first=false;
 }
 
-/* ===== NEW: read the real BUN balance from the database =====
-   BUN can change on the server without any click on this page
-   (a buyer buys your crops, a burn, an airdrop request, an admin gift).
-   This asks Supabase for the current balance and writes it into #spts,
-   so the inventory panel always shows the real number. */
 let syncBusy=false,syncSeq=0;
 
 async function fetchBun(w){
@@ -228,8 +258,8 @@ let lastW=null;
 
 setInterval(()=>{
   const w=C.getWallet()||null;
-  if(w!==lastW){lastW=w;if(w)syncBun();return}
-  if(w&&!document.hidden&&burrowOn())syncBun();
+  if(w!==lastW){lastW=w;walletBun=0;bunFor=null;if(w){syncBun();loadWalletBun(true)}else read();return}
+  if(w&&!document.hidden&&burrowOn()){syncBun();loadWalletBun()}
 },SYNC_MS);
 
 if(burrow)new MutationObserver(()=>{if(burrowOn())syncBun()}).observe(burrow,{attributes:true,attributeFilter:['class']});
@@ -240,5 +270,6 @@ new MutationObserver(read).observe(pts,{childList:true,characterData:true,subtre
 setInterval(read,1000);
 read();
 
-window.FIJI_BUNCOIN={refresh:()=>{read();syncBun()},spin:()=>{restart('spin');burst()}};
+window.FIJI_BUNCOIN={refresh:()=>{read();syncBun();loadWalletBun(true)},spin:()=>{restart('spin');burst()}};
+loadWalletBun();
 })();
