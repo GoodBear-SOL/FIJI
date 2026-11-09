@@ -1,8 +1,5 @@
 (function(){
 'use strict';
-/* FIJI Admin panel (inside index.html).
-   Shows an "Admin" tab ONLY while the connected wallet is the admin wallet.
-   All real protection is server-side (admin-api verifies a wallet signature). */
 
 const C=window.FIJI_CORE||{};
 if(!C.CFG||!C.getWallet){console.warn('admin-panel: load it after the core script');return}
@@ -10,6 +7,7 @@ if(!C.CFG||!C.getWallet){console.warn('admin-panel: load it after the core scrip
 const ADMIN='9CFHiteoDPmjdNpqo5J2P9LUkt3dRcTpEGaJTxbLNjn4';
 const API=C.CFG.SUPABASE_URL.replace(/\/+$/,'')+'/functions/v1/admin-api';
 const FIJI=C.CFG.FIJI_MINT, MIN=2000000, TK='fiji_admin_tok';
+const BUN_MINT='6jPrsxYj29kEYMSPDi9uwFBH3iMd9UTCyZby85x2pump';
 const main=document.querySelector('main.wrap'), links=document.getElementById('links');
 if(!main||!links)return;
 
@@ -53,7 +51,6 @@ link.innerHTML='<span class="ic">🛡️</span><span>Admin</span>';
 link.onclick=()=>openAdmin();
 links.appendChild(link);
 
-/* keep other pages working: leaving to any normal page hides Admin */
 const origGo=window.go;
 window.go=function(p){
   const r=typeof origGo==='function'?origGo.apply(this,arguments):undefined;
@@ -71,7 +68,6 @@ function openAdmin(){
   paint();
 }
 
-/* ---------- session ---------- */
 let token='',view='over',wdData=[],lastW=null,autoOpened=false;
 function loadTok(){
   try{const o=JSON.parse(sessionStorage.getItem(TK)||'null');if(o&&o.w===ADMIN&&o.exp>Date.now())return o.t}catch(e){}
@@ -119,7 +115,6 @@ async function signIn(){
   }
 }
 
-/* ---------- render ---------- */
 function paint(){
   if(!isAdmin()){body.innerHTML='';return}
   if(!token)token=loadTok();
@@ -207,7 +202,7 @@ function release(id){
    '<div class="adm-box adm-mono">'+esc(r.wallet)+'</div>'+
    (okv==='1'?'<p class="adm-up" style="margin-top:8px">✅ Holdings checked: qualifies</p>':
     '<p class="adm-dn" style="margin-top:8px">⚠️ '+(okv==='0'?'This wallet does NOT hold '+nf(MIN)+' FIJI.':'Holdings not checked yet.')+'</p>')+
-   '<label>Token mint address</label><input id="rMint" value="'+FIJI+'">'+
+   '<label>Token mint address</label><input id="rMint" value="'+BUN_MINT+'">'+
    '<label>BUN requested</label><input value="'+nf(r.amount)+'" disabled>'+
    '<label>Tokens per 1 BUN</label><input id="rRate" type="number" step="any" value="1">'+
    '<label>Tokens to send</label><input id="rAmt" type="number" step="any" value="'+Number(r.amount)+'">'+
@@ -300,7 +295,6 @@ async function waitConfirmed(sig){
   throw new Error('Transfer is taking long. Check your wallet before retrying, do not send twice.');
 }
 
-/* ---------- users ---------- */
 function viewUsers(){
   if(!v())return;
   v().innerHTML='<div class="sticker card"><h3>Find a user</h3><div class="adm-row" style="margin-top:8px"><input id="admQ" placeholder="Wallet address or username"><button class="btn" data-act="find">Search</button></div>'+
@@ -365,7 +359,6 @@ async function loadLog(){
    '</table></div></div>';
 }
 
-/* ---------- clicks ---------- */
 sec.addEventListener('change',e=>{
   if(e.target.id==='admWdF'){wdFilter=e.target.value;loadWd()}
 });
@@ -384,7 +377,6 @@ sec.addEventListener('click',e=>{
   else if(a==='user')openUser(b.dataset.w);
 });
 
-/* ---------- watch the connected wallet ---------- */
 setInterval(()=>{
   const w=C.getWallet()||null;
   if(w===lastW)return;
