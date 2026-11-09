@@ -379,7 +379,7 @@ host.addEventListener('click',ev=>{
   else if(a==='edit'){editing=true;mount('name')}
   else if(a==='clear')clearChat();
   else if(a==='send')send();
-  else if(a==='market')openMarket('veg');
+  else if(a==='market')openMarket('seeds');
   else if(a==='open'){pickerFor=pickerFor===id?null:id;render()}
   else if(a==='pick')react(id,b.dataset.e);
   else if(a==='reply'){
