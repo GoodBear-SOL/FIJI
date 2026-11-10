@@ -1,14 +1,6 @@
 (function(){
 'use strict';
 
-/* play-tab.js
-   Builds the combined Burrow page:
-     [ Daily check-in + Splash Tap ] [ Inventory ]
-     Quest Board (Farming, Cooking, BunBun placeholder)
-     Two Lucky Wheel placeholders
-   Also gives the Market page its buttons.
-   LOAD THIS FILE LAST (after profile-tab.js). */
-
 const $=id=>document.getElementById(id);
 const sec=$('wallet'),earn=$('earn'),inv=$('rwInv'),hub=$('qsHub'),pad=$('pad');
 if(!sec||!earn||!inv||!hub||!pad){
@@ -34,7 +26,6 @@ css.textContent=`
 `;
 document.head.appendChild(css);
 
-/* find the two cards we want to move out of the old Earn page */
 const checkin=[...earn.querySelectorAll('.grid > .card')].find(c=>/daily check-in/i.test(c.textContent));
 const splash=pad.closest('.card');
 if(!checkin||!splash){
@@ -42,18 +33,16 @@ if(!checkin||!splash){
   return;
 }
 
-/* 1) two-column area: left = check-in + splash, right = inventory */
 const grid=document.createElement('div');
 grid.id='plGrid';
 grid.className='pl-grid';
 const left=document.createElement('div');left.className='pl-left';
 const right=document.createElement('div');right.className='pl-right';
-hub.parentNode.insertBefore(grid,hub);   /* sits right above the Quest Board */
+hub.parentNode.insertBefore(grid,hub); 
 left.append(checkin,splash);
 right.append(inv);
 grid.append(left,right);
 
-/* 2) two Lucky Wheel placeholders, below the Quest Board */
 const wheels=document.createElement('div');
 wheels.id='plWheels';
 wheels.innerHTML=
@@ -66,7 +55,6 @@ wheels.innerHTML=
  '</div>';
 hub.after(wheels);
 
-/* 3) Market page helper (used by the buttons in index.html) */
 window.openMarket=function(tab){
   if(window.FIJI_FARM&&typeof window.FIJI_FARM.open==='function')window.FIJI_FARM.open('market',tab||'seeds');
   else if(window.FIJI_CORE&&window.FIJI_CORE.toast)window.FIJI_CORE.toast('The Market is still loading. Try again in a moment 🌱');
