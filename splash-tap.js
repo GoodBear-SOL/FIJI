@@ -80,8 +80,6 @@ function splash(){
   setTimeout(()=>made.forEach(el=>el.remove()),700);
 }
 
-/* Reward: +1 water and +10 BunXP per completed round, max 5/day.
-   Everything is granted inside the database (fiji_splash_reward). */
 async function splashReward(){
   const db=C.getSupabase&&C.getSupabase(),w=C.getWallet();
   if(!db||!w)return;
