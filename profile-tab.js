@@ -96,8 +96,8 @@ const link=document.createElement('a');
 link.dataset.p='profile';
 link.innerHTML='<span class="ic">👤</span><span>Profile</span>';
 link.onclick=()=>window.go('profile');
-const adminLink=links.querySelector('[data-p="admin"]');
-if(adminLink)links.insertBefore(link,adminLink);else links.appendChild(link);
+const boardLink=links.querySelector('[data-p="board"]');
+if(boardLink)links.insertBefore(link,boardLink);else links.appendChild(link);
 
 const prevGo=window.go;
 window.go=function(p){
