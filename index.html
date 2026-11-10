@@ -1390,6 +1390,15 @@ function pickMobile(){
   a.onclick=()=>setTimeout(()=>d.remove(),400);
   wl.appendChild(a);
  });
+ const cp=document.createElement('button');
+ cp.className='btn alt';cp.type='button';
+ cp.textContent='📋 Other wallet (Jupiter, Trust…): copy link';
+ cp.onclick=async()=>{await safeCopy(location.origin);toast('Link copied. Open your wallet browser and paste it 🐰')};
+ wl.appendChild(cp);
+ const hint=document.createElement('p');
+ hint.className='small';
+ hint.textContent='Using another wallet? Copy the link, open your wallet app\'s browser, and paste it there.';
+ wl.appendChild(hint);
  d.querySelector('.wx').onclick=()=>d.remove();
  d.onclick=e=>{if(e.target===d)d.remove()};
 }
