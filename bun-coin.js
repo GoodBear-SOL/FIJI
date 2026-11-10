@@ -108,6 +108,26 @@ const burrowSec=$('wallet');
 const burrowH2=burrowSec&&burrowSec.querySelector('h2');
 if(burrowSec){if(burrowH2)burrowH2.after(pend);else burrowSec.prepend(pend)}
 const pendEl=pend.querySelector('#bcPend');
+const notes=document.createElement('div');
+notes.style.cssText='margin-top:8px;display:grid;gap:4px';
+pend.lastElementChild.appendChild(notes);
+let notesAt=0;
+async function loadNotes(){
+  const w=C.getWallet(),client=C.getSupabase&&C.getSupabase();
+  if(!w||!client||Date.now()-notesAt<30000)return;
+  notesAt=Date.now();
+  try{
+    const {data,error}=await client.rpc('fiji_my_bun_ops',{p_wallet:w});
+    if(error)throw error;
+    if(w!==C.getWallet())return;
+    notes.innerHTML=(data||[]).map(o=>{
+      let d='';try{d=new Date(o.processed_at).toLocaleDateString()}catch(e){}
+      return o.kind==='burn'
+        ?'<div class="small">🔥 '+fmt(o.amount)+' BUN was removed after review on '+d+' (FIJI holdings below 2,000,000).</div>'
+        :'<div class="small">✅ '+fmt(o.amount)+' BUN was airdropped to your wallet on '+d+'.</div>';
+    }).join('');
+  }catch(e){console.debug('bun notices unavailable',e)}
+}
 
 function useFallback(){face.innerHTML=FALLBACK_SVG}
 (function loadFace(){
@@ -247,6 +267,7 @@ async function syncBun(){
     if(v===null||my!==syncSeq||w!==C.getWallet())return;
     if(String(pts.textContent).trim()!==String(v))pts.textContent=v;
     read();
+    loadNotes();
   }finally{
     syncBusy=false;
   }
@@ -258,7 +279,7 @@ let lastW=null;
 
 setInterval(()=>{
   const w=C.getWallet()||null;
-  if(w!==lastW){lastW=w;walletBun=0;bunFor=null;if(w){syncBun();loadWalletBun(true)}else read();return}
+  if(w!==lastW){lastW=w;notesAt=0;notes.innerHTML='';walletBun=0;bunFor=null;if(w){syncBun();loadWalletBun(true)}else read();return}
   if(w&&!document.hidden&&burrowOn()){syncBun();loadWalletBun()}
 },SYNC_MS);
 
