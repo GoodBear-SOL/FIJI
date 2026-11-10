@@ -563,7 +563,7 @@ function pickBody(){
     '<div class="fm-info"><b>'+esc(s.name)+'</b><span>You have: '+fmtN(s.count)+'</span></div>'+
     '<button class="btn sm" type="button" data-a="plant" data-crop="'+esc(s.id.slice(5))+'">Plant</button></div>').join('');
 }
-  
+
 function renderInline(){
   if(!mkHost)return;
   const ae=document.activeElement;
@@ -579,11 +579,7 @@ function renderModal(){
   if(!view.open||view.mode!=='pick')return;
   sheet.innerHTML=headHtml('🌱 Plant in plot '+esc(view.plot))+'<div class="fm-body">'+pickBody()+'</div>';
 }
-  const tab=(k,l)=>'<button class="mk-p'+(view.tab===k?' on':'')+'" type="button" data-a="tab" data-tab="'+k+'">'+l+'</button>';
-  sheet.innerHTML=headHtml('🛍️ Market')+
-    '<div class="fm-tabs">'+tab('seeds','🌱 Seeds')+tab('water','💧 Water')+(phaseEnded()?'':tab('sell','💰 Sell'))+'</div>'+
-    '<div class="fm-body">'+marketBody()+'</div>';
-}
+
 function openModal(mode,tab,plot){
   let t=tab||view.tab||'seeds';
   if(t==='veg'||(t==='sell'&&phaseEnded()))t='seeds';
@@ -601,10 +597,12 @@ function openModal(mode,tab,plot){
   renderModal();
   if(!cat||(wallet()&&!st))loadState();
 }
+
 function closeModal(){
   view.open=false;
   modal.classList.remove('on');
 }
+
 modal.addEventListener('click',e=>{if(e.target===modal)closeModal()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&view.open)closeModal()});
 
