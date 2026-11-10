@@ -124,10 +124,11 @@ function paint(){
   }
   body.innerHTML=
    '<div class="adm-tabs">'+
-   [['over','📊 Overview'],['wd','💸 Withdrawals'],['usr','👥 Users'],['log','📜 Audit log']].map(t=>
+   [['over','📊 Overview'],['bun','🪂 Pending BUN'],['wd','💸 Withdrawals'],['usr','👥 Users'],['log','📜 Audit log']],['usr','👥 Users'],['log','📜 Audit log']].map(t=>
      '<button class="mk-p'+(view===t[0]?' on':'')+'" data-act="tab" data-t="'+t[0]+'">'+t[1]+'</button>').join('')+
    '<button class="mk-p" data-act="logout">Sign out</button></div><div id="admView"></div>';
   if(view==='over')loadOver();
+  else if(view==='bun')loadBun();
   else if(view==='wd')loadWd();
   else if(view==='usr')viewUsers();
   else loadLog();
@@ -294,7 +295,145 @@ async function waitConfirmed(sig){
   }
   throw new Error('Transfer is taking long. Check your wallet before retrying, do not send twice.');
 }
+/* ===== Pending BUN (all players' collected BUN) ===== */
+let bunData=[],bunQ='',bunMin=1;
+const bunRow=w=>bunData.find(r=>r.wallet===w);
+const bunEl=w=>document.getElementById('bChk'+w);
 
+async function loadBun(){
+  const d=await act(()=>api({action:'bun_list',q:bunQ,min:bunMin}));if(!d||!v())return;
+  bunData=d.rows||[];
+  const ops=d.pending_ops||[];
+  v().innerHTML='<div class="sticker card">'+
+   '<div class="adm-stats"><div class="adm-stat"><span class="small">Players with pending BUN</span><b>'+nf(d.players)+'</b></div>'+
+   '<div class="adm-stat"><span class="small">Total pending BUN</span><b>'+nf(d.total)+'</b></div></div>'+
+   '<div class="adm-row" style="margin-top:12px"><input id="bunQ" placeholder="Search wallet or username" value="'+esc(bunQ)+'">'+
+   '<input id="bunMin" type="number" min="1" placeholder="Min BUN" value="'+esc(String(bunMin))+'" style="max-width:130px;flex:none">'+
+   '<button class="btn sm" data-act="bun-go">Search</button>'+
+   '<button class="btn sm alt" data-act="bchkall">🔎 Check all shown</button></div>'+
+   '<p class="small" style="margin:8px 0">Check FIJI holdings first. If the wallet holds '+nf(MIN)+'+ FIJI, <b>Release</b> sends real BUN tokens from your admin wallet and deducts that amount from their pending BUN. If it does not, <b>Burn</b> removes their pending BUN permanently.</p>'+
+   (ops.length?'<h3 style="margin:12px 0 6px">⏳ In-flight releases</h3><p class="small">BUN is held while the transfer is unconfirmed. If tokens were sent, press Finish. If nothing was sent, press Cancel to refund.</p>'+
+     ops.map(o=>'<div class="adm-req"><b>'+nf(o.amount)+' BUN</b> · #'+o.id+' · '+when(o.created_at)+
+      '<div class="adm-mono">'+esc(o.wallet)+'</div><div class="adm-acts">'+
+      '<button class="btn sm ok" data-act="bfin" data-id="'+o.id+'">✅ Finish (paste tx)</button>'+
+      '<button class="btn sm bad" data-act="bcancel" data-id="'+o.id+'">↩️ Cancel &amp; refund</button></div></div>').join(''):'')+
+   '<h3 style="margin:14px 0 6px">Players</h3>'+
+   (bunData.length?bunData.map(r=>
+     '<div class="adm-req"><div class="adm-head"><div><b style="font-size:18px">'+nf(r.points)+' BUN</b> <span class="pill">'+esc(r.username||'Player')+'</span>'+
+     '<div class="adm-mono">'+esc(r.wallet)+'</div></div>'+
+     '<div class="small" style="text-align:right">'+nf(r.bunxp)+' BunXP<br>🔥 '+nf(r.streak)+'</div></div>'+
+     '<div class="adm-box small" id="bChk'+esc(r.wallet)+'">Holdings not checked yet.</div>'+
+     '<div class="adm-acts"><button class="btn sm alt" data-act="bchk" data-w="'+esc(r.wallet)+'">🔎 Check FIJI holdings</button>'+
+     '<button class="btn sm ok" data-act="brelease" data-w="'+esc(r.wallet)+'">🚀 Release BUN</button>'+
+     '<button class="btn sm bad" data-act="bburn" data-w="'+esc(r.wallet)+'">🔥 Burn BUN</button>'+
+     '<button class="btn sm alt" data-act="user" data-w="'+esc(r.wallet)+'">👤 User</button></div></div>').join('')
+    :'<div class="small" style="padding:14px">No players with pending BUN 🌿</div>')+
+   '</div>';
+}
+
+async function bchk(w){
+  const el=bunEl(w);if(!el)return;
+  el.textContent='Checking…';
+  const d=await act(()=>api({action:'balance',wallet:w}));
+  if(!d){el.textContent='Could not check. Try again.';return}
+  el.innerHTML=d.qualifies?'<b class="adm-up">✅ Holds '+nf(d.balance)+' FIJI</b> (needs '+nf(MIN)+')':'<b class="adm-dn">❌ Holds only '+nf(d.balance)+' FIJI</b> (needs '+nf(MIN)+')';
+  el.dataset.ok=d.qualifies?'1':'0';
+}
+async function bchkAll(){
+  for(const r of bunData.slice()){
+    if(!bunEl(r.wallet))break;
+    await bchk(r.wallet);
+    await new Promise(x=>setTimeout(x,250));
+  }
+}
+
+async function burnBun(w){
+  const r=bunRow(w);if(!r)return;
+  const ok=(bunEl(w)||{dataset:{}}).dataset.ok;
+  if(ok!=='0'&&ok!=='1')return toast('Check FIJI holdings first');
+  if(ok==='1'&&!confirm('This wallet HOLDS '+nf(MIN)+'+ FIJI. Burn their BUN anyway?'))return;
+  const a=prompt('How much BUN to burn? (max '+nf(r.points)+')',String(r.points));
+  if(a===null)return;
+  const amt=Math.floor(Number(a));
+  if(!(amt>0)||amt>Number(r.points))return toast('Enter a valid amount');
+  const note=prompt('Reason (saved in audit log)','holdings below '+nf(MIN)+' FIJI');
+  if(note===null)return;
+  if(!confirm('Burn '+nf(amt)+' BUN from '+short(w)+'? This cannot be undone.'))return;
+  const d=await act(()=>api({action:'bun_reserve',wallet:w,amount:amt,kind:'burn',note}),'🔥 Burned '+nf(amt)+' BUN');
+  if(d)loadBun();
+}
+
+async function cancelOp(id,note){
+  try{await api({action:'bun_cancel',id:Number(id),note:note||'transfer not sent'});return true}
+  catch(e){console.warn('cancel failed',e);return false}
+}
+async function finishOp(id){
+  const sig=prompt('Paste the transaction signature (tokens must already be sent):','');
+  if(sig===null||!sig.trim())return;
+  if(await act(()=>api({action:'bun_finish',id:Number(id),signature:sig.trim(),note:'finished manually'}),'Marked as released'))loadBun();
+}
+async function cancelPending(id){
+  if(!confirm('Only cancel if you are SURE no tokens were sent. The BUN will be returned to the player. Continue?'))return;
+  if(await act(()=>api({action:'bun_cancel',id:Number(id),note:'cancelled by admin'}),'Cancelled, BUN returned'))loadBun();
+}
+
+function releaseBun(w){
+  const r=bunRow(w);if(!r)return;
+  const okv=(bunEl(w)||{dataset:{}}).dataset.ok;
+  const d=document.createElement('div');d.className='modal';
+  d.innerHTML='<div class="sticker card" style="max-width:440px;width:100%;max-height:90vh;overflow:auto"><h3>🚀 Release BUN</h3>'+
+   '<p class="small">Sends real tokens from <b>your admin wallet</b> to the player and deducts that BUN from their pending balance. Your wallet will ask you to approve.</p>'+
+   '<div class="adm-box adm-mono">'+esc(w)+'</div>'+
+   (okv==='1'?'<p class="adm-up" style="margin-top:8px">✅ Holdings checked: qualifies</p>':
+    '<p class="adm-dn" style="margin-top:8px">⚠️ '+(okv==='0'?'This wallet does NOT hold '+nf(MIN)+' FIJI.':'Holdings not checked yet.')+'</p>')+
+   '<label>Token mint address</label><input id="rMint" value="'+BUN_MINT+'">'+
+   '<label>Pending BUN to release (max '+nf(r.points)+')</label><input id="rBun" type="number" step="1" min="1" value="'+Number(r.points)+'">'+
+   '<label>Tokens per 1 BUN</label><input id="rRate" type="number" step="any" value="1">'+
+   '<label>Tokens to send</label><input id="rAmt" type="number" step="any" value="'+Number(r.points)+'">'+
+   '<div class="adm-row" style="margin-top:14px"><button class="btn alt" id="rNo">Cancel</button><button class="btn ok" id="rGo">Send &amp; mark released</button></div></div>';
+  document.body.appendChild(d);
+  const q=i=>d.querySelector('#'+i);
+  const sync=()=>{q('rAmt').value=+(Number(q('rBun').value||0)*Number(q('rRate').value||0)).toFixed(9)};
+  q('rBun').oninput=sync;q('rRate').oninput=sync;
+  q('rNo').onclick=()=>d.remove();
+  q('rGo').onclick=async()=>{
+    const mint=q('rMint').value.trim(),bun=Math.floor(Number(q('rBun').value)),a=Number(q('rAmt').value);
+    if(!(bun>0)||bun>Number(r.points))return toast('Enter a valid BUN amount');
+    if(!(a>0))return toast('Enter an amount to send');
+    if(okv==='0'&&!confirm('This wallet does NOT hold '+nf(MIN)+' FIJI. Release anyway?'))return;
+    if(!confirm('Send '+nf(a)+' tokens to '+short(w)+' for '+nf(bun)+' BUN?'))return;
+    q('rGo').disabled=true;q('rGo').textContent='Reserving BUN…';
+    let op=null;
+    try{
+      const res=await api({action:'bun_reserve',wallet:w,amount:bun,kind:'release',note:'release '+a+' of '+mint});
+      op=res.op_id;
+      q('rGo').textContent='Waiting for wallet…';
+      let sig;
+      try{sig=await sendTokens(w,mint,a)}
+      catch(e){await cancelOp(op,'send cancelled or failed');op=null;throw e}
+      toast('Sent. Confirming…');
+      try{await waitConfirmed(sig)}
+      catch(e){
+        if(/failed on-chain/i.test(e.message||'')){await cancelOp(op,'failed on-chain');op=null;throw e}
+        throw new Error('Tokens may have been sent ('+sig+'). The BUN stays held under "In-flight releases". Check the transaction, then press Finish or Cancel. '+e.message);
+      }
+      let done=false;
+      for(let i=0;i<6&&!done;i++){
+        try{await api({action:'bun_finish',id:Number(op),signature:sig,note:'released '+a+' of '+mint});done=true}
+        catch(e){
+          if(i===5)throw new Error('Tokens were SENT ('+short(sig)+') but recording failed: '+e.message+'. Press Finish under "In-flight releases" with this signature: '+sig);
+          await new Promise(x=>setTimeout(x,2500));
+        }
+      }
+      toast('✅ Released and recorded');d.remove();loadBun();
+    }catch(e){
+      const m=e&&e.message?e.message:String(e);
+      toast(e&&e.code===4001||/reject|denied|cancel/i.test(m)?'Cancelled, nothing sent, BUN refunded':m);
+      q('rGo').disabled=false;q('rGo').textContent='Send & mark released';
+      if(v()&&view==='bun')loadBun();
+    }
+  };
+}
 function viewUsers(){
   if(!v())return;
   v().innerHTML='<div class="sticker card"><h3>Find a user</h3><div class="adm-row" style="margin-top:8px"><input id="admQ" placeholder="Wallet address or username"><button class="btn" data-act="find">Search</button></div>'+
@@ -375,6 +514,13 @@ sec.addEventListener('click',e=>{
   else if(a==='reject')reject(b.dataset.id);
   else if(a==='find')findUsers();
   else if(a==='user')openUser(b.dataset.w);
+  else if(a==='bun-go'){bunQ=(document.getElementById('bunQ')||{}).value||'';bunMin=Math.max(1,Math.floor(Number((document.getElementById('bunMin')||{}).value)||1));loadBun()}
+  else if(a==='bchk')bchk(b.dataset.w);
+  else if(a==='bchkall')bchkAll();
+  else if(a==='brelease')releaseBun(b.dataset.w);
+  else if(a==='bburn')burnBun(b.dataset.w);
+  else if(a==='bfin')finishOp(b.dataset.id);
+  else if(a==='bcancel')cancelPending(b.dataset.id);
 });
 
 setInterval(()=>{
