@@ -451,7 +451,7 @@ footer .soc svg{width:19px;height:19px}
    <h1>A fuzzy bunny friend <span>with a little something extra.</span></h1>
    <p>Meet FIJI, a pure meme with a little home of its own.🐰💙</p>
    <div class="btns">
-    <button class="btn" onclick="go('trade')">Open Trade Pad</button>
+    <button class="btn" onclick="go('market')">Open Market</button>
     <button class="btn alt" onclick="go('wallet')">Open the Burrow</button>
    </div>
   </div>
@@ -475,17 +475,14 @@ footer .soc svg{width:19px;height:19px}
  <h2>How is Fiji doing?</h2>
  <div class="mk-live small"><span class="live"><i></i><span id="mkAgo">loading…</span></span><button class="btn sm alt" onclick="refreshMarket(true)">Refresh</button></div>
  <div class="sticker card mk-hero" id="mkHero"><div class="mk-empty">Fetching Fiji…🌐</div></div>
-
- 
- <p class="small" style="margin-top:14px">Looking for other coins? Open the <a href="#" onclick="go('trade');tradeSetMode('all');return false" style="color:var(--blue)">All coins</a> tab in the Trade Pad.</p>
  
  <div class="tag">what you can do</div>
  <h2>One place. Less confusion.</h2>
  <div class="grid">
-  <div class="sticker card"><div class="em">⚡</div><h3>Trade Pad</h3>Discover new, trending and migrated Solana tokens and trade them. Browse coins from every chain in All coins.</div>
-  <div class="sticker card"><div class="em">🥕</div><h3>Burrow</h3>Your wallet and farming status</div>
+  
   <div class="sticker card"><div class="em">📅</div><h3>Daily visit</h3>Check in and grow a streak bonus.</div>
-  <div class="sticker card"><div class="em">🤝</div><h3>Referrals</h3>Bring a friend, both of you win!</div>
+  <div class="sticker card"><div class="em">🛍️</div><h3>Market</h3>Buy seeds and water for your Bunny Field.</div>
+  <div class="sticker card"><div class="em">🥕</div><h3>Burrow</h3>Your wallet and farming status</div>
   <div class="sticker card"><div class="em">🎮</div><h3>Games</h3>Splash Tap, Lucky Wheel, and even more exciting features are on the way!</div>
   <div class="sticker card"><div class="em">🏆</div><h3>Leaderboard</h3>See who is at the top of the Leaderboard.</div>
  </div>
@@ -691,6 +688,12 @@ footer .soc svg{width:19px;height:19px}
  </div>
 </section>
 
+<section class="pg" id="market">
+ <div class="tag">market</div>
+ <h2>Bunny Market</h2>
+ <p class="small" style="margin-bottom:14px">Buy seeds and water for your Bunny Field.</p>
+ <div id="mkInline"></div>
+</section>
 <section class="pg" id="board">
  <div class="tag">leaderboard</div>
  <h2>The FIJI Hall of Hops🐰</h2>
@@ -768,13 +771,14 @@ let wallet=null,provider=null,cur=null,taps=0;
 window.FIJI_CORE={CFG,$,toast,go,loadAssets,setProfile,updateRank,
  getWallet:()=>wallet,getProvider:()=>provider,getConnection:()=>conn,getSupabase:()=>db};
 
-const pages=['home','wallet','earn','trade','board'];
-const ico={home:'🏠',wallet:'🐰',earn:'⭐',trade:'⚡',board:'🏆'};
-const label={home:'Home',wallet:'Burrow',earn:'Earn',trade:'Trade',board:'Board'};
-$('links').innerHTML=pages.map(p=>`<a data-p="${p}" onclick="go('${p}')"><span class="ic">${ico[p]}</span><span>${label[p]}</span></a>`).join('');
+const pages=['home','wallet','market','board','trade'];
+const navPages=['home','wallet','market','board'];
+const ico={home:'🏠',wallet:'🐰',market:'🛍️',board:'🏆'};
+const label={home:'Home',wallet:'Burrow',market:'Market',board:'Board'};
+$('links').innerHTML=navPages.map(p=>`<a data-p="${p}" onclick="go('${p}')"><span class="ic">${ico[p]}</span><span>${label[p]}</span></a>`).join('');
 function go(p){
  if(!pages.includes(p))return;
- pages.forEach(x=>$(x).classList.toggle('on',x==p));
+ pages.forEach(x=>{const e=$(x);if(e)e.classList.toggle('on',x==p)});
  document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('on',a.dataset.p==p));
  scrollTo({top:0});
    
@@ -1888,11 +1892,11 @@ try{go('home')}catch(e){console.error(e);try{startMarket()}catch(x){}}
 <script src="tradepad-popup.js?v=2"></script>
 <script src="popup-unify.js?v=2"></script>
 <script src="tradepad-gate.js?v=2"></script>
-<script src="market-tab.js?v=5"></script>
+<script src="market-tab.js?v=6"></script>
 <script src="reward-box.js?v=3"></script>
 <script src="bun-coin.js?v=6"></script>
 <script src="quest.js?v=5"></script>
-<script src="shop.js?v=10"></script>
+<script src="shop.js?v=11"></script>
 <script src="trade-all.js?v=2"></script>
 <script src="all-coins.js?v=2"></script>
 <script src="gifts.js"></script>
@@ -1908,8 +1912,9 @@ try{go('home')}catch(e){console.error(e);try{startMarket()}catch(x){}}
 <script src="phase-end.js?v=2"></script>
 <script src="admin-panel.js?v=3"></script>
 <script src="seed-pay.js?v=2"></script>
-<script src="profile-tab.js?v=1"></script>
+<script src="profile-tab.js?v=2"></script>
 <script src="play-tab.js?v=1"></script>
+<script src="burrow-clean.js?v=1"></script>
 
 </body>
 </html>
