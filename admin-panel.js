@@ -124,7 +124,7 @@ function paint(){
   }
   body.innerHTML=
    '<div class="adm-tabs">'+
-   [['over','📊 Overview'],['bun','🪂 Pending BUN'],['wd','💸 Withdrawals'],['usr','👥 Users'],['log','📜 Audit log']],['usr','👥 Users'],['log','📜 Audit log']].map(t=>
+   [['over','📊 Overview'],['bun','🪂 Pending BUN'],['wd','💸 Withdrawals'],['usr','👥 Users'],['log','📜 Audit log']].map(t=>
      '<button class="mk-p'+(view===t[0]?' on':'')+'" data-act="tab" data-t="'+t[0]+'">'+t[1]+'</button>').join('')+
    '<button class="mk-p" data-act="logout">Sign out</button></div><div id="admView"></div>';
   if(view==='over')loadOver();
@@ -133,6 +133,7 @@ function paint(){
   else if(view==='usr')viewUsers();
   else loadLog();
 }
+  
 const v=()=>document.getElementById('admView');
 
 async function loadOver(){
