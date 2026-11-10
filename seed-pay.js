@@ -15,16 +15,26 @@ const TREASURY='9CFHiteoDPmjdNpqo5J2P9LUkt3dRcTpEGaJTxbLNjn4';
 const ATA_PROGRAM='ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
 const MEMO_PROGRAM='MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr';
 const PAY_URL=C.CFG.SUPABASE_URL.replace(/\/+$/,'')+'/functions/v1/seed-pay';
+const PLOT_URL=C.CFG.SUPABASE_URL.replace(/\/+$/,'')+'/functions/v1/plot-pay';
 const PK='fiji_seed_pending';
+const PPK='fiji_plot_pending';
 const TERMINAL=/already used|too old|failed on-chain|does not match|not signed|too small|unknown item|invalid/i;
+const PLOT_TERMINAL=/already used|too old|failed on-chain|not signed|too small|not made from|not for this plot|invalid|not for sale|plot number changed|maximum number/i;
 
 let buying=false,resuming=false;
+let plotBusy=false,plotResuming=false;
 
 function getPending(){
   try{const o=JSON.parse(localStorage.getItem(PK)||'null');return o&&o.w&&o.item&&o.qty&&o.sig?o:null}catch(e){return null}
 }
 function setPending(o){
   try{if(o)localStorage.setItem(PK,JSON.stringify(o));else localStorage.removeItem(PK)}catch(e){}
+}
+function getPlotPending(){
+  try{const o=JSON.parse(localStorage.getItem(PPK)||'null');return o&&o.w&&o.plot&&o.sig?o:null}catch(e){return null}
+}
+function setPlotPending(o){
+  try{if(o)localStorage.setItem(PPK,JSON.stringify(o));else localStorage.removeItem(PPK)}catch(e){}
 }
 
 const B58='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
@@ -100,10 +110,10 @@ async function sendPayment(w,o){
       {pubkey:web3.SystemProgram.programId,isSigner:false,isWritable:false},
       {pubkey:programId,isSigner:false,isWritable:false}
     ],
-    data:new Uint8Array([1])   // CreateIdempotent
+    data:new Uint8Array([1]) 
   });
   const data=new Uint8Array(10);
-  data[0]=12;                  // TransferChecked
+  data[0]=12; 
   new DataView(data.buffer).setBigUint64(1,raw,true);
   data[9]=decimals;
   const transfer=new web3.TransactionInstruction({
@@ -158,7 +168,7 @@ async function waitConfirmed(sig){
     if(s&&(s.confirmationStatus==='confirmed'||s.confirmationStatus==='finalized'))return;
     await new Promise(r=>setTimeout(r,1500));
   }
-  throw new Error('The payment is taking long. If BUN left your wallet, reopen this page in a minute and your seeds will arrive.');
+  throw new Error('The payment is taking long. If BUN left your wallet, reopen this page in a minute and your purchase will arrive.');
 }
 
 async function verify(w,item,qty,sig){
@@ -168,6 +178,23 @@ async function verify(w,item,qty,sig){
       method:'POST',
       headers:{'apikey':C.CFG.SUPABASE_KEY,'Authorization':'Bearer '+C.CFG.SUPABASE_KEY,'Content-Type':'application/json'},
       body:JSON.stringify({wallet:w,item,qty,signature:sig})
+    });
+    let j={};try{j=await r.json()}catch(e){}
+    if(r.ok&&j.ok)return j.data;
+    last=j.error||('Verification failed (HTTP '+r.status+')');
+    if(j.retry||r.status===404){await new Promise(x=>setTimeout(x,2500));continue}
+    break;
+  }
+  throw new Error(last);
+}
+
+async function verifyPlot(w,plot,sig){
+  let last='';
+  for(let i=0;i<8;i++){
+    const r=await fetch(PLOT_URL,{
+      method:'POST',
+      headers:{'apikey':C.CFG.SUPABASE_KEY,'Authorization':'Bearer '+C.CFG.SUPABASE_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({wallet:w,plot,signature:sig})
     });
     let j={};try{j=await r.json()}catch(e){}
     if(r.ok&&j.ok)return j.data;
@@ -236,7 +263,62 @@ async function resume(){
   }
   resuming=false;
 }
-setInterval(resume,6000);
 
-window.FIJI_SEEDPAY={buy,resume};
+async function buyPlot(plotNo,price){
+  if(buying||plotBusy)return;
+  const w=C.getWallet();
+  if(!w){if(typeof window.connect==='function')window.connect();return}
+  plotNo=Math.floor(Number(plotNo));
+  price=Math.floor(Number(price));
+  if(!(plotNo>=2)||!(price>=1))return toast('This plot is not for sale yet 💧');
+  const p=getPlotPending();
+  if(p&&p.w===w){
+    toast('A plot payment is still being confirmed. Please wait a moment…');
+    resumePlot();
+    return;
+  }
+  plotBusy=true;
+  try{
+    if(!(await confirmBox({qty:1,name:'Plot '+plotNo,emoji:'🟫',total:price})))return;
+    toast('Approve the payment in your wallet…');
+    const sig=await sendPayment(w,{item:'plot',qty:plotNo,total:price});
+    setPlotPending({w,plot:plotNo,sig,t:Date.now()});
+    toast('Payment sent. Confirming… ⏳');
+    await waitConfirmed(sig);
+    await verifyPlot(w,plotNo,sig);
+    setPlotPending(null);
+    toast('✅ Plot '+plotNo+' unlocked 🟫');
+    refreshAll();
+  }catch(e){
+    const m=e&&e.message?e.message:String(e);
+    console.warn('plot payment failed',e);
+    if(PLOT_TERMINAL.test(m))setPlotPending(null);
+    toast(e&&e.code===4001||/reject|denied|cancel/i.test(m)?'Payment cancelled. Nothing was sent.':m);
+  }finally{
+    plotBusy=false;
+  }
+}
+async function resumePlot(){
+  const p=getPlotPending(),w=C.getWallet();
+  if(!p||!w||p.w!==w||plotBusy||plotResuming)return;
+  plotResuming=true;
+  try{
+    await verifyPlot(w,p.plot,p.sig);
+    setPlotPending(null);
+    toast('✅ Your payment was confirmed. Plot unlocked 🟫');
+    refreshAll();
+  }catch(e){
+    const m=String((e&&e.message)||e);
+    if(PLOT_TERMINAL.test(m)){
+      setPlotPending(null);
+      if(/already used/i.test(m))refreshAll();
+    }
+  }
+  plotResuming=false;
+}
+
+setInterval(resume,6000);
+setInterval(resumePlot,6000);
+
+window.FIJI_SEEDPAY={buy,resume,buyPlot,resumePlot};
 })();
