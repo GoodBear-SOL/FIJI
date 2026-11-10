@@ -12,6 +12,9 @@ const toast=C.toast||(m=>console.log('[FIJI]',m));
 const db=()=>C.getSupabase();
 const wallet=()=>C.getWallet();
 const onBurrow=()=>sec.classList.contains('on');
+const mkHost=document.getElementById('mkInline');
+const mkPage=document.getElementById('market');
+const onMarket=()=>Boolean(mkPage&&mkPage.classList.contains('on'));
 
 const EDGE='https://tmceqqciccnnlxjiobgc.supabase.co/functions/v1/dynamic-api';
 
@@ -57,7 +60,7 @@ async function loadHold(force){
     amt=r.value.reduce((s,a)=>s+(Number(a.account.data.parsed.info.tokenAmount.uiAmount)||0),0);
   }catch(e){console.warn('FIJI balance lookup failed',e)}
   hold={w,amt,t:Date.now()};
-  if(view.open)renderModal();
+  renderModal();
 }
 const canSell=()=>hold.amt!==null&&hold.amt>=MIN_FIJI_TO_SELL;
 
@@ -227,7 +230,7 @@ async function loadMarket(){
   if(!cat)return;
   loadHold();
   mkt.loading=true;mkt.err='';
-  if(view.open)renderModal();
+  renderModal();
   try{
     const w=wallet();
     const [a,b]=await Promise.all([
@@ -242,7 +245,7 @@ async function loadMarket(){
     mkt.err='The player market is not available right now 💧';
   }
   mkt.loading=false;
-  if(view.open)renderModal();
+  renderModal();
 }
 
 const css=document.createElement('style');
@@ -320,6 +323,9 @@ css.textContent=`
  .fm-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
  .fm-bigem{font-size:36px}
 }
+.fm-sheet.fm-inline{max-width:none;max-height:none}
+.fm-inline .fm-body{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.fm-inline .fm-soon,.fm-inline .fm-empty,.fm-inline .fm-sub{grid-column:1/-1}
 @media(prefers-reduced-motion:reduce){.fm-plot.ready .fm-pic{animation:none}}
 `;
 document.head.appendChild(css);
@@ -448,9 +454,9 @@ cf.addEventListener('click',e=>{
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&cf.classList.contains('on'))closeConfirm(false)});
 
-function headHtml(title){
+function headHtml(title,noClose){
   const bal=st?'<span class="pill"><img src="./bun-coin.png" class="bun-icon" alt=""> '+fmtN(st.points)+' BUN</span>':'<span class="pill">Connect wallet</span>';
-  return '<div class="fm-head"><h3>'+title+'</h3>'+bal+'<button class="btn sm alt" type="button" data-a="close" aria-label="Close">✕</button></div>';
+  return '<div class="fm-head"><h3>'+title+'</h3>'+bal+(noClose?'':'<button class="btn sm alt" type="button" data-a="close" aria-label="Close">✕</button>')+'</div>';
 }
 function buyRow(o){
   return '<div class="fm-row">'+pic(o.img,o.emoji)+
@@ -557,12 +563,22 @@ function pickBody(){
     '<div class="fm-info"><b>'+esc(s.name)+'</b><span>You have: '+fmtN(s.count)+'</span></div>'+
     '<button class="btn sm" type="button" data-a="plant" data-crop="'+esc(s.id.slice(5))+'">Plant</button></div>').join('');
 }
+  
+function renderInline(){
+  if(!mkHost)return;
+  const ae=document.activeElement;
+  if(ae&&ae.classList&&ae.classList.contains('fm-q')&&mkHost.contains(ae))return;
+  if(view.tab==='veg'||(view.tab==='sell'&&phaseEnded()))view.tab='seeds';
+  const tab=(k,l)=>'<button class="mk-p'+(view.tab===k?' on':'')+'" type="button" data-a="tab" data-tab="'+k+'">'+l+'</button>';
+  mkHost.innerHTML='<div class="sticker fm-sheet fm-inline">'+headHtml('🛍️ Market',true)+
+    '<div class="fm-tabs">'+tab('seeds','🌱 Seeds')+tab('water','💧 Water')+(phaseEnded()?'':tab('sell','💰 Sell'))+'</div>'+
+    '<div class="fm-body">'+marketBody()+'</div></div>';
+}
 function renderModal(){
-  if(!view.open)return;
-  if(view.mode==='pick'){
-    sheet.innerHTML=headHtml('🌱 Plant in plot '+esc(view.plot))+'<div class="fm-body">'+pickBody()+'</div>';
-    return;
-  }
+  renderInline();
+  if(!view.open||view.mode!=='pick')return;
+  sheet.innerHTML=headHtml('🌱 Plant in plot '+esc(view.plot))+'<div class="fm-body">'+pickBody()+'</div>';
+}
   const tab=(k,l)=>'<button class="mk-p'+(view.tab===k?' on':'')+'" type="button" data-a="tab" data-tab="'+k+'">'+l+'</button>';
   sheet.innerHTML=headHtml('🛍️ Market')+
     '<div class="fm-tabs">'+tab('seeds','🌱 Seeds')+tab('water','💧 Water')+(phaseEnded()?'':tab('sell','💰 Sell'))+'</div>'+
@@ -571,11 +587,19 @@ function renderModal(){
 function openModal(mode,tab,plot){
   let t=tab||view.tab||'seeds';
   if(t==='veg'||(t==='sell'&&phaseEnded()))t='seeds';
+  if((mode||'market')==='market'&&mkHost){
+    closeModal();
+    view.tab=t;
+    if(typeof window.go==='function')window.go('market');
+    renderInline();
+    if(!cat||(wallet()&&!st))loadState();
+    if(t==='sell')loadMarket();
+    return;
+  }
   view={open:true,mode:mode||'market',tab:t,plot:plot==null?null:plot};
   modal.classList.add('on');
   renderModal();
   if(!cat||(wallet()&&!st))loadState();
-  if(view.mode==='market'&&(view.tab==='veg'||view.tab==='sell'))loadMarket();
 }
 function closeModal(){
   view.open=false;
@@ -584,7 +608,7 @@ function closeModal(){
 modal.addEventListener('click',e=>{if(e.target===modal)closeModal()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&view.open)closeModal()});
 
-modal.addEventListener('input',e=>{
+function onQty(e){
   const q=e.target.closest&&e.target.closest('.fm-q');
   if(!q)return;
   const maxQ=Number(q.max)||99;
@@ -593,7 +617,10 @@ modal.addEventListener('input',e=>{
   if(!btn)return;
   if(q.dataset.base)btn.textContent=(btn.dataset.pre||'Burn · +')+fmtN(burnValue(q.dataset.base,qty));
   else btn.textContent=(btn.dataset.pre||'Buy · ')+fmtN(Number(q.dataset.price)*qty);
-});
+}
+modal.addEventListener('input',onQty);
+if(mkHost)mkHost.addEventListener('input',onQty);
+
 function qtyOf(b){
   const row=b.closest('.fm-buy'),q=row&&row.querySelector('.fm-q');
   const maxQ=Number(q&&q.max)||99;
@@ -725,6 +752,7 @@ async function onClick(e){
 }
 farm.addEventListener('click',onClick);
 modal.addEventListener('click',onClick);
+if(mkHost)mkHost.addEventListener('click',onClick);
 
 function render(){renderField();renderModal()}
 
@@ -751,9 +779,10 @@ setInterval(()=>{
   if(sess.wallet!==w)sess={token:null,wallet:null,exp:0};
   mkt={list:[],mine:[],loading:false,err:''};
   render();
-  if(w&&onBurrow())loadState();
+  if(w&&(onBurrow()||onMarket()))loadState();
 },1500);
 new MutationObserver(()=>{if(onBurrow()&&wallet())loadState()}).observe(sec,{attributes:true,attributeFilter:['class']});
+if(mkPage)new MutationObserver(()=>{if(onMarket()){renderInline();if(wallet())loadState()}}).observe(mkPage,{attributes:true,attributeFilter:['class']});
 
 loadCatalog().then(render).catch(e=>{console.warn('farm catalog unavailable (is farm.sql installed?)',e);failed=true;render()});
 render();
