@@ -1,9 +1,6 @@
 (function(){
 'use strict';
 
-/* Seeds and water are paid with the real BUN token (wallet -> project wallet).
-   Load AFTER the core script, bun-coin.js and shop.js. */
-
 const C=window.FIJI_CORE||{};
 if(!C.CFG||!C.getWallet||!C.getProvider||!C.getConnection){
   console.warn('seed-pay: load it after the core script');
@@ -119,7 +116,6 @@ async function sendPayment(w,o){
     ],
     data
   });
-  // the memo tells the server exactly what was bought
   const memo=new web3.TransactionInstruction({
     programId:new web3.PublicKey(MEMO_PROGRAM),
     keys:[{pubkey:owner,isSigner:true,isWritable:false}],
@@ -187,7 +183,6 @@ function refreshAll(){
   try{window.FIJI_BUNCOIN&&window.FIJI_BUNCOIN.refresh&&window.FIJI_BUNCOIN.refresh()}catch(e){}
 }
 
-/* o = {item:'seed:carrot'|'water', name, emoji, qty, unit}  (unit = BUN per piece, only used for the popup; the server uses its own price) */
 async function buy(o){
   if(buying)return;
   const w=C.getWallet();
@@ -223,8 +218,6 @@ async function buy(o){
     buying=false;
   }
 }
-
-/* If the page was closed after paying, finish the delivery next time */
 async function resume(){
   const p=getPending(),w=C.getWallet();
   if(!p||!w||p.w!==w||buying||resuming)return;
