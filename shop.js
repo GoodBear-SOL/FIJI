@@ -40,7 +40,6 @@ let mkt={list:[],mine:[],loading:false,err:''};
 let sess={token:null,wallet:null,exp:0};
 const nowMs=()=>Date.now()+skew;
 
-/* Phase 1 end (set by phase-end.js). After it: no selling to players, burn crops for BUN instead. */
 const phaseEnded=()=>Boolean(window.FIJI_PHASE&&window.FIJI_PHASE.ended&&window.FIJI_PHASE.ended());
 const burnPct=()=>Number(window.FIJI_PHASE&&window.FIJI_PHASE.burnPct?window.FIJI_PHASE.burnPct():50)||50;
 const burnValue=(base,qty)=>Math.floor(Number(base)*qty*burnPct()/100+1e-9);
@@ -61,6 +60,13 @@ async function loadHold(force){
   if(view.open)renderModal();
 }
 const canSell=()=>hold.amt!==null&&hold.amt>=MIN_FIJI_TO_SELL;
+
+const plotPriceBun=()=>{
+  if(!st||!cat)return null;
+  const n=Number(st.plots_owned)+1;
+  const p=(cat.plot_prices||[]).find(x=>Number(x.plot_no)===n);
+  return p&&p.price_bun!=null?Number(p.price_bun):null;
+};
 
 const IMG_OK=/^[\w .\-]+\.(png|jpe?g|webp|gif|svg)$/i;
 function imgUrl(f){
@@ -389,9 +395,10 @@ function renderField(){
     '<span class="pill">'+esc(w.emoji)+' '+esc(w.name)+' × '+fmtN(own('water'))+'</span>'+
     '<span class="pill">🟫 '+st.plots_owned+' / '+st.max_plots+' plots</span>';
   let html=st.plots.map(p=>plotHtml(p,now,own('water'))).join('');
-  if(st.plots_owned<st.max_plots&&st.next_plot_price!=null){
+  const nextPrice=plotPriceBun();
+  if(st.plots_owned<st.max_plots&&nextPrice!=null){
     html+='<div class="fm-plot buy"><span class="fm-pic big"><span class="fm-em">➕</span></span><b>New plot</b>'+
-      '<span class="small"><img src="./bun-coin.png" class="bun-icon" alt=""> '+fmtN(st.next_plot_price)+' BUN</span>'+
+      '<span class="small"><img src="./bun-coin.png" class="bun-icon" alt=""> '+fmtN(nextPrice)+' BUN</span>'+
       '<button class="btn sm alt" type="button" data-a="buyplot">Buy plot</button></div>';
   }
   box.innerHTML=html;
@@ -709,16 +716,11 @@ async function onClick(e){
 
   if(a==='buyplot'){
     if(!st)return;
-    const ok=await askConfirm({
-      emoji:'🟫',
-      title:'Buy plot '+(st.plots_owned+1)+'?',
-      text:'Unlock a new plot in your Bunny Field to grow more vegetables.',
-      price:st.next_plot_price,
-      balance:Number(st.points),
-      confirmLabel:'Buy plot'
-    });
-    if(!ok)return;
-    return void act('fiji_farm_buy_plot',{},'New plot unlocked 🟫');
+    if(!wallet())return toast('Connect your wallet first');
+    const price=plotPriceBun(),no=Number(st.plots_owned)+1;
+    if(price==null)return toast('This plot is not for sale yet 💧');
+    if(!window.FIJI_SEEDPAY||!window.FIJI_SEEDPAY.buyPlot)return toast('Payments are still loading. Try again in a moment 🌱');
+    return void window.FIJI_SEEDPAY.buyPlot(no,price);
   }
 }
 farm.addEventListener('click',onClick);
