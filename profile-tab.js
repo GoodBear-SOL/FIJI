@@ -1,15 +1,6 @@
 (function(){
 'use strict';
 
-/* FIJI Labs: Profile tab
-   Load AFTER seed-pay.js (last script in index.html).
-   - Adds a Profile tab (desktop nav + mobile bottom bar)
-   - Moves the Bunny Bag from Burrow into Profile
-   - Shows leaderboard rank, Phase 1 BunXP, Phase 2 BunXP
-   - Locked placeholders: 15 badges, 3 NFTs, 4 Mint Passes (all "?")
-   - Makes the farm plot boxes smaller on phones
-*/
-
 const C=window.FIJI_CORE||{};
 const $=id=>document.getElementById(id);
 const main=document.querySelector('main.wrap'),links=$('links'),burrow=$('wallet');
@@ -22,10 +13,8 @@ const short=a=>{const s=String(a||'');return s.length<=10?s:s.slice(0,4)+'…'+s
 const wallet=()=>C.getWallet();
 const db=()=>C.getSupabase&&C.getSupabase();
 
-/* ---------- placeholder counts ---------- */
 const BADGES=15, NFTS=3, PASSES=4;
 
-/* ---------- styles ---------- */
 const css=document.createElement('style');
 css.textContent=`
 #profile .pf-head{display:flex;align-items:center;gap:14px;margin-bottom:14px}
@@ -68,7 +57,6 @@ css.textContent=`
 `;
 document.head.appendChild(css);
 
-/* ---------- page ---------- */
 const ph=(n)=>Array.from({length:n},()=>'<div class="pf-ph" aria-hidden="true">?</div>').join('');
 
 const sec=document.createElement('section');
@@ -92,7 +80,6 @@ sec.innerHTML=
   '<div class="sticker card"><div class="pf-grid">'+ph(PASSES)+'</div></div></div>';
 main.appendChild(sec);
 
-/* ---------- move the Bunny Bag out of Burrow ---------- */
 (function moveBag(){
   const assets=$('assets'),card=assets&&assets.closest('.card');
   if(!card||card.parentElement!==burrow){console.warn('profile-tab: Bunny Bag card not found in Burrow');return}
@@ -104,7 +91,6 @@ main.appendChild(sec);
   burrow.insertAdjacentHTML('afterbegin','<div class="tag">burrow</div><h2>Your Burrow</h2>');
 })();
 
-/* ---------- nav link ---------- */
 try{if(typeof pages!=='undefined'&&!pages.includes('profile'))pages.push('profile')}catch(e){}
 const link=document.createElement('a');
 link.dataset.p='profile';
@@ -123,7 +109,6 @@ window.go=function(p){
   return r;
 };
 
-/* account menu: "My Bunny Bag" now opens the Profile tab */
 const prevAct=window.acctAction;
 window.acctAction=function(a){
   if(a==='wallet'){
@@ -136,7 +121,6 @@ window.acctAction=function(a){
 const menuLabel=document.querySelector('#acctMenu [onclick="acctAction(\'wallet\')"] .am-t b');
 if(menuLabel)menuLabel.textContent='My Profile';
 
-/* ---------- data ---------- */
 let seq=0,lastLoad=0,lastW=undefined,assetsBusy=false;
 const on=()=>sec.classList.contains('on');
 
@@ -175,16 +159,14 @@ async function refresh(){
   const val=r=>r.status==='fulfilled'&&r.value&&!r.value.error?r.value.data:null;
   const p=val(prof)||{},r=val(rk)||{},s=val(phs)||{};
 
-  /* Phase 1 BunXP = frozen BunXP stored on the profile.
-     Phase 2 BunXP = p2_xp from the phase status (falls back to fiji_my_phase2.bunxp).
-     If profile.bunxp turns out to include Phase 2 as well, change p1 to: p.bunxp - p2 */
+
   const p2=s.p2_xp!=null?s.p2_xp:r.bunxp;
   const p1=p.bunxp;
   paintHead(p.username);
   setStats(r.rank,p1,p2,p.streak);
 }
 
-/* wallet connect/disconnect + periodic refresh while the tab is open */
+
 setInterval(()=>{
   const w=wallet()||null;
   if(w!==lastW){lastW=w;paintHead();setStats(null,null,null,null);if(on())refresh();return}
@@ -192,7 +174,6 @@ setInterval(()=>{
   if(Date.now()-lastLoad>20000)refresh();
 },1000);
 
-/* the Bunny Bag normally refreshes only while Burrow is open: keep it live here */
 setInterval(async()=>{
   if(assetsBusy||document.hidden||!on()||!wallet())return;
   assetsBusy=true;
