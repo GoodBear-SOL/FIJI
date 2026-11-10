@@ -103,7 +103,7 @@ const pend=document.createElement('div');
 pend.className='bc-pend';
 pend.style.display='none';
 pend.innerHTML='<div class="em">🪂</div><div><div class="bc-label">BUN airdrop</div><div class="bc-pnum" id="bcPend">0</div>'+
-  '<div class="small">BUN you collected in the game. It is reviewed and airdropped to your wallet!</div></div>';
+  '<div class="small">BUN you collected in the game.</div></div>';
 const burrowSec=$('wallet');
 const burrowH2=burrowSec&&burrowSec.querySelector('h2');
 if(burrowSec){if(burrowH2)burrowH2.after(pend);else burrowSec.prepend(pend)}
