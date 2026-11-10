@@ -1,43 +1,25 @@
 (function(){
 'use strict';
 
-/* ============================================================
-   FIJI TERMS & CONDITIONS GATE
-   Shows a popup to EVERY wallet right after it connects.
-   The site stays blocked until the user ticks the box and accepts.
-   "Decline" disconnects the wallet.
-
-   Load it after the core script (same place as your other add-on files).
-   To make everybody accept again after you change the rules,
-   raise TERMS_VERSION by 1.
-   ============================================================ */
-
 const C=window.FIJI_CORE||{};
 if(!C.CFG||!C.getWallet){console.warn('tc-gate: load it after the core script');return}
 
 const TERMS_VERSION=1;
 
-/* ---------- EDIT THE RULES HERE ---------- */
 const RULES=[
   {t:'BUN and BunXP are for fun',
-   d:'BUN and BunXP are in-site community points for gameplay only. They have no cash value, and any future token or NFT rewards are not guaranteed. The FIJI team may adjust, pause or reset them to keep the game fair.'},
+   d:'BUN and BunXP are in-site community points for gameplay. The FIJI team may adjust, pause or reset them to keep the game fair.'},
   {t:'The FIJI token has real value',
-   d:'Unlike BUN and BunXP, the FIJI token is a real token with a market value that can go up or down, and you can lose some or all of it. Buying, holding or selling FIJI is your own decision and risk. Holding it only unlocks access to site features and does not guarantee any reward.'},
+   d:'Unlike BUN and BunXP, the FIJI token is a real token with a market value that can go up or down, and you can lose some or all of it. Buying, holding or selling FIJI LABS and BUN is your own decision and risk. Holding it only unlocks access to site features.'},
   {t:'Holding requirements',
-   d:'Using the Trade Pad sniper feature requires holding at least 1,000,000 FIJI in your connected wallet. Buying or selling crops in the Market requires at least 2,000,000 FIJI. These amounts are access requirements only and your FIJI always stays in your own wallet.'},
+   d:'Using the Trade Pad sniper feature requires holding at least 1,000,000 FIJI LABS token in your connected wallet. To access quests requires at least 2,000,000 FIJI LABS. These amounts are access requirements only and your FIJI LABS tokens always stays in your own wallet.'},
   {t:'Fair play',
    d:'One person, one wallet. Bots, multiple wallets, self-trading and any other way of farming BUN or BunXP are not allowed. Progress earned this way can be removed.'},
   {t:'Rewards and limits',
-   d:'Trade rewards need a minimum trade of 0.01 SOL and have daily limits. Referral rewards are only paid when your referred friend completes a qualifying trade.'},
+   d:'Referral rewards are only paid when your referred friend completes a qualifying trade.'},
   {t:'Trading risk',
    d:'Crypto tokens, especially new meme coins, can lose value very fast. Nothing on this site is financial advice. A platform fee may apply to Jupiter routes and is shown before you sign. FIJI never asks for your seed phrase or private key.'}
 
-  /* Turn these on ONLY after the backend really enforces them:
-  ,{t:'Holder progress',
-   d:'Wallets holding at least 2,000,000 FIJI earn daily BunXP. Wallets below that lose BunXP each day.'}
-  ,{t:'Selling or moving your FIJI',
-   d:'If you sell all your FIJI or transfer it to a different wallet, your BUN and BunXP progress is reset to 0.'}
-  */
 ];
 
 const $=id=>document.getElementById(id);
@@ -149,10 +131,8 @@ no.addEventListener('click',()=>{
   if(typeof window.connect==='function'&&C.getWallet&&C.getWallet())window.connect();
 });
 
-/* No closing by Escape or by clicking outside: the rules must be accepted or declined. */
 modal.addEventListener('click',e=>{if(e.target===modal)e.stopPropagation()});
 
-/* Watch the wallet: every connect (including automatic reconnect) runs the check. */
 setInterval(()=>{
   const w=C.getWallet()||null;
   if(w===current)return;
