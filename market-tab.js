@@ -348,21 +348,4 @@ hero.addEventListener('click',e=>{
   if(b)tradeFiji(b.dataset.a);
 });
 
-const soon=document.createElement('div');
-soon.innerHTML=`<div class="tag">coming soon to the burrow</div>
- <h2>More to dig up.</h2>
- <div class="grid cs-grid">
-  <div class="sticker card cs"><span class="pill">COMING SOON</span><div class="em">🛍️</div><h3>Shop</h3>
-   <p>New things to buy with FIJI are on the way. Details will be announced here.</p>
-   <div class="grid"><div class="cs-tile"><span>🎁</span>Mystery item</div><div class="cs-tile"><span>✨</span>Mystery item</div></div></div>
-  <div class="sticker card cs"><span class="pill">COMING SOON</span><div class="em">⛏️</div><h3>Mining</h3>
-   <p>Dig for BUN together with the community. BUN is for fun and has no cash value.</p>
-   <div class="grid"><div class="cs-tile"><span>🔒</span>Locked</div><div class="cs-tile"><span>🔒</span>Locked</div></div></div>
-  <div class="sticker card cs"><span class="pill">COMING SOON</span><div class="em">🖼️</div><h3>NFTs</h3>
-   <p>Bunny collectibles and your own NFTs will show up here. Nothing to claim yet.</p>
-   <div class="grid"><div class="cs-tile"><span>🐰</span>Mystery bunny</div><div class="cs-tile"><span>💧</span>Mystery drop</div></div></div>
- </div>
- <p class="small" style="margin-top:14px">Nothing here is live yet and no rewards are promised.</p>`;
-sec.appendChild(soon);
-
 })();
