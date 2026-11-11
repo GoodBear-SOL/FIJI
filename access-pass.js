@@ -68,9 +68,10 @@ css.textContent=`
 }`;
 document.head.appendChild(css);
 
+/* ---------- helpers ---------- */
 function picHtml(){
   return '<button type="button" class="ap-img" data-ap="zoom" aria-label="View Access Pass">'+
-    '<img src="'+IMG+'" alt="FIJI Access Pass" loading="lazy" onerror="this.outerHTML=\'<span class=&quot;ap-ph&quot;>🎟️</span>\'"></button>';
+    '<img src="'+IMG+'" alt="FIJI Access Pass"></button>';
 }
 function zoom(){
   const d=document.createElement('div');
