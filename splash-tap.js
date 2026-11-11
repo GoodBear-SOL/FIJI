@@ -83,12 +83,18 @@ function splash(){
 async function splashReward(){
   const db=C.getSupabase&&C.getSupabase(),w=C.getWallet();
   if(!db||!w)return;
-  const {data,error}=await db.rpc('fiji_splash_reward',{p_wallet:w});
-  if(error)return C.toast(error.message);
-  if(data.profile&&C.setProfile)C.setProfile(data.profile);
-  const bunTxt=data.bun>0?' · +'+data.bun+' BUN':'';
-  C.toast('💧 +1 water'+bunTxt+' · ⭐ +'+data.xp+' BunXP ('+data.plays_left+' plays left)');
-  if(window.FIJI_BUNXP&&window.FIJI_BUNXP.refresh)window.FIJI_BUNXP.refresh();
+  try{
+    const {data,error}=await db.rpc('fiji_splash_reward',{p_wallet:w});
+    if(error)return C.toast(error.message);
+    if(!data)return C.toast('Reward returned no data');
+    const bunTxt=data.bun>0?' · +'+data.bun+' BUN':'';
+    C.toast('💧 +1 water'+bunTxt+' · ⭐ +'+(data.xp??0)+' BunXP ('+(data.plays_left??'?')+' plays left)');
+    try{if(data.profile&&C.setProfile)C.setProfile(data.profile)}catch(e){console.warn('setProfile failed',e)}
+    try{window.FIJI_BUNXP&&window.FIJI_BUNXP.refresh&&window.FIJI_BUNXP.refresh()}catch(e){}
+  }catch(e){
+    console.error('splashReward failed',e);
+    C.toast('Splash reward failed: '+(e.message||e));
+  }
 }
 
 let taps=0;
