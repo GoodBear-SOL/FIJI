@@ -27,10 +27,7 @@ const TERMINAL=/already|too old|failed on-chain|not signed|too small|does not ma
 
 const IMG_VER='?v=4';
 const IMG_CANDIDATES=[
-  'accesspass.png','./accesspass.png','/accesspass.png',
-  'acesspass.png','access-pass.png','AccessPass.png','Accesspass.png','accesspass.PNG',
-  'accesspass.jpg','accesspass.jpeg','accesspass.webp',
-  'images/accesspass.png','assets/accesspass.png'
+  './accesspass.png'
 ];
 let IMG=IMG_CANDIDATES[0]+IMG_VER;  
 let imgState='try';               
