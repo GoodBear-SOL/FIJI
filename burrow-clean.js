@@ -1,15 +1,9 @@
 (function(){
 'use strict';
 
-/* Load this LAST in index.html (after play-tab.js):
-   <script src="burrow-clean.js?v=1"></script>
-   It cleans the Burrow tab: removes the "coming soon" cards and the
-   pending-airdrop panels so only the farm, quests, bag and games stay. */
-
 const sec=document.getElementById('wallet');
 if(!sec){console.warn('burrow-clean: #wallet not found');return}
 
-/* 1) CSS: hide things other scripts keep re-creating or re-showing */
 const css=document.createElement('style');
 css.textContent=`
 .bc-pend{display:none!important}      /* pending BUN airdrop panel (bun-coin.js) */
