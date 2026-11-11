@@ -988,6 +988,12 @@ setInterval(()=>{
 
 function setProfile(p){
  if(!p)return;
+ const pts=Number(p.points??0);
+ const s=$('spts'); if(s) s.textContent=pts;
+ const st=$('streak'); if(st) st.textContent=p.streak??0;
+ const ref=$('ref'); if(ref) ref.value=location.origin+location.pathname+'?ref='+(p.ref_code||'');
+ updateRank();
+}
 
  const pts=Number(p.points??0);
 
