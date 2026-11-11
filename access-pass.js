@@ -1,11 +1,6 @@
 (function(){
 'use strict';
 
-/* Load AFTER seed-pay.js and profile-tab.js:
-   <script src="access-pass.js?v=1"></script>
-   Adds: Access Pass card in the Market tab, pass panel in Profile, 30% seed discount,
-   and window.FIJI_PASS (used by quest.js). */
-
 const C=window.FIJI_CORE||{};
 const $=id=>document.getElementById(id);
 const mkHost=$('mkInline'),mkPage=$('market');
@@ -21,7 +16,7 @@ const nf=n=>Number(n||0).toLocaleString();
 const wallet=()=>C.getWallet();
 const db=()=>C.getSupabase();
 
-const PRICE=2000000;
+const PRICE=3000000;
 const TREASURY='8SeUf8oskJU5FfvAWRhjjoo1BdUYx2tYFVwWiqx17zM6';
 const IMG='./accesspass.png';
 const ATA_PROGRAM='ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
@@ -34,9 +29,8 @@ const TERMINAL=/already|too old|failed on-chain|not signed|too small|does not ma
 let st=null,loading=false,buying=false,resuming=false,lastW=null,lastKey='',lastHas=false,lastSync=0,lastLoad=0;
 
 const has=()=>Boolean(st&&st.has_pass===true);
-const disc=n=>Math.floor((Number(n)*70+99)/100);   /* 30% off, rounded up. Same rule as seed-pay.ts */
+const disc=n=>Math.floor((Number(n)*70+99)/100);
 
-/* ---------- styles ---------- */
 const css=document.createElement('style');
 css.textContent=`
 .ap{display:flex;gap:16px;align-items:center;padding:14px;margin:0 0 14px}
@@ -74,7 +68,6 @@ css.textContent=`
 }`;
 document.head.appendChild(css);
 
-/* ---------- helpers ---------- */
 function picHtml(){
   return '<button type="button" class="ap-img" data-ap="zoom" aria-label="View Access Pass">'+
     '<img src="'+IMG+'" alt="FIJI Access Pass" loading="lazy" onerror="this.outerHTML=\'<span class=&quot;ap-ph&quot;>🎟️</span>\'"></button>';
@@ -94,7 +87,6 @@ async function copy(t){
   }
 }
 
-/* ---------- market card ---------- */
 const card=document.createElement('div');
 card.id='apCard';
 mkHost.before(card);
@@ -129,7 +121,6 @@ function paintCard(){
     '<p class="ap-note">Tied to the wallet that buys it. It cannot be transferred or sold.</p>'+act+'</div></div>';
 }
 
-/* ---------- profile panel ---------- */
 const profHead=$('pfHead');
 let prof=null;
 if(profHead){
@@ -163,7 +154,6 @@ function paintProfile(){
 
 function paint(){paintCard();paintProfile()}
 
-/* ---------- status + quest sync ---------- */
 async function loadStatus(force){
   const w=wallet();
   if(!w){st=null;paint();return}
@@ -205,7 +195,6 @@ async function syncQuests(force){
   }catch(e){console.debug('access-pass: quest sync failed',e);lastSync=0}
 }
 
-/* ---------- 30% off seeds ---------- */
 function wrapPay(){
   const P=window.FIJI_SEEDPAY;
   if(!P||P.__ap)return;
@@ -243,7 +232,6 @@ function applyDisc(){
 }
 new MutationObserver(applyDisc).observe(mkHost,{childList:true,subtree:true});
 
-/* ---------- payment (same flow as the quest FIJI payment) ---------- */
 const B58='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 function b58(bytes){
   const a=Array.from(bytes);
@@ -438,7 +426,6 @@ async function resume(){
   resuming=false;
 }
 
-/* ---------- clicks ---------- */
 function onClick(e){
   const b=e.target.closest('[data-ap]');
   if(!b)return;
@@ -452,7 +439,6 @@ function onClick(e){
 card.addEventListener('click',onClick);
 if(prof)prof.addEventListener('click',onClick);
 
-/* ---------- loop ---------- */
 setInterval(()=>{
   wrapPay();
   const w=wallet()||null;
