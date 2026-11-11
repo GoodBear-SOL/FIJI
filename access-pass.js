@@ -16,7 +16,7 @@ const nf=n=>Number(n||0).toLocaleString();
 const wallet=()=>C.getWallet();
 const db=()=>C.getSupabase();
 
-const PRICE=3000000;
+const PRICE=2000000;
 const TREASURY='8SeUf8oskJU5FfvAWRhjjoo1BdUYx2tYFVwWiqx17zM6';
 const IMG='./accesspass.png';
 const ATA_PROGRAM='ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
