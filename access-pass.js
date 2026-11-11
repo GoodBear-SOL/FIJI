@@ -1,7 +1,6 @@
 (function(){
 'use strict';
 
-
 const C=window.FIJI_CORE||{};
 const $=id=>document.getElementById(id);
 const mkHost=$('mkInline'),mkPage=$('market');
@@ -19,13 +18,22 @@ const db=()=>C.getSupabase();
 
 const PRICE=2000000;
 const TREASURY='8SeUf8oskJU5FfvAWRhjjoo1BdUYx2tYFVwWiqx17zM6';
-const IMG='./accesspass.png';
 const ATA_PROGRAM='ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
 const MEMO_PROGRAM='MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr';
 const MEMO_TEXT='FIJI pass';
 const PAY_URL=C.CFG.SUPABASE_URL.replace(/\/+$/,'')+'/functions/v1/pass-pay';
 const PK='fiji_pass_pending';
 const TERMINAL=/already|too old|failed on-chain|not signed|too small|does not match|invalid/i;
+
+const IMG_VER='?v=4';
+const IMG_CANDIDATES=[
+  'accesspass.png','./accesspass.png','/accesspass.png',
+  'acesspass.png','access-pass.png','AccessPass.png','Accesspass.png','accesspass.PNG',
+  'accesspass.jpg','accesspass.jpeg','accesspass.webp',
+  'images/accesspass.png','assets/accesspass.png'
+];
+let IMG=IMG_CANDIDATES[0]+IMG_VER;  
+let imgState='try';               
 
 let st=null,loading=false,buying=false,resuming=false,lastW=null,lastKey='',lastHas=false,lastSync=0,lastLoad=0;
 
@@ -35,9 +43,10 @@ const disc=n=>Math.floor((Number(n)*70+99)/100);
 const css=document.createElement('style');
 css.textContent=`
 .ap{display:flex;gap:16px;align-items:center;padding:14px;margin:0 0 14px}
-.ap-img{flex:none;width:230px;cursor:zoom-in;border:0;background:none;padding:0}
-.ap-img img{display:block;width:100%;height:auto;border-radius:14px;border:3px solid var(--ink);box-shadow:0 4px 0 var(--ink)}
-.ap-img .ap-ph{display:flex;align-items:center;justify-content:center;aspect-ratio:3/2;font-size:44px;border:3px solid var(--ink);border-radius:14px;background:var(--sb)}
+.ap-img{flex:none;width:260px;cursor:zoom-in;border:0;background:none;padding:0;position:relative;line-height:0}
+.ap-img img{display:block;width:100%;height:auto;aspect-ratio:2/1;object-fit:cover;border-radius:14px;border:3px solid var(--ink);box-shadow:0 4px 0 var(--ink);background:var(--sb)}
+.ap-ph{display:flex;align-items:center;justify-content:center;aspect-ratio:2/1;width:100%;font-size:44px;border:3px solid var(--ink);border-radius:14px;background:var(--sb);line-height:1}
+.ap-zoomtip{position:absolute;right:8px;bottom:8px;background:rgba(18,48,92,.82);color:#fff;font:600 12px Fredoka,sans-serif;border-radius:99px;padding:2px 10px;line-height:1.5;pointer-events:none}
 .ap-body{flex:1;min-width:0}
 .ap-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .ap-top h3{margin:0;font-size:22px}
@@ -49,40 +58,69 @@ css.textContent=`
 .ap-act{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .ap-code{font:700 17px Fredoka,monospace;letter-spacing:.08em;background:var(--sb);border:2.5px dashed var(--ink);border-radius:12px;padding:2px 10px}
 .ap-off{color:var(--upi)}
-.ap-lb{position:fixed;inset:0;z-index:700;background:rgba(18,48,92,.75);display:flex;align-items:center;justify-content:center;padding:16px}
-.ap-lb img{max-width:min(520px,100%);max-height:88vh;border-radius:18px;border:3px solid var(--ink)}
+
+/* lightbox */
+.ap-lb{position:fixed;inset:0;z-index:9000;background:rgba(10,24,48,.88);display:flex;align-items:center;justify-content:center;padding:14px;cursor:zoom-out}
+.ap-lb img{width:min(900px,100%);max-height:90vh;height:auto;object-fit:contain;border-radius:18px;border:3px solid #fff;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+.ap-lb-x{position:absolute;top:calc(12px + env(safe-area-inset-top));right:14px;width:44px;height:44px;border-radius:50%;border:3px solid var(--ink);background:var(--sun);color:var(--ink);font:700 20px Fredoka,sans-serif;cursor:pointer;box-shadow:0 3px 0 var(--ink)}
+.ap-lb-cap{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom));left:0;right:0;text-align:center;color:#fff;font:600 13px Fredoka,sans-serif;opacity:.8;pointer-events:none}
+
+/* Profile panel */
 #apProfile{margin-bottom:14px}
-#apProfile .ap{margin:0;padding:10px}
-#apProfile .ap-top h3{font-size:18px}
-.ap-img img,.ap-mint img,.ap-full img{max-width:100%;object-fit:contain}
-.ap-mint{grid-column:span 4;display:block;padding:0;margin:0;border:3px solid var(--ink);border-radius:14px;overflow:hidden;background:#fff;cursor:zoom-in;line-height:0;box-shadow:0 3px 0 var(--ink)}
-.ap-mint img{display:block;width:100%;height:auto}
+#apProfile .ap{margin:0;padding:12px}
+#apProfile .ap-top h3{font-size:19px}
+#apProfile .ap-img{width:240px}
+
+/* Profile > Mint Passes tile: the full card, full width of its box */
+.ap-mint{grid-column:1/-1;display:block;padding:0;margin:0;border:3px solid var(--ink);border-radius:14px;overflow:hidden;background:var(--sb);cursor:zoom-in;line-height:0;box-shadow:0 3px 0 var(--ink);position:relative;width:100%;max-width:460px}
+.ap-mint img{display:block;width:100%;height:auto;aspect-ratio:2/1;object-fit:cover}
+#profile .pf-grid:has(.ap-mint){display:block}
+#profile .pf-grid:has(.ap-mint) .pf-ph{display:inline-flex;width:56px;margin:10px 10px 0 0}
+
+/* Burrow panel */
 #apBurrow{margin:0 0 14px}
-#apBurrow .ap-full{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:12px}
-#apBurrow .ap-full .ap-pic{width:100%;max-width:260px;padding:0;border:0;background:none;cursor:zoom-in;line-height:0}
-#apBurrow .ap-full img{display:block;width:100%;height:auto;border-radius:14px;border:3px solid var(--ink);box-shadow:0 4px 0 var(--ink)}
+#apBurrow .ap-full{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:14px}
+#apBurrow .ap-pic{width:100%;max-width:460px;padding:0;border:0;background:none;cursor:zoom-in;line-height:0;position:relative}
+#apBurrow .ap-pic img{display:block;width:100%;height:auto;aspect-ratio:2/1;object-fit:cover;border-radius:16px;border:3px solid var(--ink);box-shadow:0 4px 0 var(--ink);background:var(--sb)}
+
 @media(max-width:760px){
- .ap{gap:10px;padding:10px;flex-direction:column;align-items:stretch}
- .ap-img{width:100%;max-width:360px;margin:0 auto}
- .ap-img .ap-ph{font-size:30px}
- .ap-top h3{font-size:17px}
- .ap-price{font-size:17px;margin:0 0 2px}
- .ap-list{font-size:12px;gap:2px;margin:3px 0 6px}
- .ap-note{font-size:10.5px;margin-bottom:6px}
+ .ap{gap:10px;padding:12px;flex-direction:column;align-items:stretch}
+ .ap-img,#apProfile .ap-img{width:100%;max-width:none;margin:0 auto}
+ .ap-ph{font-size:34px}
+ .ap-top h3{font-size:18px}
+ .ap-price{font-size:18px;margin:0 0 2px}
+ .ap-list{font-size:12.5px;gap:3px;margin:3px 0 6px}
+ .ap-note{font-size:11px;margin-bottom:6px}
  .ap-code{font-size:15px}
- .ap .btn{min-height:38px;padding:5px 12px;font-size:14px}
+ .ap .btn{min-height:40px;padding:6px 14px;font-size:15px}
+ #apBurrow .ap-full{padding:10px}
+ #apBurrow .ap-pic{max-width:none}
+ .ap-mint{max-width:none}
+ .ap-lb{padding:8px}
+ .ap-lb img{width:100%;max-height:82vh}
 }`;
 document.head.appendChild(css);
 
+function imgTag(alt,tip){
+  if(imgState==='fail')return '<span class="ap-ph" role="img" aria-label="'+esc(alt)+'">🎟️</span>';
+  return '<img src="'+esc(IMG)+'" alt="'+esc(alt)+'" decoding="async">'+(tip?'<span class="ap-zoomtip">🔍 Tap to enlarge</span>':'');
+}
 function picHtml(){
-  return '<button type="button" class="ap-img" data-ap="zoom" aria-label="View Access Pass">'+
-    '<img src="'+IMG+'" alt="FIJI Access Pass"></button>';
+  return '<button type="button" class="ap-img" data-ap="zoom" aria-label="View Access Pass">'+imgTag('FIJI Access Pass',true)+'</button>';
 }
 function zoom(){
+  if(document.querySelector('.ap-lb'))return;
   const d=document.createElement('div');
   d.className='ap-lb';
-  d.innerHTML='<img src="'+IMG+'" alt="FIJI Access Pass">';
-  d.onclick=()=>d.remove();
+  d.innerHTML=(imgState==='fail'
+    ?'<div class="ap-ph" style="max-width:520px;background:#fff">🎟️</div>'
+    :'<img src="'+esc(IMG)+'" alt="FIJI Access Pass">')+
+    '<button type="button" class="ap-lb-x" aria-label="Close">✕</button>'+
+    '<div class="ap-lb-cap">Tap anywhere to close</div>';
+  const close=()=>{d.remove();document.removeEventListener('keydown',onKey)};
+  const onKey=e=>{if(e.key==='Escape')close()};
+  d.addEventListener('click',close);
+  document.addEventListener('keydown',onKey);
   document.body.appendChild(d);
 }
 async function copy(t){
@@ -93,9 +131,34 @@ async function copy(t){
   }
 }
 
+function probe(i){
+  if(i>=IMG_CANDIDATES.length){
+    imgState='fail';
+    console.warn('access-pass: could not load the pass image. Upload accesspass.png next to index.html (same folder). Tried:',IMG_CANDIDATES.join(', '));
+    repaintAll();
+    return;
+  }
+  const url=IMG_CANDIDATES[i]+IMG_VER,im=new Image();
+  im.onload=()=>{IMG=url;imgState='ok';repaintAll()};
+  im.onerror=()=>probe(i+1);
+  im.src=url;
+}
+function repaintAll(){
+  if(card)card.__k='';
+  if(prof)prof.__k='';
+  if(bur)bur.__k='';
+  if(mintGrid){const t=mintGrid.querySelector('.ap-mint');if(t)t.remove()}
+  paint();
+}
+
 const card=document.createElement('div');
 card.id='apCard';
-mkHost.before(card);
+function placeCard(){
+  if(card.parentElement!==mkHost||mkHost.firstChild!==card)mkHost.insertBefore(card,mkHost.firstChild);
+}
+placeCard();
+new MutationObserver(()=>{if(card.parentElement!==mkHost||mkHost.firstChild!==card)placeCard()})
+  .observe(mkHost,{childList:true});
 
 const PERKS=
   '<li>🔑 Your own unique referral code. New users enter it in the Terms &amp; Conditions and it is saved to their profile</li>'+
@@ -104,7 +167,7 @@ const PERKS=
   '<li>🌱 30% off every seed in the Market</li>';
 
 function paintCard(){
-  const w=wallet(),key=['m',w||'',has()?st.code:(st?'n':'l'),buying?1:0].join('|');
+  const w=wallet(),key=['m',w||'',has()?st.code:(st?'n':'l'),buying?1:0,imgState,IMG].join('|');
   if(key===card.__k)return;
   card.__k=key;
   let pill,price,act;
@@ -136,7 +199,7 @@ if(profHead){
 }
 function paintProfile(){
   if(!prof)return;
-  const w=wallet(),key=['p',w||'',st?JSON.stringify(st):'-'].join('|');
+  const w=wallet(),key=['p',w||'',st?JSON.stringify(st):'-',imgState,IMG].join('|');
   if(key===prof.__k)return;
   prof.__k=key;
   if(!w||!st){prof.innerHTML='';return}
@@ -144,7 +207,7 @@ function paintProfile(){
   try{if(st.since)since=new Date(st.since).toLocaleDateString()}catch(e){}
   const ref=st.referred_by_code?'<div class="small">Joined with referral code '+esc(st.referred_by_code)+'</div>':'';
   if(has()){
-    prof.innerHTML='<div class="sticker card ap">'+
+    prof.innerHTML='<div class="sticker card ap">'+picHtml()+
       '<div class="ap-body"><div class="ap-top"><h3>🎟️ Access Pass</h3><span class="pill g">✅ Active</span></div>'+
       '<div class="small">Bound to this wallet'+(since?' · since '+esc(since):'')+'</div>'+
       '<div class="ap-act" style="margin-top:6px"><span class="ap-code">'+esc(st.code)+'</span>'+
@@ -154,7 +217,7 @@ function paintProfile(){
   }else{
     prof.innerHTML='<div class="sticker card ap"><div class="ap-body"><div class="ap-top"><h3>🎟️ Access Pass</h3><span class="pill">Not owned</span></div>'+
       '<div class="small">Free quests, 30% off seeds and your own referral code.</div>'+
-      '<div class="ap-act" style="margin-top:6px"><button class="btn sm" type="button" data-ap="market">See it in Market</button></div>'+ref+'</div></div>';
+      '<div class="ap-act" style="margin-top:6px"><button class="btn sm" type="button" data-ap="market">Get it in Market</button></div>'+ref+'</div></div>';
   }
 }
 
@@ -169,12 +232,12 @@ if(burrow){
 }
 function paintBurrow(){
   if(!bur)return;
-  const w=wallet(),key=['b',w||'',has()?st.code:'-'].join('|');
+  const w=wallet(),key=['b',w||'',has()?st.code:'-',imgState,IMG].join('|');
   if(key===bur.__k)return;
   bur.__k=key;
   if(!w||!has()){bur.innerHTML='';return}
   bur.innerHTML='<div class="sticker card ap-full">'+
-    '<button type="button" class="ap-pic" data-ap="zoom" aria-label="View Access Pass"><img src="'+IMG+'" alt="FIJI Access Pass"></button>'+
+    '<button type="button" class="ap-pic" data-ap="zoom" aria-label="View Access Pass">'+imgTag('FIJI Access Pass',true)+'</button>'+
     '<div><span class="pill g">🎟️ Access Pass</span></div>'+
     '<div class="ap-act"><span class="ap-code">'+esc(st.code)+'</span>'+
     '<button class="btn sm alt" type="button" data-ap="copy">Copy code</button></div></div>';
@@ -194,11 +257,14 @@ function findMintGrid(){
 function paintMint(){
   const g=findMintGrid();
   if(!g)return;
-  const t=g.querySelector('.ap-mint'),on=Boolean(wallet())&&has();
+  let t=g.querySelector('.ap-mint');
+  const on=Boolean(wallet())&&has();
+  if(t&&t.dataset.src!==IMG+'|'+imgState){t.remove();t=null}
   if(on&&!t){
     const d=document.createElement('button');
-    d.type='button';d.className='ap-mint';d.dataset.ap='zoom';d.setAttribute('aria-label','View Access Pass');
-    d.innerHTML='<img src="'+IMG+'" alt="FIJI Access Pass">';
+    d.type='button';d.className='ap-mint';d.dataset.ap='zoom';d.dataset.src=IMG+'|'+imgState;
+    d.setAttribute('aria-label','View Access Pass');
+    d.innerHTML=imgTag('FIJI Access Pass',true);
     g.insertBefore(d,g.firstChild);
     const ph=g.querySelector('.pf-ph');
     if(ph)ph.remove();
@@ -497,8 +563,9 @@ function onClick(e){
 card.addEventListener('click',onClick);
 if(prof)prof.addEventListener('click',onClick);
 
+/* ---------- loop ---------- */
 setInterval(()=>{
-  wrapPay();paintMint();
+  wrapPay();paintMint();placeCard();
   const w=wallet()||null;
   if(w!==lastW){
     lastW=w;st=null;lastHas=false;lastSync=0;lastLoad=0;card.__k='';
@@ -509,13 +576,15 @@ setInterval(()=>{
     return;
   }
   if(!w||document.hidden)return;
-  const watching=mkPage.classList.contains('on')||(document.getElementById('profile')||{classList:{contains:()=>false}}).classList.contains('on')||(document.getElementById('wallet')||{classList:{contains:()=>false}}).classList.contains('on');
+  const on=id=>{const e=document.getElementById(id);return Boolean(e&&e.classList.contains('on'))};
+  const watching=mkPage.classList.contains('on')||on('profile')||on('wallet');
   if(watching&&Date.now()-lastLoad>30000)loadStatus(true);
 },1000);
 setInterval(resume,6000);
 
 wrapPay();
 paint();
+probe(0);
 
 window.FIJI_PASS={
   has,
