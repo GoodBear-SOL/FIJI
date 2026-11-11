@@ -18,7 +18,6 @@ const TK='fiji_quest_tok';
 const PAY_URL=C.CFG.SUPABASE_URL.replace(/\/+$/,'')+'/functions/v1/quest-pay';
 const ATA_PROGRAM='ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
 
-/* Access Pass (access-pass.js): owners see every quest and use them for free */
 const passOn=()=>Boolean(window.FIJI_PASS&&window.FIJI_PASS.has&&window.FIJI_PASS.has());
 const PASS_END='9999-12-31T00:00:00Z';
 
@@ -34,17 +33,16 @@ const S={
   loaded:false,
   failed:false
 };
-let hold=null;          // FIJI balance of the connected wallet (null = unknown)
-let holdErr=false;      // true when the balance lookup failed
+let hold=null;
+let holdErr=false; 
 let holdAt=0;
-let view='board';       // board | farming | cooking
+let view='board';
 let buying=false;
 let lastKey='';
 let lastWallet=null;
 let lastStatusAt=0;
 let statusBusy=false;
 
-/* ---------------- styles ---------------- */
 const css=document.createElement('style');
 css.textContent=`
 #fmFarm:not(.qs-live){display:none!important}
@@ -166,7 +164,6 @@ async function loadHold(force){
   render();
 }
 
-/* ---------------- subscription status ---------------- */
 async function loadStatus(force){
   const c=db();
   if(!c)return;
@@ -272,7 +269,7 @@ function renderBoard(){
     :'<p class="small" style="margin-bottom:12px">Pick a quest. Each quest is a '+nf((S.products[0]||{}).days||7)+'-day pass paid in FIJI. Quest rewards are BunXP and count toward your Phase 2 BunXP.</p>';
   body.innerHTML=top+intro+
     '<div class="qh-grid">'+cards+'</div>'+
-    '<p class="qh-note">FIJI payments are final and go to the project treasury. BunXP is for gameplay only and has no cash value. Future token or NFT rewards are not guaranteed.</p>';
+    '<p class="qh-note">FIJI payments are final and go to the project treasury. BunXP is for gameplay only and has no cash value.</p>';
   tick();
 }
 
@@ -318,7 +315,7 @@ function renderDetail(id){
   tick();
 }
 function detailPerks(id,p){
-  if(id==='farming')return '<li>🌱 Buy seeds and water in the Market</li><li>🧺 Plant, water and harvest your plots</li><li>⭐ Earn BunXP for every watering and harvest</li><li>⏳ Access lasts '+nf(p.days)+' days from purchase</li>';
+  if(id==='farming')return '<li>🫘 Buy seeds and water in the Market</li><li>🧺 Plant, water and harvest your plots</li><li>⭐ Earn BunXP for every watering and harvest</li><li>⏳ Access lasts '+nf(p.days)+' days from purchase</li>';
   if(id==='cooking')return '<li>🍳 A new dish every 12 hours</li><li>🥕 Cook it with vegetables you harvested</li><li>⭐ Rewards BunXP</li><li>⏳ Access lasts '+nf(p.days)+' days from purchase</li>';
   return '<li>⏳ Access lasts '+nf(p.days)+' days from purchase</li>';
 }
@@ -403,7 +400,7 @@ async function sendPayment(w,p){
   const treasury=new web3.PublicKey(S.treasury);
 
   const mi=await conn.getParsedAccountInfo(mint);
-  if(!mi.value||!mi.value.data||!mi.value.data.parsed)throw new Error('Could not read the FIJI token');
+  if(!mi.value||!mi.value.data||!mi.value.data.parsed)throw new Error('Could not read the FIJI LABS token');
   const programId=mi.value.owner;
   const decimals=Number(mi.value.data.parsed.info.decimals);
   const raw=BigInt(Math.round(Number(p.price_fiji)))*(10n**BigInt(decimals));
@@ -415,7 +412,7 @@ async function sendPayment(w,p){
     const v=BigInt(t.amount);
     if(v>best){best=v;src=a.pubkey}
   });
-  if(!src||best<raw)throw new Error('Not enough FIJI in your wallet');
+  if(!src||best<raw)throw new Error('Not enough FIJI LABS in your wallet');
 
   const ataProg=new web3.PublicKey(ATA_PROGRAM);
   const [dest]=web3.PublicKey.findProgramAddressSync(
@@ -431,10 +428,10 @@ async function sendPayment(w,p){
       {pubkey:web3.SystemProgram.programId,isSigner:false,isWritable:false},
       {pubkey:programId,isSigner:false,isWritable:false}
     ],
-    data:new Uint8Array([1])   // CreateIdempotent
+    data:new Uint8Array([1])
   });
   const data=new Uint8Array(10);
-  data[0]=12;                  // TransferChecked
+  data[0]=12;    
   new DataView(data.buffer).setBigUint64(1,raw,true);
   data[9]=decimals;
   const transfer=new web3.TransactionInstruction({
@@ -546,7 +543,6 @@ async function buy(id){
   }
 }
 
-/* ---------------- Cooking quest (daily dish, BunXP only) ---------------- */
 let st=null,offsetC=0,cooking=false,lastEndsLoad=0;
 
 function paintCook(){
@@ -582,7 +578,7 @@ function paintCook(){
     '<div class="qs-list">'+rows+'</div>'+
     '<div class="qs-rew">'+(Number(st.bun_reward)>0?'<span class="pill">🪙 +'+nf(st.bun_reward)+' BUN</span>':'')+'<span class="pill">⭐ +'+nf(st.bunxp)+' BunXP</span></div>'+
     btn+
-    '<p class="qs-note">One cook per dish. Same recipe for every player. Cooking rewards BunXP, and BunXP counts toward your Phase 2 total. BunXP is for gameplay only.</p>';
+    '<p class="qs-note">One cook per dish, with the same recipe for all players. Cooking earns BunXP, which contributes to the Phase 2 total. BunXP is for gameplay purposes only.</p>';
   tickCook();
 }
 function tickCook(){
@@ -719,7 +715,6 @@ function onClick(e){
 body.addEventListener('click',onClick);
 root.addEventListener('click',onClick);
 
-/* Access Pass bought, restored or lost: redraw the board */
 document.addEventListener('fiji:pass',()=>{lastKey='';render();if(passOn())loadStatus(true)});
 
 let wasOn=false;
