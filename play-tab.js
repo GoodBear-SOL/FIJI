@@ -49,7 +49,7 @@ wheels.innerHTML=
  '<div class="tag">wheels</div><h2>Spin the wheels</h2>'+
  '<div class="grid">'+
   '<div class="sticker card pl-soon"><span class="pill">COMING SOON</span><div class="em">🎡</div><h3>Lucky Wheel</h3>'+
-   '<p>Spin for veggies, seeds and water.</p><span class="pl-lock">🔒 Locked</span></div>'+
+   '<p>Classic Wheel</p><span class="pl-lock">🔒 Locked</span></div>'+
   '<div class="sticker card pl-soon"><span class="pill">COMING SOON</span><div class="em">🌟</div><h3>Jackpot Wheel</h3>'+
    '<p>A bigger wheel with bigger prizes.</p><span class="pl-lock">🔒 Locked</span></div>'+
  '</div>';
