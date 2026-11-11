@@ -103,7 +103,7 @@ document.head.appendChild(css);
 
 function imgTag(alt,tip){
   if(imgState==='fail')return '<span class="ap-ph" role="img" aria-label="'+esc(alt)+'">🎟️</span>';
-  return '<img src="'+esc(IMG)+'" alt="'+esc(alt)+'" decoding="async">'+(tip?'<span class="ap-zoomtip">🔍 Tap to enlarge</span>':'');
+  return '<img src="'+esc(IMG)+'" alt="'+esc(alt)+'" decoding="async">'+(tip?'<span class="ap-zoomtip">🔍</span>':'');
 }
 function picHtml(){
   return '<button type="button" class="ap-img" data-ap="zoom" aria-label="View Access Pass">'+imgTag('FIJI Access Pass',true)+'</button>';
@@ -134,7 +134,7 @@ async function copy(t){
 function probe(i){
   if(i>=IMG_CANDIDATES.length){
     imgState='fail';
-    console.warn('access-pass: could not load the pass image. Upload accesspass.png next to index.html (same folder). Tried:',IMG_CANDIDATES.join(', '));
+    console.warn('Could not load the access pass image.',IMG_CANDIDATES.join(', '));
     repaintAll();
     return;
   }
@@ -161,9 +161,9 @@ new MutationObserver(()=>{if(card.parentElement!==mkHost||mkHost.firstChild!==ca
   .observe(mkHost,{childList:true});
 
 const PERKS=
-  '<li>🔑 Your own unique referral code. New users enter it in the Terms &amp; Conditions and it is saved to their profile</li>'+
+  '<li>🔑 Received unique referral code. New users enter it in the Terms &amp; Conditions and it is saved to their profile</li>'+
   '<li>🔓 Quests are visible in your Burrow</li>'+
-  '<li>🌾 All quests are free to access</li>'+
+  '<li>🌾 All quests are FREE to access</li>'+
   '<li>🌱 30% off every seed in the Market</li>';
 
 function paintCard(){
@@ -291,7 +291,7 @@ async function loadStatus(force){
     st=data||{has_pass:false};
     lastLoad=Date.now();
   }catch(e){
-    console.warn('access-pass: status failed (is access-pass.sql installed?)',e);
+    console.warn('Status failed',e);
     if(!st)st={has_pass:false};
   }finally{loading=false}
   const h=has();
@@ -563,7 +563,6 @@ function onClick(e){
 card.addEventListener('click',onClick);
 if(prof)prof.addEventListener('click',onClick);
 
-/* ---------- loop ---------- */
 setInterval(()=>{
   wrapPay();paintMint();placeCard();
   const w=wallet()||null;
