@@ -45,6 +45,10 @@ css.textContent=`
 .tc-rule b{display:block;font:600 17px Fredoka,sans-serif;margin-bottom:2px}
 .tc-rule span{display:block;font-size:14px;line-height:1.45}
 .tc-foot{padding:12px 18px 16px;border-top:3px solid var(--ink);display:grid;gap:10px}
+.tc-code{display:grid;gap:2px}
+.tc-code label{font:600 13px Fredoka,sans-serif;opacity:.8}
+.tc-code input{margin:0;padding:9px 14px;text-transform:uppercase;letter-spacing:.08em;font-size:15px}
+.tc-code .tc-err{font-size:12px;color:var(--dni);min-height:0}
 .tc-agree{display:flex;align-items:flex-start;gap:10px;font-size:14px;cursor:pointer;line-height:1.4}
 .tc-agree input{width:22px;height:22px;margin:0;flex:none;accent-color:var(--blue);cursor:pointer;padding:0}
 .tc-acts{display:grid;gap:8px}
@@ -65,6 +69,9 @@ modal.innerHTML=
    RULES.map((r,i)=>'<div class="tc-rule"><b>'+(i+1)+'. '+esc(r.t)+'</b><span>'+esc(r.d)+'</span></div>').join('')+
   '</div>'+
   '<div class="tc-foot">'+
+   '<div class="tc-code"><label for="tcCode">Referral code (optional)</label>'+
+    '<input id="tcCode" type="text" maxlength="16" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Enter a code from an Access Pass holder">'+
+    '<div class="tc-err" id="tcCodeErr"></div></div>'+
    '<label class="tc-agree"><input type="checkbox" id="tcCheck"><span>I have read and agree to the Terms &amp; Conditions above.</span></label>'+
    '<div class="tc-acts">'+
     '<button class="btn full" type="button" id="tcOk" disabled>Accept and continue</button>'+
@@ -74,13 +81,19 @@ modal.innerHTML=
  '</div>';
 document.body.appendChild(modal);
 
-const chk=$('tcCheck'),ok=$('tcOk'),no=$('tcNo');
+const chk=$('tcCheck'),ok=$('tcOk'),no=$('tcNo'),codeIn=$('tcCode'),codeErr=$('tcCodeErr');
 let current=null,seq=0,busy=false,shown=false;
+
+codeIn.addEventListener('input',()=>{
+  codeIn.value=codeIn.value.replace(/[^A-Za-z0-9]/g,'').toUpperCase();
+  codeErr.textContent='';
+});
 
 function show(){
   if(shown)return;
   shown=true;
   chk.checked=false;ok.disabled=true;ok.textContent='Accept and continue';
+  codeIn.value='';codeErr.textContent='';
   modal.classList.add('on');
   document.body.style.overflow='hidden';
   modal.querySelector('.tc-body').scrollTop=0;
@@ -109,10 +122,36 @@ async function check(w){
   show();
 }
 
+/* Saves the referral code to the new user's profile. Returns true when it is fine to continue. */
+async function saveCode(w){
+  const code=codeIn.value.trim();
+  if(!code)return true;
+  const client=db();
+  if(!client){codeErr.textContent='Could not check the code right now. Clear it or try again.';return false}
+  try{
+    const {error}=await client.rpc('fiji_pass_redeem',{p_wallet:w,p_code:code});
+    if(error){
+      const m=String(error.message||error);
+      if(/already/i.test(m))return true;   /* a code is already saved for this wallet */
+      codeErr.textContent=m.charAt(0).toUpperCase()+m.slice(1);
+      return false;
+    }
+    return true;
+  }catch(e){
+    codeErr.textContent='Could not check the code right now. Clear it or try again.';
+    return false;
+  }
+}
+
 ok.addEventListener('click',async()=>{
   const w=C.getWallet&&C.getWallet();
   if(!w||!chk.checked||busy)return;
   busy=true;ok.disabled=true;ok.textContent='Saving…';
+  const codeOk=await saveCode(w);
+  if(!codeOk){
+    busy=false;ok.disabled=!chk.checked;ok.textContent='Accept and continue';
+    return;
+  }
   try{
     const client=db();
     if(client){
@@ -123,7 +162,8 @@ ok.addEventListener('click',async()=>{
   setLocal(w);
   busy=false;
   hide();
-  toast('Welcome to FIJI Labs 🐰');
+  toast(codeIn.value.trim()?'Welcome to FIJI Labs 🐰 Referral code saved 🔑':'Welcome to FIJI Labs 🐰');
+  try{window.FIJI_PASS&&window.FIJI_PASS.refresh&&window.FIJI_PASS.refresh()}catch(e){}
 });
 
 no.addEventListener('click',()=>{
