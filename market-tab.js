@@ -140,7 +140,7 @@ const bag=document.createElement('div');
 bag.id='bag';
 if(oldTbl){
   oldTbl.after(bag);
-  bag.insertAdjacentHTML('afterend','<p class="small" id="bagNote" style="margin-top:10px;display:none">PNL and Status show the last 24 hours at current prices. Tap a coin for details. Prices from DexScreener.</p>');
+  bag.insertAdjacentHTML('afterend','<p class="small" id="bagNote" style="margin-top:10px;display:none">PNL and Status show the last 24 hours at current prices.</p>');
 }
 
 let curKey='',openMint=null,lastVal={};
@@ -203,7 +203,6 @@ function paint(rows,pairs){
   list.forEach(r=>{if(r.val!==null)totVal+=r.val;if(r.pnl!==null)totPnl+=r.pnl});
   const prev=totVal-totPnl,totPct=prev>0?totPnl/prev*100:null;
 
-  // Rebuild only when the set of coins (or their icons) changes; otherwise update in place (no flicker)
   const key=list.map(r=>r.mint+'|'+(r.img?1:0)+'|'+(r.amt>0?1:0)).join(',');
   if(key!==curKey){curKey=key;buildRows(list)}
 
@@ -226,7 +225,6 @@ function paint(rows,pairs){
     setText(f('price'),priceFmt(r.price));
     const pe=f('pnl');setText(pe,pnlText(r.pnl));if(pe)pe.className=dir(r.pnl);
 
-    // soft flash when value moves
     const old=lastVal[r.mint];
     if(old!==undefined&&r.val!==null&&Math.abs(r.val-old)>1e-9){
       const m=row.querySelector('.bg-main');
@@ -285,7 +283,7 @@ bag.addEventListener('click',e=>{
   const row=e.target.closest('.bg-row');if(!row)return;
   const b=e.target.closest('[data-wa]');
   if(b){openAsset(row.dataset.mint,b.dataset.wa);return}
-  // tap a row to open / close its details (one open at a time)
+
   const was=row.classList.contains('open');
   bag.querySelectorAll('.bg-row.open').forEach(r=>r.classList.remove('open'));
   openMint=was?null:row.dataset.mint;
@@ -303,7 +301,6 @@ if(T){
   console.warn('market-tab: tradepad.js not loaded, wallet bag will not update');
 }
 
-/* Silent auto-refresh every 3s (only while the Burrow tab is open, the tab is visible, and a wallet is connected) */
 let refreshing=false;
 setInterval(async()=>{
   if(refreshing||document.hidden)return;
@@ -314,7 +311,6 @@ setInterval(async()=>{
   finally{refreshing=false}
 },REFRESH_MS);
 
-/* ===== Buy / Sell FIJI on the home hero ===== */
 function addActs(){
   if(hero.querySelector('.fj-act')||!hero.querySelector('.mk-hp'))return;
   const row=document.createElement('div');
