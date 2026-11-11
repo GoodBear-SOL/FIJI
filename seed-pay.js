@@ -216,7 +216,7 @@ async function buy(o){
   if(!w){if(typeof window.connect==='function')window.connect();return}
   const qty=Math.max(1,Math.min(99,Math.floor(Number(o.qty))||1));
   const unit=Number(o.unit)||0;
-  if(unit<1)return toast('This item has no BUN price yet 💧');
+  if(unit<1)return toast('This item has no BUN price yet.');
   const p=getPending();
   if(p&&p.w===w){
     toast('A payment is still being confirmed. Please wait a moment…');
@@ -234,7 +234,7 @@ async function buy(o){
     await waitConfirmed(sig);
     await verify(w,order.item,qty,sig);
     setPending(null);
-    toast('✅ Bought '+qty+' × '+order.name+' '+(order.emoji||'🌱'));
+    toast('✅ Bought '+qty+' × '+order.name+' '+(order.emoji||'🫘'));
     refreshAll();
   }catch(e){
     const m=e&&e.message?e.message:String(e);
@@ -252,7 +252,7 @@ async function resume(){
   try{
     await verify(w,p.item,p.qty,p.sig);
     setPending(null);
-    toast('✅ Your payment was confirmed. Items delivered 🌱');
+    toast('✅ Your payment was confirmed. Items delivered 🫘');
     refreshAll();
   }catch(e){
     const m=String((e&&e.message)||e);
@@ -270,7 +270,7 @@ async function buyPlot(plotNo,price){
   if(!w){if(typeof window.connect==='function')window.connect();return}
   plotNo=Math.floor(Number(plotNo));
   price=Math.floor(Number(price));
-  if(!(plotNo>=2)||!(price>=1))return toast('This plot is not for sale yet 💧');
+  if(!(plotNo>=2)||!(price>=1))return toast('This plot is not for sale yet.');
   const p=getPlotPending();
   if(p&&p.w===w){
     toast('A plot payment is still being confirmed. Please wait a moment…');
