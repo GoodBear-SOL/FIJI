@@ -92,7 +92,7 @@ panel.innerHTML=
  '<div class="bc-info">'+
   '<div class="bc-label">BUN in your wallet</div>'+
   '<div class="bc-num" id="bcNum">0</div>'+
-  '<div class="small bc-sub" id="bcSub">Connect your wallet to see your BUN.</div>'+
+  '<div class="small bc-sub" id="bcSub">Connect your wallet.</div>'+
  '</div>';
 
 const card=inv.querySelector('.card');
@@ -224,7 +224,6 @@ function read(){
   const connected=Boolean(C.getWallet());
   const v=connected?Math.floor(walletBun):0;
 
-  // game BUN (#spts) is now the pending airdrop
   const n=connected?Number(String(pts.textContent).replace(/[^\d.-]/g,'')):0;
   pendEl.textContent=fmt(Number.isFinite(n)&&n>0?n:0);
   pend.style.display=connected?'flex':'none';
