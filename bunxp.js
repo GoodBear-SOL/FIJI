@@ -31,7 +31,7 @@ const card=tbl.closest('.card');
 const head=document.createElement('div');
 head.className='bx-head';
 head.innerHTML=
-  '<p class="bx-note">Phase 2 ranking. Earn BunXP by playing. BunXP is for community gameplay only and has no cash value. Future token or NFT rewards are not guaranteed.</p>'+
+  '<p class="bx-note">Phase 2 ranking. Earn BunXP by playing. BunXP is for community gameplay only and has no cash value.</p>'+
   '<div class="bx-me" id="bxMe"></div>';
 if(card)card.before(head);else sec.appendChild(head);
 
