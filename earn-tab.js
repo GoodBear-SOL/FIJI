@@ -46,21 +46,9 @@ grid.querySelectorAll(':scope > .card').forEach(card=>{
 });
 grid.querySelectorAll(':scope > .card[style]').forEach(c=>c.style.removeProperty('text-align'));
 
-const SOON=[
-  {em:'🎯',t:'Weekly Quests',d:'Simple community goals that earn bonus BUN and BUNXP.'},
-  {em:'💪',t:'Strong Bunny',d:'Hold FIJI Labs coins over time and earn BUN and BUNXP'},
-  {em:'🔨',t:'Bun-A-Mole',d:'Smash the holes when FIJI pops out and test your reflexes!'}
-];
-SOON.forEach(s=>{
-  const d=document.createElement('div');
-  d.className='sticker card es-soon';
-  d.innerHTML='<span class="pill">COMING SOON</span><div class="em">'+s.em+'</div><h3>'+s.t+'</h3><p>'+s.d+'</p><span class="es-lock">🔒 Locked</span>';
-  grid.appendChild(d);
-});
-
 const note=document.createElement('p');
 note.className='small';note.style.marginTop='14px';
-note.textContent='Some features are still coming soon. BUN is an in-site currency used for FIJI Labs activities and items. BUN has no cash value.';
+note.textContent='Some features are still coming soon. BUN is an in-site currency used for FIJI Labs activities and items.';
 grid.after(note);
 
 })();
