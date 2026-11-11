@@ -1,10 +1,6 @@
 (function(){
 'use strict';
 
-/* Load AFTER profile-tab.js and play-tab.js:
-   <script src="badges.js?v=1"></script>
-   Put badge1.png ... badge16.png inside a folder called "badges" on GitHub. */
-
 const BASE='badges/';
 
 const C=window.FIJI_CORE||{};
@@ -18,7 +14,6 @@ const db=()=>C.getSupabase&&C.getSupabase();
 const toast=C.toast||(m=>console.log('[FIJI]',m));
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-/* file = image name on GitHub, key = which stat to check, need = amount required */
 const BADGES=[
  {file:'badge1.png', name:'Bunny Buddy',        desc:'7 active days',                    key:'days',      need:7},
  {file:'badge2.png', name:'Clover Hopper',      desc:'30 active days',                   key:'days',      need:30},
@@ -50,7 +45,6 @@ css.textContent=`
 `;
 document.head.appendChild(css);
 
-/* find the Badges grid (the box with the ? marks) */
 const secBox=[...sec.querySelectorAll('.pf-sec')].find(s=>{
   const h=s.querySelector('h2');return h&&/badges/i.test(h.textContent);
 });
@@ -64,7 +58,7 @@ grid.innerHTML=BADGES.map((b,i)=>
   '<span class="bd-n">'+esc(b.name)+'</span></button>'
 ).join('');
 
-let stats={};          // latest numbers
+let stats={};
 let holdAt=0,lastW=undefined,busy=false;
 
 function paint(){
@@ -108,13 +102,13 @@ async function refresh(){
     const [prof,p2,extra]=await Promise.allSettled([
       c.from('fiji_profiles').select('bunxp,streak').eq('wallet',w).maybeSingle(),
       c.rpc('fiji_phase_status',{p_wallet:w}),
-      c.rpc('fiji_badge_stats',{p_wallet:w})     // you create this one (see instructions)
+      c.rpc('fiji_badge_stats',{p_wallet:w})
     ]);
     if(w!==wallet())return;
     const val=r=>r.status==='fulfilled'&&r.value&&!r.value.error?r.value.data:null;
     const p=val(prof)||{},s=val(p2)||{},x=val(extra)||{};
     const next={};
-    next.xp=Number(p.bunxp||0)+Number(s.p2_xp||0);       // Phase 1 + Phase 2 BunXP
+    next.xp=Number(p.bunxp||0)+Number(s.p2_xp||0);
     next.days=x.active_days!=null?Number(x.active_days):null;
     next.harvested=x.harvested!=null?Number(x.harvested):null;
     next.market=x.market_items!=null?Number(x.market_items):null;
