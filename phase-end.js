@@ -72,9 +72,7 @@ function paintCard(){
         '<h3>⏳ Phase 1 ends in</h3>'+
         '<div class="ph-clock" id="phClock">--:--:--</div>'+
         '<p class="small" id="phWhen"></p>'+
-        '<p class="ph-note">When the timer reaches zero, activities stop giving BUN and give BunXP only.</p>'+
-        '<p class="ph-note">BunXP earned after that is saved separately, so the Phase 1 leaderboard stays exactly as it is.</p>'+
-        '<p class="ph-note">Vegetables can no longer be sold. BUN you collected in the game is shown as Pending BUN airdrop at the top of your Burrow.</p>';
+        '<p class="ph-note">BunXP earned from Phase 1 leaderboard are saved.</p>';
     }else{
       card.innerHTML=
         '<div class="tag" style="margin:0">phase one</div>'+
