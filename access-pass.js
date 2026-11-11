@@ -95,6 +95,35 @@ css.textContent=`
  .ap-mint{max-width:none}
  .ap-lb{padding:8px}
  .ap-lb img{width:100%;max-height:82vh}
+}
+
+/* Compact Market card (small picture, perks are in the details popup) */
+.ap.ap-compact{padding:10px 12px;gap:14px}
+.ap.ap-compact .ap-img{width:170px}
+.ap.ap-compact .ap-top h3{font-size:19px}
+.ap.ap-compact .ap-price{font-size:19px;margin:0 0 2px}
+.ap-tag{font-size:13px;opacity:.75;margin:0 0 8px;line-height:1.3}
+@media(max-width:760px){
+ .ap.ap-compact{flex-direction:row;align-items:center;gap:10px;padding:10px}
+ .ap.ap-compact .ap-img{width:118px;flex:none;margin:0}
+ .ap.ap-compact .ap-top h3{font-size:16px}
+ .ap.ap-compact .ap-price{font-size:16px}
+ .ap.ap-compact .ap-tag{display:none}
+ .ap.ap-compact .ap-zoomtip{font-size:10px;padding:0 7px}
+}
+
+/* Details popup */
+.ap-md{position:fixed;inset:0;z-index:350;background:rgba(18,48,92,.6);display:none;align-items:center;justify-content:center;padding:16px}
+.ap-md.on{display:flex}
+.ap-mbox{width:100%;max-width:440px;max-height:92vh;overflow-y:auto;background:var(--bg);padding:16px}
+.ap-mbox .ap-top{margin-bottom:10px}
+.ap-mbox .ap-top .btn{margin-left:auto}
+.ap-mpic{display:block;width:100%;padding:0;border:0;background:none;cursor:zoom-in;line-height:0;position:relative;margin-bottom:12px}
+.ap-mpic img{display:block;width:100%;height:auto;aspect-ratio:2/1;object-fit:cover;border-radius:14px;border:3px solid var(--ink);box-shadow:0 4px 0 var(--ink);background:var(--sb)}
+.ap-mbox .ap-list{font-size:14.5px;gap:6px;margin:6px 0 10px}
+@media(max-width:760px){
+ .ap-md{align-items:flex-end;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
+ .ap-mbox{max-height:90vh}
 }`;
 document.head.appendChild(css);
 
@@ -104,6 +133,9 @@ function imgTag(alt,tip){
 }
 function picHtml(){
   return '<button type="button" class="ap-img" data-ap="zoom" aria-label="View Access Pass">'+imgTag('FIJI Access Pass',true)+'</button>';
+}
+function infoPicHtml(){
+  return '<button type="button" class="ap-img" data-ap="info" aria-label="View Access Pass details">'+imgTag('FIJI Access Pass',true)+'</button>';
 }
 function zoom(){
   if(document.querySelector('.ap-lb'))return;
@@ -144,6 +176,7 @@ function repaintAll(){
   if(card)card.__k='';
   if(prof)prof.__k='';
   if(bur)bur.__k='';
+  if(info)info.__k='';
   if(mintGrid){const t=mintGrid.querySelector('.ap-mint');if(t)t.remove()}
   paint();
 }
@@ -157,35 +190,85 @@ placeCard();
 new MutationObserver(()=>{if(card.parentElement!==mkHost||mkHost.firstChild!==card)placeCard()})
   .observe(mkHost,{childList:true});
 
+/* Pass description. When you add more passes later, each one can have its own
+   title, tagline, perks and note like this. */
 const PERKS=
   '<li>🔑 Received unique referral code. New users enter it in the Terms &amp; Conditions and it is saved to their profile</li>'+
   '<li>🔓 Quests are visible in your Burrow</li>'+
   '<li>🌾 All quests are FREE to access</li>'+
   '<li>🌱 30% off every seed in the Market</li>';
+const TAGLINE='Lifetime pass · Free quests, 30% off seeds and your own referral code.';
+const NOTE='Tied to the wallet that buys it. It cannot be transferred or sold.';
+
+/* shared pieces used by the Market card and the details popup */
+function pillHtml(){
+  return has()?'<span class="pill g">✅ Owned</span>':'<span class="pill">Lifetime</span>';
+}
+function priceHtml(){
+  return has()?'':'<div class="ap-price">🪙 '+nf(PRICE)+' FIJI <span class="small">one-time</span></div>';
+}
+function ctlHtml(){
+  const w=wallet();
+  if(has()){
+    return '<span class="ap-code">'+esc(st.code)+'</span>'+
+      '<button class="btn sm alt" type="button" data-ap="copy">Copy code</button>';
+  }
+  return !w
+    ?'<button class="btn sm" type="button" data-ap="connect">Connect wallet</button>'
+    :'<button class="btn sm" type="button" data-ap="buy"'+((buying||!st)?' disabled':'')+'>'+
+      (buying?'Waiting for payment…':!st?'Checking…':'Buy Access Pass')+'</button>';
+}
 
 function paintCard(){
   const w=wallet(),key=['m',w||'',has()?st.code:(st?'n':'l'),buying?1:0,imgState,IMG].join('|');
   if(key===card.__k)return;
   card.__k=key;
-  let pill,price,act;
-  if(has()){
-    pill='<span class="pill g">✅ Owned</span>';
-    price='';
-    act='<div class="ap-act"><span class="ap-code">'+esc(st.code)+'</span>'+
-        '<button class="btn sm alt" type="button" data-ap="copy">Copy code</button></div>';
-  }else{
-    pill='<span class="pill">Lifetime</span>';
-    price='<div class="ap-price">🪙 '+nf(PRICE)+' FIJI <span class="small">one-time</span></div>';
-    act=!w
-      ?'<button class="btn sm" type="button" data-ap="connect">Connect wallet</button>'
-      :'<button class="btn sm" type="button" data-ap="buy"'+((buying||!st)?' disabled':'')+'>'+
-        (buying?'Waiting for payment…':!st?'Checking…':'Buy Access Pass')+'</button>';
-  }
-  card.innerHTML='<div class="sticker card ap">'+picHtml()+
-    '<div class="ap-body"><div class="ap-top"><h3>🎟️ Access Pass</h3>'+pill+'</div>'+price+
-    '<ul class="ap-list">'+PERKS+'</ul>'+
-    '<p class="ap-note">Tied to the wallet that buys it. It cannot be transferred or sold.</p>'+act+'</div></div>';
+  card.innerHTML='<div class="sticker card ap ap-compact">'+infoPicHtml()+
+    '<div class="ap-body"><div class="ap-top"><h3>🎟️ Access Pass</h3>'+pillHtml()+'</div>'+
+    priceHtml()+
+    '<p class="ap-tag">'+esc(TAGLINE)+'</p>'+
+    '<div class="ap-act">'+ctlHtml()+
+    '<button class="btn sm alt" type="button" data-ap="info">View perks</button></div></div></div>';
 }
+
+/* Details popup */
+const info=document.createElement('div');
+info.className='ap-md';
+info.id='apInfo';
+info.setAttribute('role','dialog');
+info.setAttribute('aria-modal','true');
+info.setAttribute('aria-label','Access Pass details');
+document.body.appendChild(info);
+
+function paintInfo(){
+  if(!info.classList.contains('on'))return;
+  const w=wallet(),key=['i',w||'',has()?st.code:(st?'n':'l'),buying?1:0,imgState,IMG].join('|');
+  if(key===info.__k)return;
+  info.__k=key;
+  info.innerHTML='<div class="sticker card ap-mbox">'+
+    '<div class="ap-top"><h3>🎟️ Access Pass</h3>'+pillHtml()+
+    '<button class="btn sm alt" type="button" data-ap="info-close" aria-label="Close">✕</button></div>'+
+    '<button type="button" class="ap-mpic" data-ap="zoom" aria-label="View Access Pass">'+imgTag('FIJI Access Pass',true)+'</button>'+
+    priceHtml()+
+    '<ul class="ap-list">'+PERKS+'</ul>'+
+    '<p class="ap-note">'+esc(NOTE)+'</p>'+
+    '<div class="ap-act">'+ctlHtml()+'</div></div>';
+}
+function openInfo(){
+  info.classList.add('on');
+  info.__k='';
+  paintInfo();
+}
+function closeInfo(){
+  info.classList.remove('on');
+}
+info.addEventListener('click',e=>{
+  if(e.target===info)return closeInfo();
+  onClick(e);
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&info.classList.contains('on')&&!document.querySelector('.ap-lb'))closeInfo();
+});
 
 const profHead=$('pfHead');
 let prof=null;
@@ -273,7 +356,7 @@ function paintMint(){
   }
 }
 
-function paint(){paintCard();paintProfile();paintBurrow();paintMint()}
+function paint(){paintCard();paintInfo();paintProfile();paintBurrow();paintMint()}
 
 async function loadStatus(force){
   const w=wallet();
@@ -341,12 +424,12 @@ function applyDisc(){
       if(q)q.dataset.price=n;
       const qty=Math.max(1,parseInt(q&&q.value,10)||1);
       b.textContent='Buy · '+nf(n*qty);
-      const info=row&&row.querySelector('.fm-info');
-      if(info){
+      const infoEl=row&&row.querySelector('.fm-info');
+      if(infoEl){
         const s=document.createElement('span');
         s.className='ap-off';
         s.textContent='🎟️ 30% off with Access Pass · was '+nf(orig)+' each';
-        info.appendChild(s);
+        infoEl.appendChild(s);
       }
     });
   }finally{discBusy=false}
@@ -530,7 +613,7 @@ async function buy(){
     console.warn('pass payment failed',e);
     if(TERMINAL.test(m))setPending(null);
     toast(e&&e.code===4001||/reject|denied|cancel/i.test(m)?'Payment cancelled. Nothing was sent.':m);
-  }finally{buying=false;card.__k='';paint()}
+  }finally{buying=false;card.__k='';info.__k='';paint()}
 }
 async function resume(){
   const p=getPending(),w=wallet();
@@ -552,6 +635,8 @@ function onClick(e){
   if(!b)return;
   const a=b.dataset.ap;
   if(a==='zoom')zoom();
+  else if(a==='info')openInfo();
+  else if(a==='info-close')closeInfo();
   else if(a==='copy'&&st&&st.code){copy(st.code);toast('Referral code copied 🔑')}
   else if(a==='connect'){if(typeof window.connect==='function')window.connect()}
   else if(a==='buy')buy();
@@ -564,7 +649,7 @@ setInterval(()=>{
   wrapPay();paintMint();placeCard();
   const w=wallet()||null;
   if(w!==lastW){
-    lastW=w;st=null;lastHas=false;lastSync=0;lastLoad=0;card.__k='';
+    lastW=w;st=null;lastHas=false;lastSync=0;lastLoad=0;card.__k='';info.__k='';
     if(prof)prof.__k='';
     if(bur)bur.__k='';
     changed();paint();
