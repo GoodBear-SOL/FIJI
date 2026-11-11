@@ -1,6 +1,7 @@
 (function(){
 'use strict';
 
+
 const C=window.FIJI_CORE||{};
 const $=id=>document.getElementById(id);
 const mkHost=$('mkInline'),mkPage=$('market');
@@ -34,7 +35,7 @@ const disc=n=>Math.floor((Number(n)*70+99)/100);
 const css=document.createElement('style');
 css.textContent=`
 .ap{display:flex;gap:16px;align-items:center;padding:14px;margin:0 0 14px}
-.ap-img{flex:none;width:170px;cursor:zoom-in;border:0;background:none;padding:0}
+.ap-img{flex:none;width:230px;cursor:zoom-in;border:0;background:none;padding:0}
 .ap-img img{display:block;width:100%;height:auto;border-radius:14px;border:3px solid var(--ink);box-shadow:0 4px 0 var(--ink)}
 .ap-img .ap-ph{display:flex;align-items:center;justify-content:center;aspect-ratio:3/2;font-size:44px;border:3px solid var(--ink);border-radius:14px;background:var(--sb)}
 .ap-body{flex:1;min-width:0}
@@ -52,11 +53,17 @@ css.textContent=`
 .ap-lb img{max-width:min(520px,100%);max-height:88vh;border-radius:18px;border:3px solid var(--ink)}
 #apProfile{margin-bottom:14px}
 #apProfile .ap{margin:0;padding:10px}
-#apProfile .ap-img{width:84px;cursor:zoom-in}
 #apProfile .ap-top h3{font-size:18px}
+.ap-img img,.ap-mint img,.ap-full img{max-width:100%;object-fit:contain}
+.ap-mint{grid-column:span 4;display:block;padding:0;margin:0;border:3px solid var(--ink);border-radius:14px;overflow:hidden;background:#fff;cursor:zoom-in;line-height:0;box-shadow:0 3px 0 var(--ink)}
+.ap-mint img{display:block;width:100%;height:auto}
+#apBurrow{margin:0 0 14px}
+#apBurrow .ap-full{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:12px}
+#apBurrow .ap-full .ap-pic{width:100%;max-width:260px;padding:0;border:0;background:none;cursor:zoom-in;line-height:0}
+#apBurrow .ap-full img{display:block;width:100%;height:auto;border-radius:14px;border:3px solid var(--ink);box-shadow:0 4px 0 var(--ink)}
 @media(max-width:760px){
- .ap{gap:10px;padding:10px;align-items:flex-start}
- .ap-img{width:84px}
+ .ap{gap:10px;padding:10px;flex-direction:column;align-items:stretch}
+ .ap-img{width:100%;max-width:360px;margin:0 auto}
  .ap-img .ap-ph{font-size:30px}
  .ap-top h3{font-size:17px}
  .ap-price{font-size:17px;margin:0 0 2px}
@@ -64,11 +71,9 @@ css.textContent=`
  .ap-note{font-size:10.5px;margin-bottom:6px}
  .ap-code{font-size:15px}
  .ap .btn{min-height:38px;padding:5px 12px;font-size:14px}
- #apProfile .ap-img{width:64px}
 }`;
 document.head.appendChild(css);
 
-/* ---------- helpers ---------- */
 function picHtml(){
   return '<button type="button" class="ap-img" data-ap="zoom" aria-label="View Access Pass">'+
     '<img src="'+IMG+'" alt="FIJI Access Pass"></button>';
@@ -139,7 +144,7 @@ function paintProfile(){
   try{if(st.since)since=new Date(st.since).toLocaleDateString()}catch(e){}
   const ref=st.referred_by_code?'<div class="small">Joined with referral code '+esc(st.referred_by_code)+'</div>':'';
   if(has()){
-    prof.innerHTML='<div class="sticker card ap">'+picHtml()+
+    prof.innerHTML='<div class="sticker card ap">'+
       '<div class="ap-body"><div class="ap-top"><h3>🎟️ Access Pass</h3><span class="pill g">✅ Active</span></div>'+
       '<div class="small">Bound to this wallet'+(since?' · since '+esc(since):'')+'</div>'+
       '<div class="ap-act" style="margin-top:6px"><span class="ap-code">'+esc(st.code)+'</span>'+
@@ -153,7 +158,59 @@ function paintProfile(){
   }
 }
 
-function paint(){paintCard();paintProfile()}
+const burrow=$('wallet');
+let bur=null;
+if(burrow){
+  bur=document.createElement('div');
+  bur.id='apBurrow';
+  const h2=burrow.querySelector(':scope > h2');
+  if(h2)h2.after(bur);else burrow.prepend(bur);
+  bur.addEventListener('click',e=>onClick(e));
+}
+function paintBurrow(){
+  if(!bur)return;
+  const w=wallet(),key=['b',w||'',has()?st.code:'-'].join('|');
+  if(key===bur.__k)return;
+  bur.__k=key;
+  if(!w||!has()){bur.innerHTML='';return}
+  bur.innerHTML='<div class="sticker card ap-full">'+
+    '<button type="button" class="ap-pic" data-ap="zoom" aria-label="View Access Pass"><img src="'+IMG+'" alt="FIJI Access Pass"></button>'+
+    '<div><span class="pill g">🎟️ Access Pass</span></div>'+
+    '<div class="ap-act"><span class="ap-code">'+esc(st.code)+'</span>'+
+    '<button class="btn sm alt" type="button" data-ap="copy">Copy code</button></div></div>';
+}
+
+let mintGrid=null,mintBound=false;
+function findMintGrid(){
+  if(mintGrid&&mintGrid.isConnected)return mintGrid;
+  const secs=document.querySelectorAll('#profile .pf-sec');
+  for(const s of secs){
+    const h=s.querySelector('h2');
+    if(h&&/mint passes/i.test(h.textContent)){mintGrid=s.querySelector('.pf-grid');break}
+  }
+  if(mintGrid&&!mintBound){mintBound=true;mintGrid.addEventListener('click',e=>onClick(e))}
+  return mintGrid;
+}
+function paintMint(){
+  const g=findMintGrid();
+  if(!g)return;
+  const t=g.querySelector('.ap-mint'),on=Boolean(wallet())&&has();
+  if(on&&!t){
+    const d=document.createElement('button');
+    d.type='button';d.className='ap-mint';d.dataset.ap='zoom';d.setAttribute('aria-label','View Access Pass');
+    d.innerHTML='<img src="'+IMG+'" alt="FIJI Access Pass">';
+    g.insertBefore(d,g.firstChild);
+    const ph=g.querySelector('.pf-ph');
+    if(ph)ph.remove();
+  }else if(!on&&t){
+    t.remove();
+    const ph=document.createElement('div');
+    ph.className='pf-ph';ph.setAttribute('aria-hidden','true');ph.textContent='?';
+    g.insertBefore(ph,g.firstChild);
+  }
+}
+
+function paint(){paintCard();paintProfile();paintBurrow();paintMint()}
 
 async function loadStatus(force){
   const w=wallet();
@@ -441,11 +498,12 @@ card.addEventListener('click',onClick);
 if(prof)prof.addEventListener('click',onClick);
 
 setInterval(()=>{
-  wrapPay();
+  wrapPay();paintMint();
   const w=wallet()||null;
   if(w!==lastW){
     lastW=w;st=null;lastHas=false;lastSync=0;lastLoad=0;card.__k='';
     if(prof)prof.__k='';
+    if(bur)bur.__k='';
     changed();paint();
     if(w)loadStatus(true);
     return;
