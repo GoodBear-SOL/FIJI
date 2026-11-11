@@ -18,6 +18,10 @@ const TK='fiji_quest_tok';
 const PAY_URL=C.CFG.SUPABASE_URL.replace(/\/+$/,'')+'/functions/v1/quest-pay';
 const ATA_PROGRAM='ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
 
+/* Access Pass (access-pass.js): owners see every quest and use them for free */
+const passOn=()=>Boolean(window.FIJI_PASS&&window.FIJI_PASS.has&&window.FIJI_PASS.has());
+const PASS_END='9999-12-31T00:00:00Z';
+
 const S={
   min_hold:1000000,
   treasury:'EZebVdUUxPYjUaBvrAewkAeDWXsw6pJ9tdhXQG6Z33mE',
@@ -117,6 +121,7 @@ root.innerHTML='<div class="small">Loading today\'s dish…</div>';
 const prod=id=>S.products.find(p=>p.id===id)||null;
 const nowMs=()=>Date.now()+S.offset;
 function subOf(id){
+  if(passOn())return {quest_id:id,expires_at:PASS_END,pass:true};
   const s=S.subs.find(x=>x.quest_id===id);
   if(!s)return null;
   return Date.parse(s.expires_at)>nowMs()?s:null;
@@ -193,9 +198,10 @@ async function loadStatus(force){
 function renderKey(){
   const w=wallet()||'';
   const subs=S.subs.map(s=>s.quest_id+s.expires_at).join(',');
-  const state=!w?'nw':hold===null?(holdErr?'err':'chk'):hold<S.min_hold?'low':'ok';
+  const pass=passOn();
+  const state=!w?'nw':pass?'ok':hold===null?(holdErr?'err':'chk'):hold<S.min_hold?'low':'ok';
   const act=state==='ok'?subs:'';
-  return [state,view,act,buying?1:0,S.failed?1:0,state==='low'?Math.floor(hold):''].join('|');
+  return [state,view,act,buying?1:0,S.failed?1:0,pass?1:0,state==='low'?Math.floor(hold):''].join('|');
 }
 function render(){
   const k=renderKey();
@@ -210,23 +216,25 @@ function render(){
       '<button class="btn" type="button" data-act="connect">Connect wallet</button></div>';
     return;
   }
-  if(hold===null&&holdErr){
-    body.innerHTML='<div class="qh-lock"><div class="em">💧</div><h3>Could not check your FIJI</h3><p class="small">The network is busy. Try again.</p><br>'+
-      '<button class="btn" type="button" data-act="retry">Try again</button></div>';
-    return;
-  }
-  if(hold===null){
-    body.innerHTML='<div class="qh-lock"><div class="em">🔎</div><h3>Checking your FIJI…</h3></div>';
-    return;
-  }
-  if(hold<S.min_hold){
-    const pct=Math.min(100,hold/S.min_hold*100);
-    body.innerHTML='<div class="qh-lock"><div class="em">🔒</div><h3>Quests are for FIJI holders</h3>'+
-      '<p>Hold at least <b>'+nf(S.min_hold)+' FIJI</b> to see the available quests.</p>'+
-      '<div class="qh-bar"><i style="width:'+pct.toFixed(1)+'%"></i></div>'+
-      '<p class="small">You hold '+nf(Math.floor(hold))+' FIJI</p><br>'+
-      '<button class="btn" type="button" data-act="trade">Get FIJI</button></div>';
-    return;
+  if(!passOn()){
+    if(hold===null&&holdErr){
+      body.innerHTML='<div class="qh-lock"><div class="em">💧</div><h3>Could not check your FIJI</h3><p class="small">The network is busy. Try again.</p><br>'+
+        '<button class="btn" type="button" data-act="retry">Try again</button></div>';
+      return;
+    }
+    if(hold===null){
+      body.innerHTML='<div class="qh-lock"><div class="em">🔎</div><h3>Checking your FIJI…</h3></div>';
+      return;
+    }
+    if(hold<S.min_hold){
+      const pct=Math.min(100,hold/S.min_hold*100);
+      body.innerHTML='<div class="qh-lock"><div class="em">🔒</div><h3>Quests are for FIJI holders</h3>'+
+        '<p>Hold at least <b>'+nf(S.min_hold)+' FIJI</b> to see the available quests.</p>'+
+        '<div class="qh-bar"><i style="width:'+pct.toFixed(1)+'%"></i></div>'+
+        '<p class="small">You hold '+nf(Math.floor(hold))+' FIJI</p><br>'+
+        '<button class="btn" type="button" data-act="trade">Get FIJI</button></div>';
+      return;
+    }
   }
   if(S.failed){
     body.innerHTML='<div class="qh-lock"><div class="em">💧</div><h3>Quests are not ready yet</h3><p class="small">Check back soon.</p></div>';
@@ -237,22 +245,32 @@ function render(){
 }
 
 function renderBoard(){
+  const pass=passOn();
   const cards=S.products.map(p=>{
     const s=subOf(p.id);
     const status=s
-      ?'<span class="pill g">✅ Active</span><span class="pill qh-left" data-end="'+Date.parse(s.expires_at)+'">…</span>'
+      ?(s.pass
+        ?'<span class="pill g">🎟️ Free with Access Pass</span>'
+        :'<span class="pill g">✅ Active</span><span class="pill qh-left" data-end="'+Date.parse(s.expires_at)+'">…</span>')
       :'<span class="pill">🔒 Not purchased</span>';
+    const priceRow=pass
+      ?'<span class="pill">🪙 Free</span><span class="pill">♾️ No expiry</span>'
+      :'<span class="pill">🪙 '+nf(p.price_fiji)+' FIJI</span><span class="pill">⏳ '+nf(p.days)+' days</span>';
     return '<div class="qh-q'+(s?' on':'')+'">'+
       '<div class="em">'+esc(p.emoji||'📜')+'</div>'+
       '<h3>'+esc(p.name)+'</h3>'+
       '<p>'+esc(p.blurb||'')+'</p>'+
-      '<div class="row"><span class="pill">🪙 '+nf(p.price_fiji)+' FIJI</span><span class="pill">⏳ '+nf(p.days)+' days</span></div>'+
+      '<div class="row">'+priceRow+'</div>'+
       '<div class="row">'+status+'</div>'+
       '<button class="btn" type="button" data-act="open" data-q="'+esc(p.id)+'">'+(s?'Open quest':'View quest')+'</button></div>';
   }).join('');
-  body.innerHTML=
-    '<div class="qh-top"><span class="pill g">✅ Holder unlocked</span><span class="pill">'+nf(Math.floor(hold))+' FIJI</span></div>'+
-    '<p class="small" style="margin-bottom:12px">Pick a quest. Each quest is a '+nf((S.products[0]||{}).days||7)+'-day pass paid in FIJI. Quest rewards are BunXP and count toward your Phase 2 BunXP.</p>'+
+  const top=pass
+    ?'<div class="qh-top"><span class="pill g">🎟️ Access Pass</span></div>'
+    :'<div class="qh-top"><span class="pill g">✅ Holder unlocked</span><span class="pill">'+nf(Math.floor(hold))+' FIJI</span></div>';
+  const intro=pass
+    ?'<p class="small" style="margin-bottom:12px">Your Access Pass unlocks every quest for free. Quest rewards are BunXP and count toward your Phase 2 BunXP.</p>'
+    :'<p class="small" style="margin-bottom:12px">Pick a quest. Each quest is a '+nf((S.products[0]||{}).days||7)+'-day pass paid in FIJI. Quest rewards are BunXP and count toward your Phase 2 BunXP.</p>';
+  body.innerHTML=top+intro+
     '<div class="qh-grid">'+cards+'</div>'+
     '<p class="qh-note">FIJI payments are final and go to the project treasury. BunXP is for gameplay only and has no cash value. Future token or NFT rewards are not guaranteed.</p>';
   tick();
@@ -266,14 +284,14 @@ function renderDetail(id){
     '<span class="grow"></span><span class="pill">'+esc(p.emoji||'')+' '+esc(p.name)+'</span></div>';
 
   if(!s){
-    const can=hold>=Number(p.price_fiji);
+    const can=hold!==null&&hold>=Number(p.price_fiji);
     body.innerHTML=back+
       '<div class="qh-pay"><div class="em">'+esc(p.emoji||'📜')+'</div><h3>'+esc(p.name)+'</h3>'+
       '<p class="small">'+esc(p.blurb||'')+'</p>'+
       '<div class="qh-price">🪙 '+nf(p.price_fiji)+' FIJI</div>'+
       '<div class="small">for '+nf(p.days)+' days of access</div>'+
       '<ul class="qh-list">'+detailPerks(id,p)+'</ul>'+
-      '<p class="small">Your balance: '+nf(Math.floor(hold))+' FIJI</p><br>'+
+      '<p class="small">Your balance: '+nf(Math.floor(hold||0))+' FIJI</p><br>'+
       '<button class="btn full" type="button" data-act="buy" data-q="'+esc(id)+'"'+((buying||!can)?' disabled':'')+'>'+
         (buying?'Waiting for payment…':can?'Subscribe · '+nf(p.price_fiji)+' FIJI':'Not enough FIJI')+'</button>'+
       '<p class="qh-note">Your wallet will ask you to approve a FIJI transfer to the project treasury. FIJI never needs your private key.</p></div>';
@@ -281,7 +299,9 @@ function renderDetail(id){
   }
 
   body.innerHTML=back+
-    '<div class="qh-sub"><span class="pill g">✅ Active</span><b>Access ends in <span class="qh-left" data-end="'+Date.parse(s.expires_at)+'">…</span></b>'+
+    '<div class="qh-sub">'+(s.pass
+      ?'<span class="pill g">🎟️ Access Pass</span><b>Included free with your Access Pass</b>'
+      :'<span class="pill g">✅ Active</span><b>Access ends in <span class="qh-left" data-end="'+Date.parse(s.expires_at)+'">…</span></b>')+
     '</div>'+
     '<div id="qhHost"></div>';
   const host=$('qhHost');
@@ -698,6 +718,9 @@ function onClick(e){
 }
 body.addEventListener('click',onClick);
 root.addEventListener('click',onClick);
+
+/* Access Pass bought, restored or lost: redraw the board */
+document.addEventListener('fiji:pass',()=>{lastKey='';render();if(passOn())loadStatus(true)});
 
 let wasOn=false;
 setInterval(()=>{
