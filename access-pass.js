@@ -29,8 +29,8 @@ const IMG_VER='?v=4';
 const IMG_CANDIDATES=[
   './accesspass.png'
 ];
-let IMG=IMG_CANDIDATES[0]+IMG_VER;  
-let imgState='try';               
+let IMG=IMG_CANDIDATES[0]+IMG_VER;
+let imgState='try';
 
 let st=null,loading=false,buying=false,resuming=false,lastW=null,lastKey='',lastHas=false,lastSync=0,lastLoad=0;
 
@@ -62,27 +62,15 @@ css.textContent=`
 .ap-lb-x{position:absolute;top:calc(12px + env(safe-area-inset-top));right:14px;width:44px;height:44px;border-radius:50%;border:3px solid var(--ink);background:var(--sun);color:var(--ink);font:700 20px Fredoka,sans-serif;cursor:pointer;box-shadow:0 3px 0 var(--ink)}
 .ap-lb-cap{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom));left:0;right:0;text-align:center;color:#fff;font:600 13px Fredoka,sans-serif;opacity:.8;pointer-events:none}
 
-/* Profile panel */
-#apProfile{margin-bottom:14px}
-#apProfile .ap{margin:0;padding:12px}
-#apProfile .ap-top h3{font-size:19px}
-#apProfile .ap-img{width:240px}
-
 /* Profile > Mint Passes tile: the full card, full width of its box */
 .ap-mint{grid-column:1/-1;display:block;padding:0;margin:0;border:3px solid var(--ink);border-radius:14px;overflow:hidden;background:var(--sb);cursor:zoom-in;line-height:0;box-shadow:0 3px 0 var(--ink);position:relative;width:100%;max-width:460px}
 .ap-mint img{display:block;width:100%;height:auto;aspect-ratio:2/1;object-fit:cover}
 #profile .pf-grid:has(.ap-mint){display:block}
 #profile .pf-grid:has(.ap-mint) .pf-ph{display:inline-flex;width:56px;margin:10px 10px 0 0}
 
-/* Burrow panel */
-#apBurrow{margin:0 0 14px}
-#apBurrow .ap-full{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:14px}
-#apBurrow .ap-pic{width:100%;max-width:460px;padding:0;border:0;background:none;cursor:zoom-in;line-height:0;position:relative}
-#apBurrow .ap-pic img{display:block;width:100%;height:auto;aspect-ratio:2/1;object-fit:cover;border-radius:16px;border:3px solid var(--ink);box-shadow:0 4px 0 var(--ink);background:var(--sb)}
-
 @media(max-width:760px){
  .ap{gap:10px;padding:12px;flex-direction:column;align-items:stretch}
- .ap-img,#apProfile .ap-img{width:100%;max-width:none;margin:0 auto}
+ .ap-img{width:100%;max-width:none;margin:0 auto}
  .ap-ph{font-size:34px}
  .ap-top h3{font-size:18px}
  .ap-price{font-size:18px;margin:0 0 2px}
@@ -90,25 +78,21 @@ css.textContent=`
  .ap-note{font-size:11px;margin-bottom:6px}
  .ap-code{font-size:15px}
  .ap .btn{min-height:40px;padding:6px 14px;font-size:15px}
- #apBurrow .ap-full{padding:10px}
- #apBurrow .ap-pic{max-width:none}
  .ap-mint{max-width:none}
  .ap-lb{padding:8px}
  .ap-lb img{width:100%;max-height:82vh}
 }
 
-/* Compact Market card (small picture, perks are in the details popup) */
+/* Compact Market card (picture + title + price + action only; perks are in the popup) */
 .ap.ap-compact{padding:10px 12px;gap:14px}
 .ap.ap-compact .ap-img{width:170px}
 .ap.ap-compact .ap-top h3{font-size:19px}
-.ap.ap-compact .ap-price{font-size:19px;margin:0 0 2px}
-.ap-tag{font-size:13px;opacity:.75;margin:0 0 8px;line-height:1.3}
+.ap.ap-compact .ap-price{font-size:19px;margin:0 0 8px}
 @media(max-width:760px){
  .ap.ap-compact{flex-direction:row;align-items:center;gap:10px;padding:10px}
  .ap.ap-compact .ap-img{width:118px;flex:none;margin:0}
  .ap.ap-compact .ap-top h3{font-size:16px}
  .ap.ap-compact .ap-price{font-size:16px}
- .ap.ap-compact .ap-tag{display:none}
  .ap.ap-compact .ap-zoomtip{font-size:10px;padding:0 7px}
 }
 
@@ -131,9 +115,7 @@ function imgTag(alt,tip){
   if(imgState==='fail')return '<span class="ap-ph" role="img" aria-label="'+esc(alt)+'">🎟️</span>';
   return '<img src="'+esc(IMG)+'" alt="'+esc(alt)+'" decoding="async">'+(tip?'<span class="ap-zoomtip">🔍</span>':'');
 }
-function picHtml(){
-  return '<button type="button" class="ap-img" data-ap="zoom" aria-label="View Access Pass">'+imgTag('FIJI Access Pass',true)+'</button>';
-}
+
 function infoPicHtml(){
   return '<button type="button" class="ap-img" data-ap="info" aria-label="View Access Pass details">'+imgTag('FIJI Access Pass',true)+'</button>';
 }
@@ -174,12 +156,11 @@ function probe(i){
 }
 function repaintAll(){
   if(card)card.__k='';
-  if(prof)prof.__k='';
-  if(bur)bur.__k='';
   if(info)info.__k='';
   if(mintGrid){const t=mintGrid.querySelector('.ap-mint');if(t)t.remove()}
   paint();
 }
+
 
 const card=document.createElement('div');
 card.id='apCard';
@@ -190,17 +171,13 @@ placeCard();
 new MutationObserver(()=>{if(card.parentElement!==mkHost||mkHost.firstChild!==card)placeCard()})
   .observe(mkHost,{childList:true});
 
-/* Pass description. When you add more passes later, each one can have its own
-   title, tagline, perks and note like this. */
 const PERKS=
   '<li>🔑 Received unique referral code. New users enter it in the Terms &amp; Conditions and it is saved to their profile</li>'+
   '<li>🔓 Quests are visible in your Burrow</li>'+
   '<li>🌾 All quests are FREE to access</li>'+
   '<li>🌱 30% off every seed in the Market</li>';
-const TAGLINE='Lifetime pass · Free quests, 30% off seeds and your own referral code.';
 const NOTE='Tied to the wallet that buys it. It cannot be transferred or sold.';
 
-/* shared pieces used by the Market card and the details popup */
 function pillHtml(){
   return has()?'<span class="pill g">✅ Owned</span>':'<span class="pill">Lifetime</span>';
 }
@@ -223,15 +200,14 @@ function paintCard(){
   const w=wallet(),key=['m',w||'',has()?st.code:(st?'n':'l'),buying?1:0,imgState,IMG].join('|');
   if(key===card.__k)return;
   card.__k=key;
+  
   card.innerHTML='<div class="sticker card ap ap-compact">'+infoPicHtml()+
     '<div class="ap-body"><div class="ap-top"><h3>🎟️ Access Pass</h3>'+pillHtml()+'</div>'+
     priceHtml()+
-    '<p class="ap-tag">'+esc(TAGLINE)+'</p>'+
-    '<div class="ap-act">'+ctlHtml()+
-    '<button class="btn sm alt" type="button" data-ap="info">View perks</button></div></div></div>';
+    '<div class="ap-act">'+ctlHtml()+'</div></div></div>';
 }
 
-/* Details popup */
+
 const info=document.createElement('div');
 info.className='ap-md';
 info.id='apInfo';
@@ -270,59 +246,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&info.classList.contains('on')&&!document.querySelector('.ap-lb'))closeInfo();
 });
 
-const profHead=$('pfHead');
-let prof=null;
-if(profHead){
-  prof=document.createElement('div');
-  prof.id='apProfile';
-  profHead.after(prof);
-}
-function paintProfile(){
-  if(!prof)return;
-  const w=wallet(),key=['p',w||'',st?JSON.stringify(st):'-',imgState,IMG].join('|');
-  if(key===prof.__k)return;
-  prof.__k=key;
-  if(!w||!st){prof.innerHTML='';return}
-  let since='';
-  try{if(st.since)since=new Date(st.since).toLocaleDateString()}catch(e){}
-  const ref=st.referred_by_code?'<div class="small">Joined with referral code '+esc(st.referred_by_code)+'</div>':'';
-  if(has()){
-    prof.innerHTML='<div class="sticker card ap">'+picHtml()+
-      '<div class="ap-body"><div class="ap-top"><h3>🎟️ Access Pass</h3><span class="pill g">✅ Active</span></div>'+
-      '<div class="small">Bound to this wallet'+(since?' · since '+esc(since):'')+'</div>'+
-      '<div class="ap-act" style="margin-top:6px"><span class="ap-code">'+esc(st.code)+'</span>'+
-      '<button class="btn sm alt" type="button" data-ap="copy">Copy</button></div>'+
-      '<div class="small" style="margin-top:4px">👥 '+nf(st.referrals)+' player'+(Number(st.referrals)===1?'':'s')+' joined with your code</div>'+
-      ref+'</div></div>';
-  }else{
-    prof.innerHTML='<div class="sticker card ap"><div class="ap-body"><div class="ap-top"><h3>🎟️ Access Pass</h3><span class="pill">Not owned</span></div>'+
-      '<div class="small">Free quests, 30% off seeds and your own referral code.</div>'+
-      '<div class="ap-act" style="margin-top:6px"><button class="btn sm" type="button" data-ap="market">Get it in Market</button></div>'+ref+'</div></div>';
-  }
-}
-
-const burrow=$('wallet');
-let bur=null;
-if(burrow){
-  bur=document.createElement('div');
-  bur.id='apBurrow';
-  const h2=burrow.querySelector(':scope > h2');
-  if(h2)h2.after(bur);else burrow.prepend(bur);
-  bur.addEventListener('click',e=>onClick(e));
-}
-function paintBurrow(){
-  if(!bur)return;
-  const w=wallet(),key=['b',w||'',has()?st.code:'-',imgState,IMG].join('|');
-  if(key===bur.__k)return;
-  bur.__k=key;
-  if(!w||!has()){bur.innerHTML='';return}
-  bur.innerHTML='<div class="sticker card ap-full">'+
-    '<button type="button" class="ap-pic" data-ap="zoom" aria-label="View Access Pass">'+imgTag('FIJI Access Pass',true)+'</button>'+
-    '<div><span class="pill g">🎟️ Access Pass</span></div>'+
-    '<div class="ap-act"><span class="ap-code">'+esc(st.code)+'</span>'+
-    '<button class="btn sm alt" type="button" data-ap="copy">Copy code</button></div></div>';
-}
-
+/* ===== Profile: pass image appears ONLY in the Mint Passes section ===== */
 let mintGrid=null,mintBound=false;
 function findMintGrid(){
   if(mintGrid&&mintGrid.isConnected)return mintGrid;
@@ -356,7 +280,7 @@ function paintMint(){
   }
 }
 
-function paint(){paintCard();paintInfo();paintProfile();paintBurrow();paintMint()}
+function paint(){paintCard();paintInfo();paintMint()}
 
 async function loadStatus(force){
   const w=wallet();
@@ -640,25 +564,22 @@ function onClick(e){
   else if(a==='copy'&&st&&st.code){copy(st.code);toast('Referral code copied 🔑')}
   else if(a==='connect'){if(typeof window.connect==='function')window.connect()}
   else if(a==='buy')buy();
-  else if(a==='market'){if(typeof window.go==='function')window.go('market')}
 }
 card.addEventListener('click',onClick);
-if(prof)prof.addEventListener('click',onClick);
 
 setInterval(()=>{
   wrapPay();paintMint();placeCard();
   const w=wallet()||null;
   if(w!==lastW){
     lastW=w;st=null;lastHas=false;lastSync=0;lastLoad=0;card.__k='';info.__k='';
-    if(prof)prof.__k='';
-    if(bur)bur.__k='';
     changed();paint();
     if(w)loadStatus(true);
     return;
   }
   if(!w||document.hidden)return;
   const on=id=>{const e=document.getElementById(id);return Boolean(e&&e.classList.contains('on'))};
-  const watching=mkPage.classList.contains('on')||on('profile')||on('wallet');
+  
+  const watching=mkPage.classList.contains('on')||on('profile');
   if(watching&&Date.now()-lastLoad>30000)loadStatus(true);
 },1000);
 setInterval(resume,6000);
