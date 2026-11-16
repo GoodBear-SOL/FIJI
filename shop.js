@@ -160,6 +160,37 @@ async function act(fn,args,okMsg){
   }finally{busy=false}
 }
 
+
+async function waterAll(plot){
+  const w=wallet();
+  if(!w)return toast('Connect your wallet first');
+  if(busy||!st||!cat)return;
+  const p=st.plots.find(x=>Number(x.plot_no)===Number(plot));
+  const c=p&&p.crop_id?crop(p.crop_id):null;
+  if(!p||!c)return;
+  const need=Math.max(1,Number(c.waterings)||1)-(Number(p.waterings_done)||0);
+  const n=Math.min(need,own('water'));
+  if(need<1)return;
+  if(n<1)return toast('You need water. Buy some in the Market 💧');
+  busy=true;
+  let done=0,failedMsg='';
+  try{
+    for(let i=0;i<n;i++){
+      if(w!==wallet())break;
+      const {data,error}=await db().rpc('fiji_farm_water',{p_wallet:w,p_plot:Number(plot)});
+      if(error)throw error;
+      setState(data);
+      done++;
+    }
+  }catch(e){failedMsg=errMsg(e)}
+  finally{busy=false}
+  if(failedMsg&&!done)return toast(failedMsg);
+  const left=Math.max(0,need-done);
+  toast(failedMsg?('Watered '+done+'× 💧 · '+failedMsg)
+    :left>0?('Watered '+done+'× 💧 Add more water to finish this plant')
+    :('Fully watered 💧'+(done>1?' ('+done+' waters used)':'')));
+}
+
 async function edge(body){
   const r=await fetch(EDGE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   let j={};
@@ -327,6 +358,34 @@ css.textContent=`
 .fm-inline .fm-body{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
 .fm-inline .fm-soon,.fm-inline .fm-empty,.fm-inline .fm-sub{grid-column:1/-1}
 @media(prefers-reduced-motion:reduce){.fm-plot.ready .fm-pic{animation:none}}
+
+.fm-tiles{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.fm-tile{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;padding:10px 6px;background:var(--soft);border:3px solid var(--ink);border-radius:18px;box-shadow:0 4px 0 var(--ink);min-width:0;cursor:pointer;font:inherit;color:inherit;-webkit-tap-highlight-color:transparent}
+.fm-tile:active{transform:translateY(2px);box-shadow:0 2px 0 var(--ink)}
+.fm-tile b{font:600 15px Fredoka,sans-serif;line-height:1.15}
+.fm-tile .fm-tp{font:700 15px Fredoka,sans-serif;display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center}
+.fm-tile .fm-tp s{opacity:.55;font-weight:600;font-size:12px}
+.fm-tile .fm-tp .bun-icon{width:16px;height:16px}
+.fm-tile .fm-off{font:600 11px Fredoka,sans-serif;color:var(--upi)}
+.fm-tile .small{font-size:11px;opacity:.75}
+.fm-im{position:fixed;inset:0;background:rgba(18,48,92,.5);z-index:470;display:none;align-items:center;justify-content:center;padding:16px}
+.fm-im.on{display:flex}
+.fm-imbox{width:100%;max-width:400px;max-height:92vh;overflow-y:auto;padding:16px;background:var(--bg);text-align:center;animation:fmPop .18s ease-out}
+.fm-imtop{display:flex;justify-content:flex-end}
+.fm-imbox .fm-pic{width:84px;height:84px}
+.fm-imbox h3{margin:6px 0 2px;font-size:24px}
+.fm-qty{display:flex;align-items:center;justify-content:center;gap:10px;margin:12px 0}
+.fm-qty .btn{min-width:44px;padding:4px 0}
+.fm-qty input{width:72px;margin:0;text-align:center}
+.fm-sum{background:#fff;border:2.5px solid var(--ink);border-radius:16px;padding:8px 12px;display:grid;gap:4px;text-align:left}
+.fm-sum div{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:14px}
+.fm-sum .fm-dc{color:var(--upi)}
+.fm-sum .fm-tot{border-top:2px dashed var(--line);padding-top:6px;margin-top:2px;font:700 20px Fredoka,sans-serif}
+.fm-sum .fm-tot span{display:flex;align-items:center;gap:4px}
+@media(max-width:760px){
+ .fm-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .fm-im{align-items:flex-end;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
+}
 `;
 document.head.appendChild(css);
 
@@ -458,11 +517,30 @@ function headHtml(title,noClose){
   const bal=st?'<span class="pill"><img src="./bun-coin.png" class="bun-icon" alt=""> '+fmtN(st.points)+' BUN</span>':'<span class="pill">Connect wallet</span>';
   return '<div class="fm-head"><h3>'+title+'</h3>'+bal+(noClose?'':'<button class="btn sm alt" type="button" data-a="close" aria-label="Close">✕</button>')+'</div>';
 }
-function buyRow(o){
-  return '<div class="fm-row">'+pic(o.img,o.emoji)+
-    '<div class="fm-info"><b>'+esc(o.name)+'</b><span>'+o.l1+'</span><span>'+o.l2+'</span></div>'+
-    '<div class="fm-buy"><input class="fm-q" type="number" min="1" max="99" value="1" inputmode="numeric" data-q="'+esc(o.id)+'" data-price="'+o.price+'">'+
-    '<button class="btn sm" type="button" data-a="buy" data-item="'+esc(o.id)+'" data-price="'+o.price+'">Buy · '+fmtN(o.price)+'</button></div></div>';
+const passOn=()=>Boolean(window.FIJI_PASS&&window.FIJI_PASS.has&&window.FIJI_PASS.has());
+const discOf=n=>{const P=window.FIJI_PASS;return P&&typeof P.disc==='function'?P.disc(n):Math.floor((Number(n)*70+99)/100)};
+function itemInfo(id){
+  if(id==='water'){
+    const w=waterItem();
+    return {id,seed:false,name:w.name,emoji:w.emoji,img:w.img,orig:Number(w.price_bun)||0,
+      desc:'Used to water your plants.',have:own('water')};
+  }
+  const c=crop(String(id).slice(5));
+  if(!c)return null;
+  return {id,seed:true,name:c.name+' seed',emoji:c.seed_emoji,img:c.seed_img,orig:Number(c.seed_price_bun)||0,
+    desc:Number(c.waterings)+' watering'+(Number(c.waterings)===1?'':'s')+' · ready '+c.grow_hours+'h after the last one.',
+    have:own(id)};
+}
+const unitOf=i=>i.seed&&passOn()?discOf(i.orig):i.orig;
+function itemTile(id){
+  const i=itemInfo(id);
+  if(!i)return '';
+  const u=unitOf(i),off=u!==i.orig;
+  return '<button type="button" class="fm-tile" data-a="item" data-item="'+esc(id)+'">'+pic(i.img,i.emoji)+
+    '<b>'+esc(i.name)+'</b>'+
+    '<span class="fm-tp"><img src="./bun-coin.png" class="bun-icon" alt="">'+(off?'<s>'+fmtN(i.orig)+'</s>':'')+fmtN(u)+'</span>'+
+    (off?'<span class="fm-off">🎟️ 30% off</span>':'')+
+    '<span class="small">You have: '+fmtN(i.have)+'</span></button>';
 }
 function vegBody(){
   if(phaseEnded())return '<div class="fm-soon"><b>Player market closed</b><p>Vegetables are no longer sold between players. You can still buy seeds and water, and burn your harvest for BUN in the 🔥 Burn tab.</p></div>';
@@ -541,17 +619,12 @@ function marketBody(){
   if(view.tab==='water'){
     const w=waterItem();
     return '<div class="fm-soon"><b>Water is paid with real BUN</b><p>The BUN is sent from your wallet to the project wallet.</p></div>'+
-      buyRow({id:'water',img:w.img,emoji:w.emoji,name:w.name,price:Number(w.price_bun)||0,
-      l1:'Used to water your plants · price in BUN tokens',l2:'You have: '+fmtN(own('water'))});
+      '<div class="fm-tiles">'+itemTile('water')+'</div>';
   }
   if(view.tab==='veg')return vegBody();
   if(view.tab==='sell')return sellBody();
   const seedNote='<div class="fm-soon"><b>Seeds are paid with real BUN</b><p>The BUN is sent from your wallet to the project wallet. Make sure you hold enough BUN tokens.</p></div>';
-  return seedNote+cat.crops.map(c=>buyRow({
-    id:'seed:'+c.id,img:c.seed_img,emoji:c.seed_emoji,name:c.name+' seed',price:Number(c.seed_price_bun)||0,
-    l1:esc(c.waterings)+' watering'+(c.waterings===1?'':'s')+' · ready '+esc(c.grow_hours)+'h after the last one',
-    l2:'You have: '+fmtN(own('seed:'+c.id))+' · price in BUN tokens'
-  })).join('');
+  return seedNote+'<div class="fm-tiles">'+cat.crops.map(c=>itemTile('seed:'+c.id)).join('')+'</div>';
 }
 function pickBody(){
   const seeds=inventoryItems().filter(i=>i.id.indexOf('seed:')===0);
@@ -625,12 +698,86 @@ function qtyOf(b){
   return Math.min(maxQ,Math.max(1,parseInt(q&&q.value,10)||1));
 }
 
+
+const im=document.createElement('div');
+im.className='fm-im';
+im.innerHTML='<div class="sticker fm-imbox" role="dialog" aria-modal="true" aria-label="Item details"></div>';
+document.body.appendChild(im);
+const imBox=im.firstChild;
+let imSel=null;
+const imQty=()=>{const q=imBox.querySelector('#fmIq');return Math.min(99,Math.max(1,parseInt(q&&q.value,10)||1))};
+function imSums(){
+  const i=imSel&&itemInfo(imSel);
+  if(!i)return;
+  const qty=imQty(),u=unitOf(i),off=u!==i.orig;
+  const set=(id,t)=>{const e=imBox.querySelector('#'+id);if(e&&e.textContent!==t)e.textContent=t};
+  set('fmImQ',fmtN(qty));
+  set('fmImTot',fmtN(u*qty));
+  if(off)set('fmImSave','-'+fmtN((i.orig-u)*qty));
+  const b=imBox.querySelector('[data-im=buy]');
+  if(b)b.textContent='Buy · '+fmtN(u*qty)+' BUN';
+}
+function paintItem(){
+  const i=imSel&&itemInfo(imSel);
+  if(!i){closeItem();return}
+  const u=unitOf(i),off=u!==i.orig;
+  const keep=imBox.querySelector('#fmIq');
+  const qv=keep?imQty():1;
+  imBox.innerHTML=
+    '<div class="fm-imtop"><button class="btn sm alt" type="button" data-im="close" aria-label="Close">✕</button></div>'+
+    pic(i.img,i.emoji,'big')+
+    '<h3>'+esc(i.name)+'</h3>'+
+    '<p class="small">'+esc(i.desc)+'</p>'+
+    '<p class="small">You have: '+fmtN(i.have)+'</p>'+
+    '<div class="fm-qty"><button class="btn sm alt" type="button" data-im="dec" aria-label="Less">−</button>'+
+    '<input id="fmIq" type="number" min="1" max="99" value="'+qv+'" inputmode="numeric">'+
+    '<button class="btn sm alt" type="button" data-im="inc" aria-label="More">+</button></div>'+
+    '<div class="fm-sum">'+
+      '<div><span>Price each</span><span><img src="./bun-coin.png" class="bun-icon" alt=""> '+(off?'<s style="opacity:.55">'+fmtN(i.orig)+'</s> ':'')+fmtN(u)+'</span></div>'+
+      '<div><span>Quantity</span><span id="fmImQ">1</span></div>'+
+      (off?'<div class="fm-dc"><span>🎟️ Access Pass 30% off</span><span id="fmImSave">-0</span></div>':'')+
+      '<div class="fm-tot"><span>Total</span><span><img src="./bun-coin.png" class="bun-icon" alt=""> <span id="fmImTot">0</span> BUN</span></div>'+
+    '</div>'+
+    '<p class="small" style="margin-top:8px">Paid in BUN from your wallet to the project wallet. Payments are final.</p>'+
+    '<div class="fm-cfacts"><button class="btn alt" type="button" data-im="close">Cancel</button>'+
+    '<button class="btn" type="button" data-im="buy">Buy</button></div>';
+  imSums();
+}
+function openItem(id){
+  if(!itemInfo(id))return;
+  imSel=id;
+  paintItem();
+  im.classList.add('on');
+}
+function closeItem(){im.classList.remove('on');imSel=null}
+im.addEventListener('click',e=>{
+  if(e.target===im)return closeItem();
+  const b=e.target.closest('[data-im]');
+  if(!b)return;
+  const a=b.dataset.im,q=imBox.querySelector('#fmIq');
+  if(a==='close')return closeItem();
+  if(a==='inc'||a==='dec'){if(q)q.value=Math.min(99,Math.max(1,imQty()+(a==='inc'?1:-1)));return imSums()}
+  if(a==='buy'){
+    const i=imSel&&itemInfo(imSel);
+    if(!i)return;
+    if(!wallet())return toast('Connect your wallet first');
+    if(!window.FIJI_SEEDPAY)return toast('Payments are still loading. Try again in a moment 🌱');
+    const qty=imQty();
+    closeItem();
+    window.FIJI_SEEDPAY.buy({item:i.id,name:i.name,emoji:i.emoji,qty,unit:i.orig,confirmed:true});
+  }
+});
+im.addEventListener('input',e=>{if(e.target&&e.target.id==='fmIq')imSums()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&im.classList.contains('on'))closeItem()});
+document.addEventListener('fiji:pass',()=>{if(im.classList.contains('on'))paintItem()});
+
 async function onClick(e){
   const b=e.target.closest('[data-a]');
   if(!b)return;
   const a=b.dataset.a,plot=Number(b.dataset.plot);
   if(a==='market')return openModal('market','seeds');
   if(a==='market-water')return openModal('market','water');
+  if(a==='item')return openItem(b.dataset.item);
   if(a==='close')return closeModal();
   if(a==='tab'){
     view.tab=b.dataset.tab;renderModal();
@@ -715,7 +862,7 @@ async function onClick(e){
     if(r)closeModal();
     return;
   }
-  if(a==='water')return void act('fiji_farm_water',{p_plot:plot},'Watered 💧');
+  if(a==='water')return void waterAll(plot);
   
   if(a==='harvest'){
     const result = await act('fiji_farm_harvest', {p_plot:plot}, d=>{
