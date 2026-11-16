@@ -11,13 +11,14 @@ if($('plGrid'))return;
 
 const css=document.createElement('style');
 css.textContent=`
-.pl-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;margin-top:6px}
-.pl-left{display:grid;gap:18px;min-width:0}
+.pl-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:stretch;margin-top:6px}
+.pl-left{display:grid;grid-template-rows:auto 1fr;gap:0;min-width:0}
+.pl-left>.pl-hd .tag{margin-top:0}
 .pl-right{min-width:0}
 .pl-left>.card{margin:0;text-align:center}
 
 /* one compact panel: Daily check-in + Splash Tap side by side */
-.pl-combo{padding:12px}
+.pl-combo{padding:12px;height:100%}
 .pl-combo-in{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .pl-tile{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;padding:10px 8px;background:var(--soft);border:2.5px dashed var(--line);border-radius:18px;text-align:center}
 .pl-tile .em{font-size:30px;line-height:1}
@@ -34,8 +35,13 @@ css.textContent=`
 .pl-soon h3{margin:8px 0 4px}
 .pl-soon p{font-size:15px;opacity:.8;margin:0}
 .pl-lock{display:inline-block;margin-top:12px;border:2.5px dashed var(--ink);border-radius:99px;padding:4px 16px;font:600 14px Fredoka;background:#fff;opacity:.7}
+@media(min-width:761px){
+ .pl-combo-in{grid-template-columns:1fr;grid-auto-rows:1fr;height:100%}
+ .pl-act #pad{width:88px;height:88px}
+}
 @media(max-width:760px){
  .pl-grid{grid-template-columns:1fr}
+ .pl-left{grid-template-rows:auto}
  .pl-combo{padding:10px}
  .pl-combo-in{gap:8px}
  .pl-tile{padding:8px 6px}
@@ -81,6 +87,13 @@ grid.className='pl-grid';
 const left=document.createElement('div');left.className='pl-left';
 const right=document.createElement('div');right.className='pl-right';
 hub.parentNode.insertBefore(grid,hub); 
+const it=inv.querySelector(':scope > .tag'),ih=inv.querySelector(':scope > h2');
+if(it||ih){
+  const hd=document.createElement('div');
+  hd.className='pl-hd';
+  hd.innerHTML=(it?'<div class="'+it.className+'">play</div>':'')+(ih?'<h2>Daily play</h2>':'');
+  left.append(hd);
+}
 left.append(combo);
 right.append(inv);
 grid.append(left,right);
