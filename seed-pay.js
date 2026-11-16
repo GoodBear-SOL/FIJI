@@ -226,7 +226,7 @@ async function buy(o){
   const order={item:o.item,name:o.name,emoji:o.emoji,qty,total:unit*qty};
   buying=true;
   try{
-    if(!(await confirmBox(order)))return;
+    if(!o.confirmed&&!(await confirmBox(order)))return;
     toast('Approve the payment in your wallet…');
     const sig=await sendPayment(w,order);
     setPending({w,item:order.item,qty,sig,t:Date.now()});
