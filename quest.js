@@ -109,17 +109,17 @@ document.head.appendChild(css);
 
 const css2=document.createElement('style');
 css2.textContent=`
-.qh-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.qh-grid{grid-template-columns:repeat(auto-fill,minmax(130px,160px));justify-content:start;gap:10px}
 .qh-q{align-items:center;text-align:center;padding:10px 8px;gap:4px;border-width:2.5px;border-radius:18px;box-shadow:0 3px 0 var(--ink)}
 .qh-q .em{font-size:38px}
 .qh-q h3{font-size:16px;margin:0;line-height:1.15}
 .qh-q .row{justify-content:center;margin:0}
 .qh-q .pill{font-size:12px;padding:0 10px}
-.qh-q .btn{width:100%;padding:5px 10px;font-size:14px;min-height:0}
+.qh-q .btn{width:auto;min-width:84px;padding:4px 18px;font-size:14px;min-height:0;margin-top:4px}
 .qh-modal .qh-pop{max-height:92vh;overflow-y:auto;background:var(--bg)}
 .qh-pop .qh-x{display:flex;justify-content:flex-end}
 .qh-pop .qh-list{margin:10px 0}
-@media(max-width:760px){.qh-modal{align-items:flex-end;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}}
+@media(max-width:760px){.qh-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.qh-modal{align-items:flex-end;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}}
 `;
 document.head.appendChild(css2);
 
