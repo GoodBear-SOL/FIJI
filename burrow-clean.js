@@ -12,7 +12,6 @@ css.textContent=`
 `;
 document.head.appendChild(css);
 
-/* 2) Sweeper: remove cards/sections by their heading text */
 const BAD=/mining|nft|referral|trade\s*(&|and)?\s*earn|strong\s*bunny|bun[\s-]*a[\s-]*mole|more to dig up|coming soon to the burrow/i;
 const KEEP='#pad,#rwInv,#qsHub,#fmFarm,#bag,#plGrid,#plWheels';
 
@@ -20,7 +19,7 @@ function sweep(){
   sec.querySelectorAll('h2,h3,.tag').forEach(h=>{
     if(!h.isConnected||!BAD.test(h.textContent))return;
 
-    // a whole "coming soon" block created as one wrapper directly inside #wallet
+    
     const top=h.closest('#wallet > *');
     if(top&&/more to dig up|coming soon to the burrow/i.test(h.textContent)&&!top.querySelector(KEEP)){
       top.remove();return;
@@ -32,7 +31,7 @@ function sweep(){
       return;
     }
 
-    // h2 / tag headings: remove the heading, its small tag, and the card right after it
+    
     if(h.matches('h2')){
       const prev=h.previousElementSibling,next=h.nextElementSibling;
       if(prev&&prev.classList.contains('tag'))prev.remove();
