@@ -38,6 +38,8 @@ let holdErr=false;
 let holdAt=0;
 let view='board';
 let buying=false;
+let popId=null;
+let popEl=null;
 let lastKey='';
 let lastWallet=null;
 let lastStatusAt=0;
@@ -104,6 +106,22 @@ css.textContent=`
 }
 `;
 document.head.appendChild(css);
+
+const css2=document.createElement('style');
+css2.textContent=`
+.qh-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.qh-q{align-items:center;text-align:center;padding:10px 8px;gap:4px;border-width:2.5px;border-radius:18px;box-shadow:0 3px 0 var(--ink)}
+.qh-q .em{font-size:38px}
+.qh-q h3{font-size:16px;margin:0;line-height:1.15}
+.qh-q .row{justify-content:center;margin:0}
+.qh-q .pill{font-size:12px;padding:0 10px}
+.qh-q .btn{width:100%;padding:5px 10px;font-size:14px;min-height:0}
+.qh-modal .qh-pop{max-height:92vh;overflow-y:auto;background:var(--bg)}
+.qh-pop .qh-x{display:flex;justify-content:flex-end}
+.qh-pop .qh-list{margin:10px 0}
+@media(max-width:760px){.qh-modal{align-items:flex-end;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}}
+`;
+document.head.appendChild(css2);
 
 const hub=document.createElement('div');
 hub.id='qsHub';
@@ -198,13 +216,14 @@ function renderKey(){
   const pass=passOn();
   const state=!w?'nw':pass?'ok':hold===null?(holdErr?'err':'chk'):hold<S.min_hold?'low':'ok';
   const act=state==='ok'?subs:'';
-  return [state,view,act,buying?1:0,S.failed?1:0,pass?1:0,state==='low'?Math.floor(hold):''].join('|');
+  return [state,view,act,buying?1:0,S.failed?1:0,pass?1:0,state==='low'?Math.floor(hold):'',popId||'',popId?Math.floor(hold||0):''].join('|');
 }
 function render(){
   const k=renderKey();
   if(k===lastKey)return;
   lastKey=k;
   stashFarm();
+  hidePop();
 
   const w=wallet();
   if(!w){
@@ -241,36 +260,55 @@ function render(){
   renderDetail(view);
 }
 
+function hidePop(){if(popEl){popEl.remove();popEl=null}}
+function paintPop(){
+  hidePop();
+  if(!popId)return;
+  const p=prod(popId);
+  if(!p||subOf(popId)){popId=null;return}
+  const can=hold!==null&&hold>=Number(p.price_fiji);
+  popEl=document.createElement('div');
+  popEl.className='modal qh-modal';
+  popEl.innerHTML='<div class="sticker card qh-pop">'+
+    '<div class="qh-x"><button class="btn sm alt" type="button" data-act="close" aria-label="Close">✕</button></div>'+
+    '<div class="em">'+esc(p.emoji||'📜')+'</div><h3>'+esc(p.name)+'</h3>'+
+    '<p class="small">'+esc(p.blurb||'')+'</p>'+
+    '<div class="qh-price">🪙 '+nf(p.price_fiji)+' FIJI</div>'+
+    '<div class="small">for '+nf(p.days)+' days of access</div>'+
+    '<ul class="qh-list">'+detailPerks(popId,p)+'</ul>'+
+    '<p class="small">Your balance: '+nf(Math.floor(hold||0))+' FIJI</p>'+
+    '<button class="btn full" style="margin-top:10px" type="button" data-act="buy" data-q="'+esc(popId)+'"'+((buying||!can)?' disabled':'')+'>'+
+      (buying?'Waiting for payment…':can?'Subscribe · '+nf(p.price_fiji)+' FIJI':'Not enough FIJI')+'</button>'+
+    '<p class="qh-note">Your wallet will ask you to approve a FIJI transfer to the project treasury. Payments are final.</p></div>';
+  popEl.addEventListener('click',e=>{
+    if(e.target===popEl){popId=null;lastKey='';render();return}
+    onClick(e);
+  });
+  document.body.appendChild(popEl);
+}
+
 function renderBoard(){
   const pass=passOn();
   const cards=S.products.map(p=>{
     const s=subOf(p.id);
     const status=s
       ?(s.pass
-        ?'<span class="pill g">🎟️ Free with Access Pass</span>'
+        ?'<span class="pill g">✅ Unlocked</span>'
         :'<span class="pill g">✅ Active</span><span class="pill qh-left" data-end="'+Date.parse(s.expires_at)+'">…</span>')
-      :'<span class="pill">🔒 Not purchased</span>';
-    const priceRow=pass
-      ?'<span class="pill">🪙 Free</span><span class="pill">♾️ No expiry</span>'
-      :'<span class="pill">🪙 '+nf(p.price_fiji)+' FIJI</span><span class="pill">⏳ '+nf(p.days)+' days</span>';
+      :'<span class="pill">🔒 Locked</span>';
     return '<div class="qh-q'+(s?' on':'')+'">'+
       '<div class="em">'+esc(p.emoji||'📜')+'</div>'+
       '<h3>'+esc(p.name)+'</h3>'+
-      '<p>'+esc(p.blurb||'')+'</p>'+
-      '<div class="row">'+priceRow+'</div>'+
       '<div class="row">'+status+'</div>'+
-      '<button class="btn" type="button" data-act="open" data-q="'+esc(p.id)+'">'+(s?'Open quest':'View quest')+'</button></div>';
+      '<button class="btn" type="button" data-act="open" data-q="'+esc(p.id)+'">'+(s?'Open':'View')+'</button></div>';
   }).join('');
   const top=pass
     ?'<div class="qh-top"><span class="pill g">🎟️ Access Pass</span></div>'
     :'<div class="qh-top"><span class="pill g">✅ Holder unlocked</span><span class="pill">'+nf(Math.floor(hold))+' FIJI</span></div>';
-  const intro=pass
-    ?'<p class="small" style="margin-bottom:12px">Your Access Pass unlocks every quest for free. Quest rewards are BunXP and count toward your Phase 2 BunXP.</p>'
-    :'<p class="small" style="margin-bottom:12px">Pick a quest. Each quest is a '+nf((S.products[0]||{}).days||7)+'-day pass paid in FIJI. Quest rewards are BunXP and count toward your Phase 2 BunXP.</p>';
-  body.innerHTML=top+intro+
-    '<div class="qh-grid">'+cards+'</div>'+
-    '<p class="qh-note">FIJI payments are final and go to the project treasury. BunXP is for gameplay only and has no cash value.</p>';
+  body.innerHTML=top+'<div class="qh-grid">'+cards+'</div>'+
+    (pass?'':'<p class="qh-note">Tap a quest to see its details and price. FIJI payments are final. BunXP is for gameplay only and has no cash value.</p>');
   tick();
+  paintPop();
 }
 
 function renderDetail(id){
@@ -280,24 +318,11 @@ function renderDetail(id){
   const back='<div class="qh-top"><button class="btn sm alt" type="button" data-act="back">← Quests</button>'+
     '<span class="grow"></span><span class="pill">'+esc(p.emoji||'')+' '+esc(p.name)+'</span></div>';
 
-  if(!s){
-    const can=hold!==null&&hold>=Number(p.price_fiji);
-    body.innerHTML=back+
-      '<div class="qh-pay"><div class="em">'+esc(p.emoji||'📜')+'</div><h3>'+esc(p.name)+'</h3>'+
-      '<p class="small">'+esc(p.blurb||'')+'</p>'+
-      '<div class="qh-price">🪙 '+nf(p.price_fiji)+' FIJI</div>'+
-      '<div class="small">for '+nf(p.days)+' days of access</div>'+
-      '<ul class="qh-list">'+detailPerks(id,p)+'</ul>'+
-      '<p class="small">Your balance: '+nf(Math.floor(hold||0))+' FIJI</p><br>'+
-      '<button class="btn full" type="button" data-act="buy" data-q="'+esc(id)+'"'+((buying||!can)?' disabled':'')+'>'+
-        (buying?'Waiting for payment…':can?'Subscribe · '+nf(p.price_fiji)+' FIJI':'Not enough FIJI')+'</button>'+
-      '<p class="qh-note">Your wallet will ask you to approve a FIJI transfer to the project treasury. FIJI never needs your private key.</p></div>';
-    return;
-  }
+  if(!s){view='board';popId=id;lastKey='';render();return}
 
   body.innerHTML=back+
     '<div class="qh-sub">'+(s.pass
-      ?'<span class="pill g">🎟️ Access Pass</span><b>Included free with your Access Pass</b>'
+      ?'<span class="pill g">🎟️ Access Pass</span><b>Quest unlocked</b>'
       :'<span class="pill g">✅ Active</span><b>Access ends in <span class="qh-left" data-end="'+Date.parse(s.expires_at)+'">…</span></b>')+
     '</div>'+
     '<div id="qhHost"></div>';
@@ -527,6 +552,7 @@ async function buy(id){
     const g=await verifyPayment(w,id,sig);
     setPending(null);
     applyGrant(g);
+    popId=null;
     toast('✅ '+p.name+' unlocked for '+nf(p.days)+' days!');
     holdAt=0;
     await loadStatus(true);
@@ -706,7 +732,13 @@ function onClick(e){
   const a=b.dataset.act;
   if(a==='connect'){if(typeof window.connect==='function')window.connect()}
   else if(a==='trade'){if(typeof window.go==='function')window.go('trade')}
-  else if(a==='open'){view=b.dataset.q;lastKey='';render();if(view==='cooking')loadCook()}
+  else if(a==='open'){
+    const id=b.dataset.q;
+    if(subOf(id)){view=id;popId=null}else{popId=id}
+    lastKey='';render();
+    if(view==='cooking')loadCook();
+  }
+  else if(a==='close'){popId=null;lastKey='';render()}
   else if(a==='back'){view='board';lastKey='';render()}
   else if(a==='retry'){holdErr=false;lastKey='';render();loadHold(true)}
   else if(a==='buy')buy(b.dataset.q);
@@ -732,7 +764,7 @@ setInterval(()=>{
   const w=wallet()||null;
   const on=Boolean(sec.classList.contains('on'));
   if(w!==lastWallet){
-    lastWallet=w;hold=null;holdErr=false;S.subs=[];view='board';lastKey='';st=null;
+    lastWallet=w;hold=null;holdErr=false;S.subs=[];view='board';popId=null;lastKey='';st=null;
     root.innerHTML='<div class="small">Loading today\'s dish…</div>';
     render();
     loadStatus();
