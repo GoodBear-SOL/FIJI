@@ -428,7 +428,7 @@ function plotHtml(p,now,waterQty){
   const need=Number(c.waterings)||1,done=Number(p.waterings_done)||0;
   if(!p.ready_at){
     const pct=Math.min(100,done/need*100);
-    return '<div class="fm-plot">'+pic(FARM_SEED_IMG?c.seed_img:'',c.seed_emoji,'big')+
+    return '<div class="fm-plot">'+pic('',c.seed_emoji,'big')+
       '<b>'+esc(c.name)+'</b><span class="small">Watered '+done+' / '+need+'</span>'+
       '<div class="fm-bar"><i style="width:'+pct+'%"></i></div>'+
       (waterQty>0
@@ -439,7 +439,7 @@ function plotHtml(p,now,waterQty){
   if(left>0){
     const total=Math.max(1,(Number(c.grow_hours)||0)*3600000);
     const pct=Math.min(100,(1-left/total)*100);
-    return '<div class="fm-plot">'+pic(FARM_SEED_IMG?c.seed_img:'',c.seed_emoji,'big')+
+    return '<div class="fm-plot">'+pic('',c.seed_emoji,'big')+
       '<b>'+esc(c.name)+'</b><span class="small">Growing…</span>'+
       '<span class="fm-cd" data-end="'+end+'" data-total="'+total+'">'+fmtLeft(left)+'</span>'+
       '<div class="fm-bar"><i data-bar style="width:'+pct+'%"></i></div></div>';
@@ -634,7 +634,7 @@ function pickBody(){
     return '<div class="fm-empty"><p>You have no seeds yet.</p><br>'+
       '<button class="btn" type="button" data-a="market">Open Market</button></div>';
   }
-  return seeds.map(s=>'<div class="fm-row">'+pic(s.img,s.icon)+
+  return seeds.map(s=>'<div class="fm-row">'+pic((crop(s.id.slice(5))||{}).seed_img||'',s.icon)+
     '<div class="fm-info"><b>'+esc(s.name)+'</b><span>You have: '+fmtN(s.count)+'</span></div>'+
     '<button class="btn sm" type="button" data-a="plant" data-crop="'+esc(s.id.slice(5))+'">Plant</button></div>').join('');
 }
