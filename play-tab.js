@@ -87,7 +87,7 @@ grid.className='pl-grid';
 const left=document.createElement('div');left.className='pl-left';
 const right=document.createElement('div');right.className='pl-right';
 hub.parentNode.insertBefore(grid,hub); 
-const it=inv.querySelector(':scope > .tag'),ih=inv.querySelector(':scope > h2');
+const it=inv.querySelector('.tag'),ih=inv.querySelector('h2');
 if(it||ih){
   const hd=document.createElement('div');
   hd.className='pl-hd';
