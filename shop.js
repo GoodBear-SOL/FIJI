@@ -618,6 +618,7 @@ function sellBody(){
 }
 function marketBody(){
   if(!cat)return '<div class="fm-empty">'+(failed?'The market is not available right now 💧':'Loading the market…')+'</div>';
+  if(view.tab==='bags')return window.FIJI_BAGS?window.FIJI_BAGS.html():'<div class="fm-empty">Loading bags…</div>';
   if(view.tab==='water'){
     const w=waterItem();
     return '<div class="fm-soon"><b>Water is paid with real BUN</b><p>The BUN is sent from your wallet to the project wallet.</p></div>'+
@@ -646,7 +647,7 @@ function renderInline(){
   if(view.tab==='veg'||(view.tab==='sell'&&phaseEnded()))view.tab='seeds';
   const tab=(k,l)=>'<button class="mk-p'+(view.tab===k?' on':'')+'" type="button" data-a="tab" data-tab="'+k+'">'+l+'</button>';
   mkHost.innerHTML='<div class="sticker fm-sheet fm-inline">'+headHtml('🛍️ Market',true)+
-    '<div class="fm-tabs">'+tab('seeds','🌱 Seeds')+tab('water','💧 Water')+(phaseEnded()?'':tab('sell','💰 Sell'))+'</div>'+
+    '<div class="fm-tabs">'+tab('seeds','🌱 Seeds')+tab('water','💧 Water')+tab('bags','🎒 Bags')+(phaseEnded()?'':tab('sell','💰 Sell'))+'</div>'+
     '<div class="fm-body">'+marketBody()+'</div></div>';
 }
 function renderModal(){
