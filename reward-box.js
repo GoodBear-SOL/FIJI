@@ -67,7 +67,8 @@ bar.className='rw-bar';
 bar.id='rwBar';
 sec.prepend(bar);
 
-const SLOTS=15;
+const SLOTS_BASE=15;
+const slots=()=>{try{const n=Number(window.FIJI_BAGS&&window.FIJI_BAGS.cap&&window.FIJI_BAGS.cap());return n>=SLOTS_BASE?n:SLOTS_BASE}catch(e){return SLOTS_BASE}};
 const inv=document.createElement('div');
 inv.id='rwInv';
 inv.innerHTML=
@@ -98,6 +99,9 @@ function paintInventory(){
   const grid=$('rwGrid'),note=$('rwInvNote');
   if(!grid)return;
   const list=items();
+  const SLOTS=slots();
+  window.FIJI_INV={items:list,cap:SLOTS};
+  try{document.dispatchEvent(new CustomEvent('fiji:inv'))}catch(e){}
   let html='';
   for(let i=0;i<SLOTS;i++){
     const it=list[i];
@@ -311,5 +315,6 @@ function syncFarm(c){
 
 paintBar();
 if(onBurrow()&&wallet())loadGifts(true);
+document.addEventListener('fiji:bag',paintInventory);
 window.FIJI_REWARDS={refresh:()=>loadGifts(true),sync:syncFarm};
 })();
