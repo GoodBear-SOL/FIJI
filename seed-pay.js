@@ -23,7 +23,13 @@ const PLOT_TERMINAL=/already used|too old|failed on-chain|not signed|too small|n
 
 let buying=false,resuming=false;
 let plotBusy=false,plotResuming=false;
-
+const BAG_URL=C.CFG.SUPABASE_URL.replace(/\/+$/,'')+'/functions/v1/bag-pay';
+const BPK='fiji_bag_pending';
+const BAG_TERMINAL=/already used|too old|failed on-chain|not signed|too small|does not match|invalid/i;
+let bagBusy=false,bagResuming=false;
+const getBagPending=()=>{try{const o=JSON.parse(localStorage.getItem(BPK)||'null');return o&&o.w&&o.tier&&o.sig?o:null}catch(e){return null}};
+const setBagPending=o=>{try{if(o)localStorage.setItem(BPK,JSON.stringify(o));else localStorage.removeItem(BPK)}catch(e){}};
+  
 function getPending(){
   try{const o=JSON.parse(localStorage.getItem(PK)||'null');return o&&o.w&&o.item&&o.qty&&o.sig?o:null}catch(e){return null}
 }
@@ -316,9 +322,67 @@ async function resumePlot(){
   }
   plotResuming=false;
 }
-
+async function verifyBag(w,tier,sig){
+  let last='';
+  for(let i=0;i<8;i++){
+    const r=await fetch(BAG_URL,{method:'POST',
+      headers:{'apikey':C.CFG.SUPABASE_KEY,'Authorization':'Bearer '+C.CFG.SUPABASE_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({wallet:w,tier,signature:sig})});
+    let j={};try{j=await r.json()}catch(e){}
+    if(r.ok&&j.ok)return j.data;
+    last=j.error||('Verification failed (HTTP '+r.status+')');
+    if(j.retry||r.status===404){await new Promise(x=>setTimeout(x,2500));continue}
+    break;
+  }
+  throw new Error(last);
+}
+async function buyBag(tier,price,name){
+  if(buying||plotBusy||bagBusy)return;
+  const w=C.getWallet();
+  if(!w){if(typeof window.connect==='function')window.connect();return}
+  tier=Math.floor(Number(tier));price=Math.floor(Number(price));
+  if(!(tier>=1&&tier<=3)||!(price>=1))return toast('This bag is not for sale.');
+  const p=getBagPending();
+  if(p&&p.w===w){toast('A bag payment is still being confirmed. Please wait a moment…');resumeBag();return}
+  bagBusy=true;
+  try{
+    if(!(await confirmBox({qty:1,name:name||('Bag '+tier),emoji:'🎒',total:price})))return;
+    toast('Approve the payment in your wallet…');
+    const sig=await sendPayment(w,{item:'bag',qty:tier,total:price});
+    setBagPending({w,tier,sig,t:Date.now()});
+    toast('Payment sent. Confirming… ⏳');
+    await waitConfirmed(sig);
+    await verifyBag(w,tier,sig);
+    setBagPending(null);
+    toast('✅ '+(name||'Bag')+' unlocked 🎒');
+    refreshAll();
+    try{window.FIJI_BAGS&&window.FIJI_BAGS.refresh()}catch(e){}
+  }catch(e){
+    const m=e&&e.message?e.message:String(e);
+    console.warn('bag payment failed',e);
+    if(BAG_TERMINAL.test(m))setBagPending(null);
+    toast(e&&e.code===4001||/reject|denied|cancel/i.test(m)?'Payment cancelled. Nothing was sent.':m);
+  }finally{bagBusy=false}
+}
+async function resumeBag(){
+  const p=getBagPending(),w=C.getWallet();
+  if(!p||!w||p.w!==w||bagBusy||bagResuming)return;
+  bagResuming=true;
+  try{
+    await verifyBag(w,p.tier,p.sig);
+    setBagPending(null);
+    toast('✅ Your payment was confirmed. Bag unlocked 🎒');
+    refreshAll();
+    try{window.FIJI_BAGS&&window.FIJI_BAGS.refresh()}catch(e){}
+  }catch(e){
+    const m=String((e&&e.message)||e);
+    if(BAG_TERMINAL.test(m)){setBagPending(null);if(/already used/i.test(m))refreshAll()}
+  }
+  bagResuming=false;
+}
+setInterval(resumeBag,6000);
 setInterval(resume,6000);
 setInterval(resumePlot,6000);
 
-window.FIJI_SEEDPAY={buy,resume,buyPlot,resumePlot};
+window.FIJI_SEEDPAY={buy,resume,buyPlot,resumePlot,buyBag,resumeBag};
 })();
