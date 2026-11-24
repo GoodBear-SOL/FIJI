@@ -1,7 +1,6 @@
 (function(){
 'use strict';
 
-/* FIJI NFT Gallery (Market tab). Needs nft-data.js loaded first. */
 const $=id=>document.getElementById(id);
 const mkPage=$('market'),host=$('mkInline');
 const DATA=window.FIJI_NFT_DATA;
@@ -131,7 +130,7 @@ function filtered(){
 function card(n){
   const m=minted(n);
   return '<button type="button" class="ng-card" data-id="'+n.id+'">'+
-   '<div class="ng-img"><img src="'+esc(n.img)+'" alt="'+esc(n.name)+'" loading="lazy" onerror="this.outerHTML=\'🐰\'">'+
+   '<div class="ng-img"><img src="'+esc(n.img)+'" alt="'+esc(n.name)+'" loading="lazy" decoding="async" data-nid="'+n.id+'">'+
    '<span class="ng-id">#'+pad3(n.id)+'</span>'+
    '<span class="ng-st'+(m?' on':'')+'">'+(m?'Minted':S.loaded?'Not minted':'Preview')+'</span></div>'+
    '<div class="ng-info"><b>'+esc(n.name)+'</b><span class="ng-r" style="background:'+RCOL[n.rarity]+'">'+esc(n.rarity)+'</span></div></button>';
@@ -169,7 +168,7 @@ function openNft(id){
   const ex=a=>'https://explorer.solana.com/address/'+a+'?cluster=devnet';
   d.innerHTML='<div class="sticker card ng-sheet">'+
    '<div style="display:flex;justify-content:space-between;align-items:center"><span class="pill">#'+pad3(n.id)+'</span><button class="btn sm alt" type="button" data-x>✕</button></div>'+
-   '<img class="ng-big" src="'+esc(n.img)+'" alt="'+esc(n.name)+'">'+
+   '<img class="ng-big" src="'+esc(n.img)+'" alt="'+esc(n.name)+'" data-nid="'+n.id+'">'+
    '<h3>'+esc(n.name)+'</h3>'+
    '<span class="ng-r" style="background:'+RCOL[n.rarity]+';border:2px solid var(--ink);border-radius:99px;padding:0 12px;font:600 14px Fredoka">'+esc(n.rarity)+'</span>'+
    '<table style="margin-top:12px"><tr><td>Status</td><td>'+(c?'✅ Minted on Devnet':S.loaded?'⏳ Not minted yet':'Not checked')+'</td></tr>'+
@@ -199,6 +198,23 @@ body.addEventListener('input',e=>{
   if(e.target.id==='ngSearch'){S.q=e.target.value;S.shown=PAGE;S._focus=true;
     clearTimeout(S.t);S.t=setTimeout(()=>{render();const i=$('ngSearch');if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length)}},200)}
 });
+
+const BACKUPS=['https://arweave.net/','https://ar-io.net/'];
+document.addEventListener('error',e=>{
+  const t=e.target;
+  if(!t||t.tagName!=='IMG'||!t.dataset||!t.dataset.nid)return;
+  const n=NFTS.find(x=>x.id===Number(t.dataset.nid));
+  if(!n)return;
+  const step=Number(t.dataset.s||0);
+  if(step<BACKUPS.length){
+    t.dataset.s=step+1;
+    t.src=BACKUPS[step]+n.img.split('/').pop();
+  }else{
+    const sp=document.createElement('span');
+    sp.textContent='🐰';
+    t.replaceWith(sp);
+  }
+},true);
 
 render();
 let first=true;
