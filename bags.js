@@ -21,8 +21,8 @@ function pic(b){
   const fb='<span class="fm-em">🎒</span>';
   return '<span class="fm-pic"><img src="'+esc(encodeURI(b.img))+'" alt="" loading="lazy" data-fb="'+esc(fb)+'" onerror="this.outerHTML=this.dataset.fb"></span>';
 }
-function html(){
-  const tiles=BAGS.map(b=>{
+function tilesHtml(){
+  return BAGS.map(b=>{
     const owned=tier===b.tier,lower=tier>b.tier;
     const label=owned?'✅ Owned':lower?'Included':'Buy';
     return '<button type="button" class="fm-tile" data-bag="'+b.tier+'"'+((owned||lower)?' disabled style="opacity:.6;cursor:default"':'')+'>'+pic(b)+
@@ -31,8 +31,10 @@ function html(){
       '<span class="small">Holds '+b.cap+' items</span>'+
       '<span class="small">'+label+'</span></button>';
   }).join('');
+}
+function html(){
   return '<div class="fm-soon"><b>🎒 Bigger bag</b><p>Your burrow inventory holds '+BASE_CAP+' items. A bag raises that limit. Paid in BUN from your wallet to the project wallet. Payments are final, and the bag stays tied to your wallet. Current capacity: <b>'+cap()+'</b>.</p></div>'+
-    '<div class="fm-tiles">'+tiles+'</div>';
+    '<div class="fm-tiles">'+tilesHtml()+'</div>';
 }
 
 function changed(){
@@ -74,6 +76,6 @@ setInterval(()=>{
   if(w&&!document.hidden&&mk&&mk.classList.contains('on')&&Date.now()-lastAt>30000)refresh();
 },1500);
 
-window.FIJI_BAGS={cap,tier:()=>tier,html,refresh};
+window.FIJI_BAGS={cap,tier:()=>tier,html,tiles:tilesHtml,refresh};
 refresh();
 })();
