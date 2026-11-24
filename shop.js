@@ -38,7 +38,7 @@ let skew=0;
 let busy=false;
 let failed=false;
 let lastWallet=null;
-let view={open:false,mode:'market',tab:'seeds',plot:null};
+let view={open:false,mode:'market',tab:'all',plot:null};
 let mkt={list:[],mine:[],loading:false,err:''};
 let sess={token:null,wallet:null,exp:0};
 const nowMs=()=>Date.now()+skew;
@@ -618,6 +618,16 @@ function sellBody(){
 }
 function marketBody(){
   if(!cat)return '<div class="fm-empty">'+(failed?'The market is not available right now 💧':'Loading the market…')+'</div>';
+    if(view.tab==='all'){
+    const sub=t=>'<div class="fm-sub">'+t+'</div>';
+    const bagTiles=window.FIJI_BAGS
+      ?(window.FIJI_BAGS.tiles?'<div class="fm-tiles">'+window.FIJI_BAGS.tiles()+'</div>':window.FIJI_BAGS.html())
+      :'<div class="fm-empty">Loading bags…</div>';
+    return '<div class="fm-soon"><b>Everything in one place</b><p>Seeds, water and bags are paid with real BUN from your wallet to the project wallet. Tap an item to see details.</p></div>'+
+      sub('🌱 Seeds')+'<div class="fm-tiles">'+cat.crops.map(c=>itemTile('seed:'+c.id)).join('')+'</div>'+
+      sub('💧 Water')+'<div class="fm-tiles">'+itemTile('water')+'</div>'+
+      sub('🎒 Bags')+bagTiles;
+  }
   if(view.tab==='bags')return window.FIJI_BAGS?window.FIJI_BAGS.html():'<div class="fm-empty">Loading bags…</div>';
   if(view.tab==='water'){
     const w=waterItem();
@@ -647,7 +657,7 @@ function renderInline(){
   if(view.tab==='veg'||(view.tab==='sell'&&phaseEnded()))view.tab='seeds';
   const tab=(k,l)=>'<button class="mk-p'+(view.tab===k?' on':'')+'" type="button" data-a="tab" data-tab="'+k+'">'+l+'</button>';
   mkHost.innerHTML='<div class="sticker fm-sheet fm-inline">'+headHtml('🛍️ Market',true)+
-    '<div class="fm-tabs">'+tab('seeds','🌱 Seeds')+tab('water','💧 Water')+tab('bags','🎒 Bags')+(phaseEnded()?'':tab('sell','💰 Sell'))+'</div>'+
+    '<div class="fm-tabs">'+tab('all','🛒 All')+tab('seeds','🌱 Seeds')+tab('water','💧 Water')+tab('bags','🎒 Bags')+(phaseEnded()?'':tab('sell','💰 Sell'))+'</div>'+
     '<div class="fm-body">'+marketBody()+'</div></div>';
 }
 function renderModal(){
@@ -657,7 +667,7 @@ function renderModal(){
 }
 
 function openModal(mode,tab,plot){
-  let t=tab||view.tab||'seeds';
+  let t=tab||view.tab||'all';
   if(t==='veg'||(t==='sell'&&phaseEnded()))t='seeds';
   if((mode||'market')==='market'&&mkHost){
     closeModal();
@@ -778,7 +788,7 @@ async function onClick(e){
   const b=e.target.closest('[data-a]');
   if(!b)return;
   const a=b.dataset.a,plot=Number(b.dataset.plot);
-  if(a==='market')return openModal('market','seeds');
+  if(a==='market')return openModal('market','all');
   if(a==='market-water')return openModal('market','water');
   if(a==='item')return openItem(b.dataset.item);
   if(a==='close')return closeModal();
