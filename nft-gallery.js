@@ -1,6 +1,7 @@
 (function(){
 'use strict';
 
+/* FIJI NFT Gallery (Market tab). Needs nft-data.js loaded first. */
 const $=id=>document.getElementById(id);
 const mkPage=$('market'),host=$('mkInline');
 const DATA=window.FIJI_NFT_DATA;
@@ -20,7 +21,8 @@ const short=a=>{const s=String(a||'');return s.length<=10?s:s.slice(0,4)+'…'+s
 const toast=m=>{try{window.FIJI_CORE.toast(m)}catch(e){console.log(m)}};
 const pad3=n=>String(n).padStart(3,'0');
 
-const NFTS=DATA.map(r=>({id:r[0],name:r[1],rarity:r[2],img:GATEWAY+r[3],meta:GATEWAY+r[4],metaId:r[4]}));
+const LOCAL='./nft/';
+const NFTS=DATA.map(r=>({id:r[0],name:r[1],rarity:r[2],img:LOCAL+pad3(r[0])+'.webp',imgId:r[3],meta:GATEWAY+r[4],metaId:r[4]}));
 const byMeta=new Map(NFTS.map(n=>[n.metaId,n]));
 const byName=new Map(NFTS.map(n=>[n.name.toLowerCase(),n]));
 
@@ -199,7 +201,8 @@ body.addEventListener('input',e=>{
     clearTimeout(S.t);S.t=setTimeout(()=>{render();const i=$('ngSearch');if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length)}},200)}
 });
 
-const BACKUPS=['https://arweave.net/','https://ar-io.net/'];
+/* If an image fails, retry from backup hosts, then show a bunny */
+const BACKUPS=['https://gateway.irys.xyz/','https://arweave.net/','https://ar-io.net/'];
 document.addEventListener('error',e=>{
   const t=e.target;
   if(!t||t.tagName!=='IMG'||!t.dataset||!t.dataset.nid)return;
@@ -208,7 +211,7 @@ document.addEventListener('error',e=>{
   const step=Number(t.dataset.s||0);
   if(step<BACKUPS.length){
     t.dataset.s=step+1;
-    t.src=BACKUPS[step]+n.img.split('/').pop();
+    t.src=BACKUPS[step]+n.imgId;
   }else{
     const sp=document.createElement('span');
     sp.textContent='🐰';
